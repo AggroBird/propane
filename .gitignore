@@ -27,6 +27,8 @@
 *.sln
 *.vcxproj
 *.vcxproj.*
+intermediate
+bin
 
 # Test
 buildtool
