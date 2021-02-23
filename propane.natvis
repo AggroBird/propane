@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?> 
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  
+  <Type Name="propane::block&lt;*&gt;">
+    <Intrinsic Name="size" Expression="len" />
+    <DisplayString>{{ size={len} }}</DisplayString>
+    <Expand>
+      <ArrayItems>
+        <Size>len</Size>
+        <ValuePointer>ptr</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="propane::static_block&lt;*&gt;">
+    <Intrinsic Name="size" Expression="len" />
+    <DisplayString>{{ size={len} }}</DisplayString>
+    <Expand>
+      <ArrayItems>
+        <Size>len</Size>
+        <ValuePointer>(value_type*)(((uint8_t*)this) + off)</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+  
+  <Type Name="propane::aligned_t&lt;*&gt;">
+    <DisplayString>{*(type*)&amp;data}</DisplayString>
+  </Type>
+
+  <Type Name="propane::string_table">
+    <DisplayString>{{ size={entries.size()} }}</DisplayString>
+    <Expand>
+      <IndexListItems>
+        <Size>entries.size()</Size>
+        <ValueNode>((char*)(((uint8_t*)&amp;strings) + strings.off)+entries[$i].offset),[entries[$i].length]</ValueNode>
+      </IndexListItems>
+    </Expand>
+  </Type>
+  
+</AutoVisualizer>
