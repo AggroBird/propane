@@ -29,7 +29,6 @@ using std::stringstream;
 using std::span;
 
 #include <iostream>
-#include <memory>
 #include <type_traits>
 
 #define CLASS_DEFAULT(type, copy, move, ...)	\
