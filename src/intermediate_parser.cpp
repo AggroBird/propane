@@ -29,11 +29,15 @@
 #define VALIDATE_ARRAY_SIZE(num) VALIDATE(ERRC::PRS_ARRAY_SIZE_OVERFLOW, propane::check_size_range(num), \
 	"Array size exceeds supported maximum value")
 #define VALIDATE_STACK_INDEX(num) VALIDATE(ERRC::PRS_STACK_IDX_OVERFLOW, uint64_t(num) < uint64_t(address_header::index_max), \
-	"Stack index exceeds supported maximum value")
+	"Index exceeds supported maximum value")
 #define UNDEFINED_STACK_IDX(expr, num) VALIDATE(ERRC::PRS_UNDEFINED_STACK_IDX, expr, \
 	"Undefined stack index: '%'", num)
 #define DUPLICATE_STACK_IDX(expr, num) VALIDATE(ERRC::PRS_DUPLICATE_STACK_IDX, expr, \
 	"Stack index '%' has already been defined", num)
+#define UNDEFINED_PARAM_IDX(expr, num) VALIDATE(ERRC::PRS_UNDEFINED_PARAM_IDX, expr, \
+	"Undefined parameter index: '%'", num)
+#define DUPLICATE_PARAM_IDX(expr, num) VALIDATE(ERRC::PRS_DUPLICATE_PARAM_IDX, expr, \
+	"Parameter index '%' has already been defined", num)
 #define DUPLICATE_STACK_NAME(expr, name) VALIDATE(ERRC::PRS_DUPLICATE_STACK_NAME, expr, \
 	"Variable '%' has already been defined", name)
 #define UNEXPECTED_LITERAL(expr) VALIDATE(ERRC::PRS_UNEXPECTED_LITERAL, expr, \
@@ -794,7 +798,14 @@ namespace propane
 
 					type = resolve_typename(args[1]);
 
-					DUPLICATE_STACK_IDX(lookup.indices.find(index) == lookup.indices.end(), index);
+					if (current_scope == definition_type::param)
+					{
+						DUPLICATE_PARAM_IDX(lookup.indices.find(index) == lookup.indices.end(), index);
+					}
+					else
+					{
+						DUPLICATE_STACK_IDX(lookup.indices.find(index) == lookup.indices.end(), index);
+					}
 					lookup.indices.emplace(index, lookup.count++);
 				}
 				else
@@ -814,7 +825,7 @@ namespace propane
 				return type;
 			}
 
-			UNEXPECTED_EXPRESSION(num > 0, args[0]);
+			UNEXPECTED_EXPRESSION(num == 0, args[0]);
 			return type_idx::invalid;
 		}
 
@@ -918,7 +929,7 @@ namespace propane
 				{
 					// Indexed parameter
 					auto find = parameter_lookup.indices.find(parse_idx);
-					UNDEFINED_STACK_IDX(find != stackvar_lookup.indices.end(), parse_idx);
+					UNDEFINED_PARAM_IDX(find != parameter_lookup.indices.end(), parse_idx);
 					result.header.set_type(address_type::parameter);
 					result.header.set_index(find->second);
 					break;
