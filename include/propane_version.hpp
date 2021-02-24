@@ -3,19 +3,8 @@
 
 #include <cinttypes>
 
-#define PROPANE_VERSION_MAJOR 1
-#define PROPANE_VERSION_MINOR 0
-#define PROPANE_VERSION_CHANGELIST 854
-
 namespace propane
 {
-	namespace version
-	{
-		constexpr uint16_t major = PROPANE_VERSION_MAJOR;
-		constexpr uint16_t minor = PROPANE_VERSION_MINOR;
-		constexpr uint32_t changelist = PROPANE_VERSION_CHANGELIST;
-	}
-
 	enum class platform_endianness : uint8_t
 	{
 		unknown = 0,

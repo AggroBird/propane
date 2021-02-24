@@ -1,12 +1,19 @@
 #include "propane_version.hpp"
 #include "constants.hpp"
-
+#include "version.hpp"
 
 // Endian independant version numbering
 // See https://sourceforge.net/p/predef/wiki/Endianness/
 
 namespace propane
 {
+	namespace version
+	{
+		constexpr uint16_t major = PROPANE_VERSION_MAJOR;
+		constexpr uint16_t minor = PROPANE_VERSION_MINOR;
+		constexpr uint32_t changelist = PROPANE_VERSION_CHANGELIST;
+	}
+
 	constexpr uint64_t major_bytecount = 2;
 	constexpr uint64_t minor_bytecount = 2;
 	constexpr uint64_t changelist_bytecount = 3;
@@ -134,6 +141,8 @@ namespace propane
 		return
 			major() == version::major &&
 			minor() == version::minor &&
+			// By default a different changelist does not invalidate previous binaries.
+			// Uncomment this to include changelist into the compatibility check:
 			//changelist() == version::changelist &&
 			endianness() == get_endianness() &&
 			architecture() == get_architecture();
