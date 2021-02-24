@@ -64,7 +64,7 @@ noop
 ```
 
 ### Assignment instructions
-`set` and `conv` (convert) follow the following behaviour:
+`set` and `conv` (convert) have the following behaviour:
 * If left-hand operand type and right-hand operand type are the same:
   * `set` will copy the entire value of right to left, regardless of size.
 * If left-hand operand type and right-hand operand type are not the same:
@@ -102,8 +102,8 @@ or     <address>    <address/constant>    (bitwise or)
 ```
 
 ### Pointer instructions
-Pointer instructions require pointer types.
-* `padd` and `psub` will add and substract the underlying type size multiplied by the operand.
+Pointer instructions require pointer types as left-hand operand.
+* `padd` and `psub` will add or substract the underlying type size multiplied by the operand. The right-hand operand must be integral.
 * `pdif` will take the offset between two pointers, divided by the underlying type size, granted both pointers are the same type.
 ```
 padd   <address>    <address/constant>
