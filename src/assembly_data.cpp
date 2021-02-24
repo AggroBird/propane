@@ -873,9 +873,9 @@ namespace propane
 				// Ensure that both types are arithmetic
 				VALIDATE_IMPLICIT_CONVERSION(rhs_type.is_arithmetic(), lhs_type.index, rhs_type.index);
 			}
-			else if (lhs_type.is_object() && lhs_type.index == rhs_type.index)
+			else if ((lhs_type.is_object() || lhs_type.is_array()) && lhs_type.index == rhs_type.index)
 			{
-				// Copy struct
+				// Copy data
 				return subcode(45);
 			}
 			else
