@@ -2016,7 +2016,7 @@ namespace propane
 		{
 			return read_bytecode<subcode>(sf.iptr);
 		}
-		address_t read_address(bool is_operand) noexcept
+		address_t read_address(bool is_rhs) noexcept
 		{
 			address_t result;
 
@@ -2130,8 +2130,8 @@ namespace propane
 
 				case address_prefix::address_of:
 				{
-					tmp_var[is_operand] = reinterpret_cast<size_t>(result.addr);
-					result.addr = reinterpret_cast<pointer_t>(&tmp_var[is_operand]);
+					tmp_var[is_rhs] = reinterpret_cast<size_t>(result.addr);
+					result.addr = reinterpret_cast<pointer_t>(&tmp_var[is_rhs]);
 
 					const type_idx dst_type = result.type->pointer_type;
 					result.type = dst_type == type_idx::invalid ? &vptr_type : &get_type(dst_type);
@@ -2140,8 +2140,8 @@ namespace propane
 
 				case address_prefix::size_of:
 				{
-					tmp_var[is_operand] = result.type->total_size;
-					result.addr = reinterpret_cast<pointer_t>(&tmp_var[is_operand]);
+					tmp_var[is_rhs] = result.type->total_size;
+					result.addr = reinterpret_cast<pointer_t>(&tmp_var[is_rhs]);
 
 					result.type = &size_type;
 				}

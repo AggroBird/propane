@@ -1161,7 +1161,7 @@ namespace propane
 		{
 			return read_bytecode<subcode>(sf.iptr);
 		}
-		string_address_t read_address(bool is_operand)
+		string_address_t read_address(bool is_rhs)
 		{
 			string_writer& buf = get_next_buffer();
 
@@ -1241,7 +1241,7 @@ namespace propane
 
 				case address_type::constant:
 				{
-					ASSERT(is_operand, "Constant cannot be a destination operand");
+					ASSERT(is_rhs, "Constant cannot be a left-hand side operand");
 					const type_idx btype_idx = type_idx(index);
 					ASSERT(btype_idx <= type_idx::vptr, "Malformed constant opcode");
 					sf.iptr += sizeof(address_header);
@@ -1366,7 +1366,7 @@ namespace propane
 			{
 				if (size_t(index) < stack_vars_used.size() && !stack_vars_used[size_t(index)])
 				{
-					if (addr.header.prefix() == address_prefix::none && addr.header.modifier() == address_modifier::none && !is_operand)
+					if (addr.header.prefix() == address_prefix::none && addr.header.modifier() == address_modifier::none && !is_rhs)
 					{
 						buf.clear();
 						declare_stackvar(buf, stack_postfix, size_t(index), sv_type);

@@ -41,7 +41,7 @@
 #define VALIDATE_PARAM_INDEX(idx, max) VALIDATE(ERRC::GNR_PARAM_OUT_OF_RANGE, size_t(idx) < size_t(max), \
 	"Parameter index out of range (%/%)", size_t(idx), max)
 #define VALIDATE_NONCONST(expr) VALIDATE(ERRC::GNR_INVALID_CONSTANT, expr, \
-	"Constant is not valid as destination operand")
+	"Constant is not valid as left-hand side operand")
 
 #define VALIDATE_TYPE(id, max) { VALIDATE_INDEX(id, max); VALIDATE_NONVOID(id); }
 #define VALIDATE_TYPES(set, max) { for(const auto& id : set) { VALIDATE_INDEX(id, max); VALIDATE_NONVOID(id); } }

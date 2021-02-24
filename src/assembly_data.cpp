@@ -380,8 +380,8 @@ namespace propane
 						case opcode::set:
 						{
 							subcode& sub = read_subcode();
-							const type_idx lhs = resolve_address();
-							const type_idx rhs = resolve_operand();
+							const type_idx lhs = resolve_address(false);
+							const type_idx rhs = resolve_address(true);
 							sub = resolve_set(lhs, rhs);
 						}
 						break;
@@ -389,8 +389,8 @@ namespace propane
 						case opcode::conv:
 						{
 							subcode& sub = read_subcode();
-							const type_idx lhs = resolve_address();
-							const type_idx rhs = resolve_operand();
+							const type_idx lhs = resolve_address(false);
+							const type_idx rhs = resolve_address(true);
 							sub = resolve_conv(lhs, rhs);
 						}
 						break;
@@ -399,7 +399,7 @@ namespace propane
 						case opcode::ari_neg:
 						{
 							subcode& sub = read_subcode();
-							const type_idx lhs = resolve_address();
+							const type_idx lhs = resolve_address(false);
 							sub = resolve_ari(op, lhs, lhs);
 						}
 						break;
@@ -416,8 +416,8 @@ namespace propane
 						case opcode::ari_or:
 						{
 							subcode& sub = read_subcode();
-							const type_idx lhs = resolve_address();
-							const type_idx rhs = resolve_operand();
+							const type_idx lhs = resolve_address(false);
+							const type_idx rhs = resolve_address(true);
 							sub = resolve_ari(op, lhs, rhs);
 						}
 						break;
@@ -426,16 +426,16 @@ namespace propane
 						case opcode::psub:
 						{
 							subcode& sub = read_subcode();
-							const type_idx lhs = resolve_address();
-							const type_idx rhs = resolve_operand();
+							const type_idx lhs = resolve_address(false);
+							const type_idx rhs = resolve_address(true);
 							sub = resolve_ptr(op, lhs, rhs);
 						}
 						break;
 
 						case opcode::pdif:
 						{
-							const type_idx lhs = resolve_address();
-							const type_idx rhs = resolve_operand();
+							const type_idx lhs = resolve_address(false);
+							const type_idx rhs = resolve_address(true);
 							resolve_pdif(lhs, rhs);
 							// Pointer dif return value
 							return_value = offset_type;
@@ -451,8 +451,8 @@ namespace propane
 						case opcode::cle:
 						{
 							subcode& sub = read_subcode();
-							const type_idx lhs = resolve_address();
-							const type_idx rhs = resolve_operand();
+							const type_idx lhs = resolve_address(false);
+							const type_idx rhs = resolve_address(true);
 							sub = resolve_cmp(op, lhs, rhs);
 							// Comparison return value
 							return_value = type_idx::i32;
@@ -487,8 +487,8 @@ namespace propane
 						{
 							const size_t jump = read_bytecode<size_t>(iptr);
 							subcode& sub = read_subcode();
-							const type_idx lhs = resolve_address();
-							const type_idx rhs = resolve_operand();
+							const type_idx lhs = resolve_address(false);
+							const type_idx rhs = resolve_address(true);
 							sub = resolve_cmp(op - (opcode::br - opcode::cmp), lhs, rhs);
 							// Reset return value after branch
 							return_value = type_idx::voidtype;
@@ -531,7 +531,7 @@ namespace propane
 							for (size_t i = 0; i < arg_count; i++)
 							{
 								subcode& sub = read_subcode();
-								const type_idx arg_type = resolve_operand();
+								const type_idx arg_type = resolve_address(true);
 								sub = resolve_set(signature.parameters[i].type, arg_type);
 							}
 							// Set return value to method return type
@@ -549,7 +549,7 @@ namespace propane
 							for (size_t i = 0; i < arg_count; i++)
 							{
 								subcode& sub = read_subcode();
-								const type_idx arg_type = resolve_operand();
+								const type_idx arg_type = resolve_address(true);
 								sub = resolve_set(signature.parameters[i].type, arg_type);
 							}
 							// Set return value to method return type
@@ -570,13 +570,13 @@ namespace propane
 							has_returned = true;
 
 							subcode& sub = read_subcode();
-							const type_idx rhs = resolve_operand();
+							const type_idx rhs = resolve_address(true);
 							sub = resolve_set(current_signature->return_type, rhs);
 						}
 						break;
 
 						case opcode::dump:
-							resolve_operand();
+							resolve_address(true);
 							break;
 
 						default: ASSERT(false, "Malformed opcode");
@@ -596,7 +596,7 @@ namespace propane
 		{
 			return read_bytecode_ref<subcode>(iptr);
 		}
-		type_idx resolve_address(bool is_operand = false)
+		type_idx resolve_address(bool is_rhs)
 		{
 			type_idx last_type = type_idx::invalid;
 
@@ -656,7 +656,7 @@ namespace propane
 					const type_idx btype_idx = type_idx(index);
 
 					// All of these cases should have been caught by the parser already
-					ASSERT(is_operand, "Constant cannot be a destination operand");
+					ASSERT(is_rhs, "Constant cannot be a left-hand side operand");
 					ASSERT(btype_idx <= type_idx::vptr, "Malformed constant opcode");
 					ASSERT(addr.header.modifier() == address_modifier::none, "Cannot apply address modifier on a constant");
 					ASSERT(addr.header.prefix() == address_prefix::none, "Cannot apply address prefix on a constant");
@@ -779,10 +779,6 @@ namespace propane
 			iptr += sizeof(address_data_t);
 
 			return last_type;
-		}
-		type_idx resolve_operand()
-		{
-			return resolve_address(true);
 		}
 
 		void resolve_signature(asm_signature& signature)
