@@ -799,20 +799,26 @@ namespace propane
 				}
 				else if (type.is_array())
 				{
-					//fmt.write_str("{");
-					//const auto& underlying_type = get_type(type.generated.array.underlying_type);
-					//for (size_t i = 0; i < type.generated.array.array_size; i++)
-					//{
-					//	fmt.write_str(i == 0 ? " " : ", ");
-					//
-					//	const size_t s = addr.size();
-					//	addr.write_str(".$val[");
-					//	addr.write_str(get_number_str(i));
-					//	addr.write_str("]");
-					//	dump_recursive(underlying_type, fmt, arg, addr);
-					//	addr.resize(s);
-					//}
-					//fmt.write_str(" }");
+					// This could potentially turn into a very large piece of code
+					// when used with large arrays. As such, dumping array content is
+					// disabled for now until a better solution is found.
+					// (This could potentially be implemented using a forloop)
+#if 0
+					fmt.write_str("{");
+					const auto& underlying_type = get_type(type.generated.array.underlying_type);
+					for (size_t i = 0; i < type.generated.array.array_size; i++)
+					{
+						fmt.write_str(i == 0 ? " " : ", ");
+					
+						const size_t s = addr.size();
+						addr.write_str(".$val[");
+						addr.write_str(get_number_str(i));
+						addr.write_str("]");
+						dump_recursive(underlying_type, fmt, arg, addr);
+						addr.resize(s);
+					}
+					fmt.write_str(" }");
+#endif
 				}
 				else if (!type.fields.empty())
 				{
