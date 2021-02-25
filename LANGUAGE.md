@@ -75,7 +75,7 @@ The memory layout of a structure is implementation specific and cannot be guaran
 
 ## Globals and constants
 
-```
+```c
 global
 	int global_integer 15
 	vector3 global_vec3 1.0f 2.0f 3.0f
@@ -84,9 +84,32 @@ end
 
 Global are defined as unique data that can be accessed from any method. Globals exist at application startup and have a predetermined value. Globals that do not get initialized with a value default to zero. Global structs with multiple fields can have an initializer per field. The amount of initializer values can be fewer than the amount of fields (nested fields included), and uninitialized fields should default to zero. The amount of initializer values cannot exceed the total amount of fields.
 
-Constants are similar to globals in scope and initialization, but must their value must be immutable. Despite being immuatble, it is valid to take the address of a constant and use constants in arithmetic expressions. Modifying the value of a constant directly or indirectly through pointer access is expected to lead to undefined behaviour and should result in process termination. Unlike globals, constants are not guaranteed to exist in memory at a specified location, as compilers might optimize or inline constant values depending on their usage.
+Constants are similar to globals in scope and initialization, but must their value must be immutable. Despite being immuatble, it is valid to take the address of a constant and use constants in arithmetic expressions. Modifying the value of a constant directly or indirectly through pointer access is considered undefined behaviour and should result in process termination. Unlike globals, constants are not guaranteed to exist in memory at a specified location, as compilers might optimize or inline constant values depending on their usage.
 
 Global signature types can be initialized with a method address or a null pointer, while constant signature types must be initialized with a valid method address.
+
+## Methods
+
+```call
+method add_numbers returns int
+	parameters
+		0: int
+		1: int
+	end
+	
+	stack
+		0: int
+	end
+	
+	set {0} (0)
+	add {0} (1)
+	
+	retv {0}
+```
+
+Methods in Propane are implemented as subroutines that can be invoked from any other method. Propane methods have no support for overloading and each method name has to be unique. Arguments passed to a method are copied by value and methods cannot modify any variables of the calling method's stack, unless passed by pointer.
+
+Methods variable stacks are fixed size and cannot grow or shrink at runtime. Like in C, stack data is not initialized and accessing uninitialized data is considered undefined behaviour.
 
 ## Instruction set
 
