@@ -1,6 +1,6 @@
 # Propane Language Definition
 
-The following documents defines the Propane language standard. For custom implementations, these rules can serve as a guideline. The standard Propane toolchain follows these rules strictly.
+The following documents defines the Propane language standard. For custom implementations, these rules can serve as a guideline. The experimental Propane toolchain follows these rules strictly.
 
 :warning: **This document is incomplete, and will continue to undergo changes.**
 
