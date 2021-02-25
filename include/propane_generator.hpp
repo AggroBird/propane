@@ -18,11 +18,15 @@ namespace propane
 		generator() = delete;
 	};
 
+	// Experimental C generator
 	class c_generator
 	{
 	public:
+		// Takes in a finalized Propane assembly and generates a C file at specified location
 		static void generate(const char* out_dir, const class assembly& linked_assembly);
 	};
+
+	template<> class generator<language_c> : public c_generator {};
 
 
 	struct address
@@ -174,10 +178,13 @@ namespace propane
 		return std::span<const value_t>(&init, 1);
 	}
 
+	// Experimental Propane bytecode generator
+	// Inherit from this to implement a parser
 	class propane_generator
 	{
 	public:
 		propane_generator();
+		// String name of the file (will be included in type/method metadata)
 		propane_generator(std::string_view name);
 		~propane_generator();
 
@@ -190,9 +197,11 @@ namespace propane
 			type_writer(const type_writer&) = delete;
 			type_writer& operator=(const type_writer&) = delete;
 
+			// Field declaration for structs
 			void declare_field(type_idx type, name_idx name);
 			void declare_field(type_idx type, std::string_view name);
 
+			// Finalize
 			void finalize();
 
 		private:
@@ -226,15 +235,19 @@ namespace propane
 			method_writer(const method_writer&) = delete;
 			method_writer& operator=(const method_writer&) = delete;
 
+			// Variable stack
 			void set_stack(std::span<const type_idx> types);
 			inline void set_stack(std::initializer_list<type_idx> types)
 			{
 				set_stack(init_span(types));
 			}
 
+			// Declare label for later use
 			label_idx declare_label(std::string_view label_name);
+			// Write label (this should be called only once per label)
 			void write_label(label_idx label);
 
+			// Instruction writer methods
 			void write_noop();
 
 			void write_set(address lhs, address rhs);
@@ -298,6 +311,7 @@ namespace propane
 
 			void write_dump(address addr);
 
+			// Finalize
 			void finalize();
 
 		private:
@@ -325,14 +339,21 @@ namespace propane
 			file_meta get_meta() const;
 		};
 
+		// Declare a unique identifier. If 'name' has already been used,
+		// this method will return the same index
 		name_idx make_identifier(std::string_view name);
 
+		// Declare signatures
+		// Signatures can be used for method declaration or signature type declaration
 		signature_idx make_signature(type_idx return_type, std::span<const type_idx> parameter_types = std::span<const type_idx>());
 		inline signature_idx make_signature(type_idx return_type, std::initializer_list<type_idx> parameter_types)
 		{
 			return make_signature(return_type, init_span(parameter_types));
 		}
 
+		// Offsets
+		// Data views into structs relative to the root type.
+		// Modifying field values is only possible through offsets.
 		offset_idx make_offset(type_idx type, std::span<const name_idx> fields);
 		inline offset_idx make_offset(type_idx type, std::initializer_list<name_idx> fields)
 		{
@@ -343,6 +364,7 @@ namespace propane
 			return make_offset(type, init_span(field));
 		}
 
+		// Global and constant definition
 		void define_global(name_idx name, bool is_constant, type_idx type, std::span<const constant> values = std::span<const constant>());
 		inline void define_global(name_idx name, bool is_constant, type_idx type, std::initializer_list<constant> values)
 		{
@@ -356,39 +378,55 @@ namespace propane
 		{
 			return define_global(make_identifier(name), is_constant, type, init_span(values));
 		}
-
+		
+		// Type declaration
+		// Can be called multiple times, but will always
+		// return the same index for identifier 'name'
 		type_idx declare_type(name_idx name);
 		inline type_idx declare_type(std::string_view name)
 		{
 			return declare_type(make_identifier(name));
 		}
+		// Define type can only be called once
 		type_writer& define_type(type_idx type, bool is_union = false);
 		inline type_writer& define_type(std::string_view name, bool is_union = false)
 		{
 			return define_type(declare_type(make_identifier(name)));
 		}
 		
+		// Creation of generated types
 		type_idx declare_pointer_type(type_idx base_type);
 		type_idx declare_array_type(type_idx base_type, size_t array_size);
 		type_idx declare_signature_type(signature_idx signature);
 
+		// Method declaration
+		// Can be called multiple times, but will always
+		// return the same index for identifier 'name'
 		method_idx declare_method(name_idx name);
 		inline method_idx declare_method(std::string_view name)
 		{
 			return declare_method(make_identifier(name));
 		}
+		// Define method can only be called once
 		method_writer& define_method(method_idx method, signature_idx signature);
 		inline method_writer& define_method(std::string_view name, signature_idx signature)
 		{
 			return define_method(declare_method(make_identifier(name)), signature);
 		}
 
+		// Set a line number to be included in type/method metadata
 		void set_line_number(index_t line_number) noexcept;
 
+		// Finalize
+		// This method finishes up all the writers and releases all the resources.
+		// The returned intermediate can be merged with other intermediates or linked and executed.
 		intermediate finalize();
 
+		// Experimental parser for parsing from text
 		static intermediate parse(const char* file_path);
+		// Experimental generator for generating to text
 		static void generate(const char* out_dir, const class assembly& linked_assembly);
+
 
 		file_meta get_meta() const;
 
@@ -411,7 +449,6 @@ namespace propane
 	};
 
 	template<> class generator<language_propane> : public propane_generator {};
-	template<> class generator<language_c> : public c_generator {};
 }
 
 #endif

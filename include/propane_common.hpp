@@ -3,11 +3,12 @@
 
 #include "propane_version.hpp"
 
-#include <exception>
+#include <span>
 #include <string>
 #include <string_view>
 #include <initializer_list>
-#include <span>
+#include <type_traits>
+#include <exception>
 
 namespace propane
 {
@@ -29,8 +30,26 @@ namespace propane
 		f64,
 		vptr,
 		voidtype,
+
 		invalid = invalid_index,
 	};
+
+	constexpr bool is_integral(type_idx type) noexcept
+	{
+		return type < type_idx::f32;
+	}
+	constexpr bool is_unsigned(type_idx type) noexcept
+	{
+		return is_integral(type) && (((index_t)type & 1) == 1);
+	}
+	constexpr bool is_floating_point(type_idx type) noexcept
+	{
+		return type == type_idx::f32 || type == type_idx::f64;
+	}
+	constexpr bool is_arithmetic(type_idx type) noexcept
+	{
+		return type <= type_idx::f64;
+	}
 
 	enum class method_idx : index_t { invalid = invalid_index };
 	enum class signature_idx : index_t { invalid = invalid_index };
@@ -174,6 +193,34 @@ namespace propane
 	private:
 		index_t value;
 	};
+
+	// Type flags
+	enum class type_flags : index_t
+	{
+		none = 0,
+		is_union = 1 << 0,
+		is_internal = 1 << 1,
+
+		is_pointer_type = 1 << 8,
+		is_array_type = 1 << 9,
+		is_signature_type = 1 << 10,
+
+		is_generated_type = (is_pointer_type | is_array_type | is_signature_type),
+	};
+
+	constexpr type_flags operator|(type_flags lhs, type_flags rhs) noexcept
+	{
+		return type_flags(index_t(lhs) | index_t(rhs));
+	}
+	constexpr type_flags& operator|=(type_flags& lhs, type_flags rhs) noexcept
+	{
+		lhs = lhs | rhs;
+		return lhs;
+	}
+	constexpr bool operator&(type_flags lhs, type_flags rhs) noexcept
+	{
+		return type_flags(index_t(lhs) & index_t(rhs)) != type_flags::none;
+	}
 
 
 	struct file_meta

@@ -6,6 +6,8 @@
 
 namespace propane
 {
+	// Field
+	// Contains info regarding struct fields
 	struct field
 	{
 		field() = default;
@@ -14,11 +16,16 @@ namespace propane
 			type(type),
 			offset(offset) {}
 
+		// Field name
 		name_idx name;
+		// Field type
 		type_idx type;
+		// Byte offset in the struct (relative to front of struct)
 		aligned_size_t offset;
 	};
 
+	// Stackvar
+	// Contains info regarding stack variables or parameters
 	struct stackvar
 	{
 		stackvar() = default;
@@ -26,10 +33,14 @@ namespace propane
 			type(type),
 			offset(offset) {}
 
+		// Variable type
 		type_idx type;
+		// Byte offset on the stack (relative to front of stack)
 		aligned_size_t offset;
 	};
 
+	// Generate type information
+	// Contains information regarding generated types
 	struct generated_type
 	{
 		struct pointer_data
@@ -39,7 +50,9 @@ namespace propane
 				underlying_type(underlying_type),
 				underlying_size(underlying_size) {}
 
+			// Underlying type index
 			type_idx underlying_type;
+			// Underlying type size (for pointer arithmetics)
 			aligned_size_t underlying_size;
 		};
 
@@ -50,7 +63,9 @@ namespace propane
 				underlying_type(underlying_type),
 				array_size(array_size) {}
 
+			// Underlying type index
 			type_idx underlying_type;
+			// Array element count (number of items, not byte size)
 			aligned_size_t array_size;
 		};
 
@@ -61,6 +76,7 @@ namespace propane
 				index(index),
 				zero(0) {}
 
+			// Index to the signature of this method pointer
 			signature_idx index;
 
 		private:
@@ -80,71 +96,45 @@ namespace propane
 
 		union
 		{
+			// This data is valid if type is a pointer
 			pointer_data pointer;
+			// This data is valid if type is an array
 			array_data array;
+			// This data is valid if type is a signature
 			signature_data signature;
 		};
 	};
 
+	// Optional meta data that gets included per type/method,
+	// if set during generation, this data will contain the filename
+	// and line number where the type/method was originally defined.
+	// If not set during generation, index will equal to meta_idx::invalid
 	struct metadata
 	{
 		meta_idx index;
 		index_t line_number;
 	};
 
-	enum class type_flags : index_t
-	{
-		none = 0,
-		is_union = 1 << 0,
-		is_internal = 1 << 1,
-
-		is_pointer_type = 1 << 8,
-		is_array_type = 1 << 9,
-		is_signature_type = 1 << 10,
-
-		is_generated_type = (is_pointer_type | is_array_type | is_signature_type),
-	};
-
-	constexpr type_flags operator|(type_flags lhs, type_flags rhs) noexcept
-	{
-		return type_flags(index_t(lhs) | index_t(rhs));
-	}
-	constexpr type_flags& operator|=(type_flags& lhs, type_flags rhs) noexcept
-	{
-		lhs = lhs | rhs;
-		return lhs;
-	}
-	constexpr bool operator&(type_flags lhs, type_flags rhs) noexcept
-	{
-		return type_flags(index_t(lhs) & index_t(rhs)) != type_flags::none;
-	}
-
-	constexpr bool is_integral(type_idx type) noexcept
-	{
-		return type < type_idx::f32;
-	}
-	constexpr bool is_unsigned(type_idx type) noexcept
-	{
-		return is_integral(type) && (((index_t)type & 1) == 1);
-	}
-	constexpr bool is_floating_point(type_idx type) noexcept
-	{
-		return type == type_idx::f32 || type == type_idx::f64;
-	}
-	constexpr bool is_arithmetic(type_idx type) noexcept
-	{
-		return type <= type_idx::f64;
-	}
-
+	// Type definition
 	struct type
 	{
+		// Name (invalid for generated types)
 		name_idx name;
+		// Unique index
 		type_idx index;
+		// Flags (see helper functions below)
 		type_flags flags;
+		// Generated type information
+		// (only valid if this type is a generated type)
 		generated_type generated;
+		// List of fields
 		static_block<field> fields;
+		// Total type size (in bytes)
 		aligned_size_t total_size;
+		// Index to the pointer type that uses this type as underlying
+		// This is optional, some types might not have need for a pointer type
 		type_idx pointer_type;
+		// Metadata
 		metadata meta;
 
 		inline bool is_integral() const noexcept
@@ -187,11 +177,17 @@ namespace propane
 		}
 	};
 
+	// Method signature
+	// Contains information required for invoking methods
 	struct signature
 	{
+		// Unique index
 		signature_idx index;
+		// Return type (voidtype if none)
 		type_idx return_type;
+		// List of parameters (and their byte offsets)
 		static_block<stackvar> parameters;
+		// Total size of parameter list in bytes
 		aligned_size_t parameters_size;
 
 		inline bool has_return_value() const noexcept
@@ -200,16 +196,26 @@ namespace propane
 		}
 	};
 
+	// Method definition
 	struct method
 	{
+		// Name
 		name_idx name;
+		// Unique index
 		method_idx index;
+		// Flags (see helper functions below)
 		type_flags flags;
+		// Signature index
 		signature_idx signature;
+		// Actual instruction bytecode
 		static_block<uint8_t> bytecode;
+		// Label locations (byte offset relative to start of bytecode)
 		static_block<aligned_size_t> labels;
+		// Stack variables
 		static_block<stackvar> stackvars;
+		// Total stack variable size
 		aligned_size_t stack_size;
+		// Metadata
 		metadata meta;
 
 		inline bool is_internal() const noexcept
@@ -218,29 +224,50 @@ namespace propane
 		}
 	};
 
-
+	// Field address
+	// Contains the set of field names required for accessing
+	// nested fields. This can be important for generators when
+	// unwinding nested structs.
 	struct field_address
 	{
+		// Root type from which any field is initially accessed
 		type_idx parent_type;
+		// Field name chain leading down to target field
 		static_block<name_idx> field_names;
 	};
 
+	// Field offset
+	// Contains information regarding field offsets. Interpeter runtime
+	// utilizes this for fast lookup of field offsets, but this part of
+	// information is probably useless to a generator.
 	struct field_offset
 	{
+		// Field address (see above)
 		field_address name;
+		// Field type
 		type_idx type;
+		// Field offset (relative to field address root type)
 		aligned_size_t offset;
 	};
 
+	// Data table
+	// Contains global data
 	struct data_table
 	{
+		// List of names and offsets per global
+		// Offset is relative to front of data array
 		indexed_static_block<global_idx, field> info;
+		// Actual global data
 		static_block<uint8_t> data;
 	};
 
+	// String table
+	// Tightly packed container for strings
 	template<typename key_t> struct string_table
 	{
+		// String info (offset and length)
 		static_block<string_offset> entries;
+		// String character data
 		static_block<char> strings;
 
 		inline std::string_view operator[](key_t key) const noexcept
@@ -258,24 +285,51 @@ namespace propane
 		}
 	};
 
+	// Actual assembly data
+	// Contains all types, methods, signatures and offsets required to
+	// A) Generate a program in any programming language or assembler
+	//      If this is the case, information regarding names and strings is
+	//      more relevant than data offsets.
+	// B) Execute directly in an interpreter
+	//      If this is the case, information regarding data offsets
+	//      is more relevant than names and fields.
 	struct assembly_data
 	{
+		// List of types
 		indexed_static_block<type_idx, type> types;
+		// List of methods
 		indexed_static_block<method_idx, method> methods;
+		// List of signatures
 		indexed_static_block<signature_idx, signature> signatures;
+		// List of offsets
 		indexed_static_block<offset_idx, field_offset> offsets;
 
+		// Global
 		data_table globals;
+		// Constant data
 		data_table constants;
 
+		// Database of type/method/field names
 		string_table<name_idx> database;
+		// Database of type/method meta info
 		string_table<meta_idx> metatable;
+		// Index of main entry point method
+		// (method_idx::invalid if none was provided)
 		method_idx main;
+		// Internal hash for validation checking
 		aligned_hash_t internal_hash;
 
+		// Utility function for generating a full typename.
+		// Generated type names don't get exported into the database,
+		// so this function can help generating a typename for debugging purposes.
 		void generate_name(type_idx type, std::string& out_name) const;
 	};
 
+	// Invoke internal method
+	// Return value address must point to a location in memory where
+	// enough space is reserved for the return value.
+	// Parameter stack address must point to a location in memory where
+	// all arguments have been initialized properly for the method call.
 	void call_internal(method_idx index, void* return_value_address, const void* parameter_stack_address);
 
 	struct runtime_parameters
@@ -290,6 +344,7 @@ namespace propane
 		size_t max_callstack_depth;
 	};
 
+	// Experimental interpreter
 	int32_t execute_assembly(const class assembly& linked_assembly, runtime_parameters parameters = runtime_parameters());
 }
 

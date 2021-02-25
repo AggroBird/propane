@@ -37,16 +37,16 @@ int32_t $main()
 }
 ```
 
-Propane assemblies are exported as binary blobs that contain all the necessary information for cross compilation including field names, label locations, method signatures etc.
+Propane assemblies are exported as binary blobs that contain all the necessary information for cross compilation including field names, label locations, stack offsets, method signatures etc.
 
 ## Resources
 
 - [Propane intermediate language specifications](LANGUAGE.md)
 - [Propane bytecode format specifications](FORMAT.md)
-- [Generator header](include/propane_generator.hpp)
-- [Assembly header](include/propane_runtime.hpp)
-- [Experimental C generator](src/generator_c.cpp)
-- [Experimental interpreter](src/interpreter.cpp)
+- [Generator header](include/propane_generator.hpp) Main header required for parsers and compilers.
+- [Runtime header](include/propane_runtime.hpp) Contains assembly data required for cross compilers and interpreters.
+- [Experimental C generator](src/generator_c.cpp) Experimental implementation of a Propane assembly to C code generator.
+- [Experimental interpreter](src/interpreter.cpp) Experimental implementation of a Propane assembly interpreter.
 
 ## Current features
 
