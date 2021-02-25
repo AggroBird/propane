@@ -41,12 +41,12 @@ Propane assemblies are exported as binary blobs that contain all the necessary i
 
 ## Resources
 
->- [Propane language definition](LANGUAGE.MD)
->- [Propane bytecode format](FORMAT.MD)
->- [Generator header](include/propane_generator.hpp)
->- [Assembly header](include/propane_runtime.hpp)
->- [Experimental C generator](src/generator_c.cpp)
->- [Experimental interpreter](src/interpreter.cpp)
+- [Propane language definition](LANGUAGE.MD)
+- [Propane bytecode format](FORMAT.MD)
+- [Generator header](include/propane_generator.hpp)
+- [Assembly header](include/propane_runtime.hpp)
+- [Experimental C generator](src/generator_c.cpp)
+- [Experimental interpreter](src/interpreter.cpp)
 
 ## Current features
 
