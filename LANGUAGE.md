@@ -90,7 +90,7 @@ Global signature types can be initialized with a method address or a null pointe
 
 ## Methods
 
-```call
+```c
 method add_numbers returns int
 	parameters
 		0: int
@@ -105,6 +105,7 @@ method add_numbers returns int
 	add {0} (1)
 	
 	retv {0}
+end
 ```
 
 Methods in Propane are implemented as subroutines that can be invoked from any other method. Propane methods have no support for overloading and each method name has to be unique. Arguments passed to a method are copied by value and methods cannot modify any variables of the calling method's stack, unless passed by pointer.
