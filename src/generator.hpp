@@ -114,7 +114,7 @@ namespace propane
 			return flags & type_flags::is_generated_type;
 		}
 
-		inline bool is_object() const noexcept
+		inline bool is_struct() const noexcept
 		{
 			return !is_arithmetic() && !is_generated();
 		}
