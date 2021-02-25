@@ -10,18 +10,18 @@ Typical Propane code can look like this:
 
 ```c
 method main returns int
-    stack
-        0: int
-        1: int
-    end
+	stack
+    	0: int
+    	1: int
+	end
     
-    // Add two numbers and return the result
-    set {0} 3
-    set {1} 5
+	// Add two numbers and return the result
+	set {0} 3
+	set {1} 5
     
-    add {0} {1}
+	add {0} {1}
     
-    retv {0}
+	retv {0}
 end
 ```
 
@@ -30,10 +30,10 @@ Running this through the provided C generator would yield the following result:
 ```c
 int32_t $main()
 {
-    int32_t $0s = 3;
-    int32_t $1s = 5;
-    $0s += $1s;
-    return $0s;
+	int32_t $0s = 3;
+	int32_t $1s = 5;
+	$0s += $1s;
+	return $0s;
 }
 ```
 
@@ -43,8 +43,8 @@ Propane assemblies are exported as binary blobs that contain all the necessary i
 
 - <INSTRUCTION BINARY FORMAT AND EXAMPLES>
 - <ASSEMBLY CONTENT INFO>
-- <EXAMPLES>
-- <LINK TO GENERATOR>
+- <LINK TO GENERATOR HEADER>
+- <LINK TO C GENERATOR>
 - <LINK TO INTERPRETER>
 
 ## Current features
@@ -59,6 +59,8 @@ Propane assemblies are exported as binary blobs that contain all the necessary i
 ## Potential future additions
 
 - Strings
+- Alignment and padding
+- Compile time optimization
 - Multithreading
 - Dynamic libraries
 

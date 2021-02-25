@@ -2,15 +2,13 @@
 
 The following documents defines the Propane language standard. For custom implementations, these rules can serve as a guideline. The standard Propane toolchain follows these rules strictly.
 
-The Propane language is largely based on the C programming language standard, and shares many similarities.
-
 ## Types
 
 Propane is a strongly typed language.
 
 ### Base types
 
-Standard build-in arithmetic types. They behave the same as their C standard equivalents in terms of operations and size.
+The Propane language provides the same basic arithmetic types as C. Implementations of Propane should guarantee the following types exist with the following sizes:
 
 ```
 byte     signed 8 bit integer
@@ -21,71 +19,81 @@ int      signed 32 bit integer
 uint     unsigned 32 bit integer
 long     signed 64 bit integer
 ulong    unsigned 64 bit integer
-float    32 bit floating point number
-double   64 bit floating point number
+float    32 bit floating point
+double   64 bit floating point
 ```
 
 Additionally, the alias types `size` and `offset` will refer to the native integer types for the current architecture:
 * On 32 bit architectures this will be uint and int respectively.
 * On 64 bit architectures this will be ulong and long respectively.
 
-Propane implements `void` as a special type that cannot be declared on the stack or as a method parameter. The only use of `void` is to indicate methods with no return value.
+Propane implements `void` as an incomplete type. It cannot be declared on a stack or used as a method parameter. However, pointers to void and methods returning void are permitted.
 
 ### Pointer types
 
-Pointer types behave the same as in C. They point to a location in memory, and pointer addition/substraction will result in the underlying type size being added to the memory address. In Propane, any type can have a pointer type, including pointer to pointers and pointer to method signatures.
+```c
+int*
+```
 
-Void pointers behave the same as in C. They cannot be implicitly incremented or decremented, nor can they be dereferenced.
+Pointer types behave the same as in C. Pointer arithmetic is automatically scaled by the size of the underlying data type.
 
-The size of a pointer is dependant on the architecture, but is guaranteed to be the same as the `size` type.
+The size of a pointer type is dependant on the architecture, but is guaranteed to be the same size as the `size` and `offset` types.
 
 ### Array types
 
-Array types are implemented as a collection of elements. Array type lengths are constant will not change at runtime. Unlike C, Propane arrays are passed by value.
+```c
+int[5]
+```
 
-The size of an array type is guaranteed to be the size of the underlying type multiplied by the array length. Incrementing an array type pointer will result in the entire size of the array being added to the memory address.
+Array types are defined to be fixed, static sized collections of a type. Unlike C, arrays in Propane are passed by value, and arithmetic operations performed on a pointer-to-array will scale by the full array size.
 
 ### Signature types
 
-Signature types are implemented as a pointer to a method. Signature types are implemented as an abstract handle to a method that can be dynamically invoked. Unlike C, method pointers cannot be explicitly converted between different types. Signature types can only be assigned with the address of a method that exactly matches the parameters and return type, or other method pointers of the same type. Attempting to convert method pointer types through pointers will result in undefined behaviour.
+```c
+void(int,int)
+```
+
+Signature types are implemented as a pointer to a method. Signature types are implemented as an abstract handle to a method that can be dynamically invoked. Unlike C, method pointers cannot be explicitly converted to other types. Signature types can only be assigned with the address of a method which signature exactly matches the parameters and return type, or other method pointers of the same type. Attempting invoke method pointers converted through pointer conversions will result in undefined behaviour.
 
 The size of a method pointer is implementation specific and cannot be guaranteed. Extra care should be taken when using method pointers as fields in structs.
 
 ### Structure and union types
 
-Like C, Propane includes structures and unions. Structures allow nesting of other types. Unions are guaranteed to have all values at zero offset. Propane currently requires no alignment or padding for fields, so extra care should be taken when converting Propane to other languages that do.
+```c
+struct vector3
+	float x
+	float y
+	float z
+end
+```
+
+Like C, Propane includes structures and unions. Structures allow nesting of other types.
+
+The memory layout of a structure is implementation specific and cannot be guaranteed. The memory address of the first member must be the same as the address of structure itself. Unions are guaranteed to have all values at zero offset.
 
 ## Instruction set
 
 ### Zero instruction
+
 Noop does nothing.
+
 ```
 noop
 ```
 
 ### Assignment instructions
-`set` and `conv` (convert) have the following behaviour:
-* If left-hand operand type and right-hand operand type are the same:
-  * `set` will copy the entire value of right to left, regardless of size.
-* If left-hand operand type and right-hand operand type are not the same:
-  * If left-hand operand type is arithmetic:
-    * If right-hand operand type is arithmetic:
-      * `set` will implicitly convert the value of right to the type of left if possible (see Conversion Rules), and copy the result of the conversion to left.
-      * `conv` will explicitly convert the value of right to the type of left regardless of type, and copy the result of the conversion to left. Any conversion of arithmetic types that are larger than the destination arithmetic type will result in loss of data.
-	* If right-hand operand type is a pointer:
-	  * `conv` will convert the pointer to arithmetic value. Any conversion of pointers that are larger than the destination arithmetic type will result in loss of data.
-  * If left-hand operand type is a pointer:
-    * If right-hand operand type is arithmetic:
-	  * `conv` will convert the arithmetic value to a pointer. Any conversion of arithmetic types that are larger than the native pointer size will result in loss of data.
-	* If right-hand operand type is a pointer:
-	  * `conv` will copy the value of right to left. The resulting value will point to the same address in memory, but the type of the pointer has changed.
+
+`set` and `conv` (convert) provide implicit and explicit conversion between different or equal types (see Conversion rules).
+
 ```
-set    <address>    <address/constant>
-conv   <address>    <address/constant>
+set    <address>    <address/constant>    (implicit conversion)
+conv   <address>    <address/constant>    (explicit conversion)
 ```
 
 ### Arithmetic instructions
-Arithmetic instructions require arithmetic (integral and floating point) types. Right-hand operand must be compatible with destination left-hand operand (see Conversion Rules). Result of these operations will be the same as their C equivalents.
+
+Arithmetic instructions require arithmetic (integral and floating point) types. Right-hand operand must be compatible with destination left-hand operand (see Conversion rules).
+
 ```
 not    <address>                          (bitwise complement)
 neg    <address>                          (negate)
@@ -93,7 +101,7 @@ mul    <address>    <address/constant>    (multiply)
 div    <address>    <address/constant>    (divide)
 mod    <address>    <address/constant>    (modulus)
 add    <address>    <address/constant>    (addition)
-sub    <address>    <address/constant>    (substraction)
+sub    <address>    <address/constant>    (subtraction)
 lsh    <address>    <address/constant>    (left shift)
 rsh    <address>    <address/constant>    (right shift)
 and    <address>    <address/constant>    (bitwise and)
@@ -102,72 +110,120 @@ or     <address>    <address/constant>    (bitwise or)
 ```
 
 ### Pointer instructions
-Pointer instructions require pointer types as left-hand operand.
-* `padd` and `psub` will add or substract the underlying type size multiplied by the operand. The right-hand operand must be integral.
-* `pdif` will take the offset between two pointers, divided by the underlying type size, granted both pointers are the same type.
+
+Pointer instructions require pointer types as left-hand operand. Left-hand operand cannot be void pointer type.
+* `padd` and `psub` will add or substract the operand scaled by the underlying type size. The right-hand operand must be integral.
+* `pdif` will take the offset between two pointers, divided by the underlying type size. Both pointers must be of the same type.
+
 ```
-padd   <address>    <address/constant>
-psub   <address>    <address/constant>
-pdif   <address>    <address/constant>
+padd   <address>    <address/constant>    (pointer addition)
+psub   <address>    <address/constant>    (pointer substract)
+pdif   <address>    <address/constant>    (pointer difference)
 ```
 
 ### Comparison instructions
-Arithmetic instructions require arithmetic (integral and floating point) or pointer types. All comparison instructions do not have a destination operand, but instead push their result as a return value on the stack as an integer.
+
+Comparison instructions require arithmetic or pointer types. All comparison instructions push their result as a return value on the stack as an integer type. Both left-hand and right-hand operands need to be compatible for comparison (see Conversion rules). Either operand cannot be void pointer type.
 * `cmp` will push -1 if left is lesser than right, 1 if left is greater than right and 0 if left is equal to right.
 * Any other instruction will push 1 if the expression is true and 0 if false.
+
 ```
 cmp    <address>    <address/constant>    (compare)
-ceq    <address>    <address/constant>    (equal)
-cne    <address>    <address/constant>    (not equal)
-cgt    <address>    <address/constant>    (greater than)
-cge    <address>    <address/constant>    (greater or equal)
-clt    <address>    <address/constant>    (less than)
-cle    <address>    <address/constant>    (less or equal)
+ceq    <address>    <address/constant>    (compare equal)
+cne    <address>    <address/constant>    (compare not equal)
+cgt    <address>    <address/constant>    (compare greater than)
+cge    <address>    <address/constant>    (compare greater or equal)
+clt    <address>    <address/constant>    (compare less than)
+cle    <address>    <address/constant>    (compare less or equal)
 cze    <address>                          (compare to zero)
 cnz    <address>                          (compare not zero)
 ```
 
 ### Control flow instructions
+
 Control flow instructions jump to another instruction within the same method.
 * `br` will unconditionally jump to label location.
-* All other instructions will jump to label if condition equals to true, where the condition is tested using the comparision instructions defined above.
-* The `sw` instruction allows implenting lookup tables, where the first operand is an integral value, and the following operands a list of label locations. The index must be within the range of the label list.
+* All other instructions will jump to label if condition equals to true, where the condition is tested using the comparison  instructions defined above.
+* The `sw` instruction allows implementation of branch tables, where the first operand is an integral value, and the following operands a list of label locations. The index must be within range of the label list.
+
 ```
 br     <label>
-beq    <label>      <address>     <address/constant>
-bne    <label>      <address>     <address/constant>
-bgt    <label>      <address>     <address/constant>
-bge    <label>      <address>     <address/constant>
-blt    <label>      <address>     <address/constant>
-ble    <label>      <address>     <address/constant>
-bze    <label>      <address>
-bnz    <label>      <address>
-sw     <address>    <labels...>
+beq    <label>      <address>     <address/constant>    (branch if equal)
+bne    <label>      <address>     <address/constant>    (branch if not equal)
+bgt    <label>      <address>     <address/constant>    (branch if greater than)
+bge    <label>      <address>     <address/constant>    (branch if greater or equal)
+blt    <label>      <address>     <address/constant>    (branch if less than)
+ble    <label>      <address>     <address/constant>    (branch if less or equal)
+bze    <label>      <address>                           (branch if zero)
+bnz    <label>      <address>                           (branch if not zero)
+sw     <address>    <label...>                          (switch)
 ```
 
 ### Method instructions
+
 Method instructions invoke other methods and push the return value on the stack if one is provided.
 * `call` will invoke a method using a constant address.
 * `callv` (call virtual) will invoke a method using a dynamic method handle.
-All parameters are pushed as parameters on the stack using the same conversion as the `set` instruction. The number of arguments must match the number of parameters in the methods signature.
-Methods that return no value should return using the `ret` instruction, or `retv` if a return value is expected. Return values are copied onto the caller stack using the same conversion as the `set` instruction.
+All arguments are copied as parameters on the stack using the same conversion rules as the `set` instruction. The number of arguments must match the number of parameters in the methods signature. Methods that return no value should return using the `ret` instruction, methods that do should return a value with `retv`. Return values are copied onto the caller stack using the same conversion as the `set` instruction.
+
 ```
-call   <method>     <args...>
-callv  <address>    <args...>
+call   <method>     <address/constant...>
+callv  <address>    <address/constant...>
 ret
 retv   <address/constant>
 ```
 
 ### Debug instructions
+
 Dump prints the value of the variable specified at the address to the standard text output.
+
 ```
 dump   <address/constant>
 ```
 
-### Conversion rules
+## Conversion rules
 
-TODO
+### Assignment conversion rules
 
-### Address formats
+Assignment conversion rules apply to the `set` and `conv` instructions, as well as any other instruction that takes in one or multiple operands, including arguments for a method call and the returning of method return values.
 
-TODO
+For assignment instructions using structs, pointers and arithmetic types, the following conversion rules apply:
+* If left-hand operand type and right-hand operand type are the same:
+  * `set` will copy the entire value of right to left, regardless of size.
+* If left-hand operand type and right-hand operand type are not the same:
+  * If left-hand operand type is arithmetic:
+    * If right-hand operand type is arithmetic:
+      * `set` will convert the value of right to the type of left if implicit conversion is possible (see Arithmetic conversion rules).
+      * `conv` will convert the value of right to the type of left regardless of data loss.
+	* If right-hand operand type is a pointer:
+	  * `conv` will convert the pointer to arithmetic value regardless of data loss.
+  * If left-hand operand type is a pointer:
+    * If right-hand operand type is arithmetic:
+	  * `conv` will convert the arithmetic value to a pointer regardless of data loss.
+	* If right-hand operand type is a pointer:
+	  * `set` will copy the value of right to left if left is a void pointer type.
+	  * `conv` will copy the value of right to left. This conversion only changes the underlying type of the pointer, the address remains the same.
+All unlisted cases will result in an invalid conversion.
+
+### Arithmetic conversion rules
+
+Arithmetic conversion rules apply to all arithmetic instructions.
+
+The arithmetic conversion rules assume the following order of significance in arithmetic types:
+`byte < ubyte < short < ushort < int < uint < long < ulong < float < double`
+
+Implicit conversion of different arithmetic types dictates that the left-hand operand should always be able to represent the value of the right-hand operand. If left-hand operand and right-hand operand are not of the same type, implicit conversion is only possible when:
+* The left-hand type is a double and the right-hand type is a float or integral.
+* The left-hand type is a float and the right-hand type is integral.
+* The left-hand type has the same sign as the righ-hand type and the right-hand type is less significant than the left-hand type.
+For all of the above cases, the right-hand type is converted to the left-hand type.
+
+### Comparison conversion rules
+
+Comparison between pointer types can only be performed if both operands are of the same type, and neither are void pointer type. If both operand types are arithmetic, the following rules apply:
+* If either operand type is a double, the comparison is performed as double.
+* If either operand type is a float, the comparison is performed as float.
+* If both operand types are signed int or any type of lesser significance, the comparison is performed as signed int.
+* If both operand types are signed long or any type of lesser significance, the comparison is performed as signed long.
+* If both operands have the same sign, the comparison is performed using the most significant type.
+All unlisted cases will result in an invalid comparison.
