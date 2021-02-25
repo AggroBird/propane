@@ -2,6 +2,8 @@
 
 The following documents defines the Propane language standard. For custom implementations, these rules can serve as a guideline. The standard Propane toolchain follows these rules strictly.
 
+:warning: **This document is incomplete, and will continue to undergo changes.**
+
 ## Types
 
 Propane is a strongly typed language.
@@ -53,7 +55,7 @@ Array types are defined to be fixed, static sized collections of a type. Unlike 
 void(int,int)
 ```
 
-Signature types are implemented as a pointer to a method. Signature types are implemented as an abstract handle to a method that can be dynamically invoked. Unlike C, method pointers cannot be explicitly converted to other types. Signature types can only be assigned with the address of a method which signature exactly matches the parameters and return type, or other method pointers of the same type. Attempting invoke method pointers converted through pointer conversions will result in undefined behaviour.
+Signature types are implemented as a pointer to a method. Signature types are implemented as an abstract handle to a method that can be dynamically invoked. Unlike C, method pointers cannot be explicitly converted to other types. Signature types can only be assigned with the address of a method which signature exactly matches the parameters and return type, other method pointers of the same type, or a null pointer. Attempting invoke method pointers converted through pointer conversions will result in undefined behaviour.
 
 The size of a method pointer is implementation specific and cannot be guaranteed. Extra care should be taken when using method pointers as fields in structs.
 
@@ -70,6 +72,21 @@ end
 Like C, Propane includes structures and unions. Structures allow nesting of other types.
 
 The memory layout of a structure is implementation specific and cannot be guaranteed. The memory address of the first member must be the same as the address of structure itself. Unions are guaranteed to have all values at zero offset.
+
+## Globals and constants
+
+```
+global
+	int global_integer 15
+	vector3 global_vec3 1.0f 2.0f 3.0f
+end
+```
+
+Global are defined as unique data that can be accessed from any method. Globals exist at application startup and have a predetermined value. Globals that do not get initialized with a value default to zero. Global structs with multiple fields can have an initializer per field. The amount of initializer values can be fewer than the amount of fields (nested fields included), and uninitialized fields should default to zero. The amount of initializer values cannot exceed the total amount of fields.
+
+Constants are similar to globals in scope and initialization, but must their value must be immutable. Despite being immuatble, it is valid to take the address of a constant and use constants in arithmetic expressions. Modifying the value of a constant directly or indirectly through pointer access is expected to lead to undefined behaviour and should result in process termination. Unlike globals, constants are not guaranteed to exist in memory at a specified location, as compilers might optimize or inline constant values depending on their usage.
+
+Global signature types can be initialized with a method address or a null pointer, while constant signature types must be initialized with a valid method address.
 
 ## Instruction set
 
@@ -163,7 +180,7 @@ sw     <address>    <label...>                          (switch)
 
 Method instructions invoke other methods and push the return value on the stack if one is provided.
 * `call` will invoke a method using a constant address.
-* `callv` (call virtual) will invoke a method using a dynamic method handle.
+* `callv` (call virtual) will invoke a method using a dynamic signature type variable.
 All arguments are copied as parameters on the stack using the same conversion rules as the `set` instruction. The number of arguments must match the number of parameters in the methods signature. Methods that return no value should return using the `ret` instruction, methods that do should return a value with `retv`. Return values are copied onto the caller stack using the same conversion as the `set` instruction.
 
 ```
@@ -203,6 +220,7 @@ For assignment instructions using structs, pointers and arithmetic types, the fo
 	* If right-hand operand type is a pointer:
 	  * `set` will copy the value of right to left if left is a void pointer type.
 	  * `conv` will copy the value of right to left. This conversion only changes the underlying type of the pointer, the address remains the same.
+
 All unlisted cases will result in an invalid conversion.
 
 ### Arithmetic conversion rules
@@ -210,6 +228,7 @@ All unlisted cases will result in an invalid conversion.
 Arithmetic conversion rules apply to all arithmetic instructions.
 
 The arithmetic conversion rules assume the following order of significance in arithmetic types:
+
 `byte < ubyte < short < ushort < int < uint < long < ulong < float < double`
 
 Implicit conversion of different arithmetic types dictates that the left-hand operand should always be able to represent the value of the right-hand operand. If left-hand operand and right-hand operand are not of the same type, implicit conversion is only possible when:
@@ -226,4 +245,5 @@ Comparison between pointer types can only be performed if both operands are of t
 * If both operand types are signed int or any type of lesser significance, the comparison is performed as signed int.
 * If both operand types are signed long or any type of lesser significance, the comparison is performed as signed long.
 * If both operands have the same sign, the comparison is performed using the most significant type.
+
 All unlisted cases will result in an invalid comparison.
