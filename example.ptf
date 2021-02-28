@@ -1,0 +1,14 @@
+method AddNumbers returns int parameters
+		0: int
+		1: int
+	end
+	
+	stack
+		0: int
+	end
+	
+	set {0} (0)
+	add {0} (1)
+	
+	retv {0}
+end

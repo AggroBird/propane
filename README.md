@@ -42,7 +42,8 @@ Propane assemblies are exported as binary blobs that contain all the necessary i
 ## Resources
 
 - [Propane intermediate language specifications](LANGUAGE.md)
-- [Propane bytecode format specifications](FORMAT.md)
+- [Propane experimental toolchain documentation](TOOLCHAIN.md)
+- [C++ toolchain example](example.cpp)
 - [Generator header](include/propane_generator.hpp) Main header required for parsers and compilers.
 - [Runtime header](include/propane_runtime.hpp) Contains assembly data required for cross compilers and interpreters.
 - [Experimental C generator](src/generator_c.cpp) Experimental implementation of a Propane assembly to C code generator.

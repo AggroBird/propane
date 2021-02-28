@@ -1,16 +1,16 @@
 # Propane Intermediate Language Specifications
 
-The following documents defines the Propane language standard. For custom implementations, these rules can serve as a guideline. The experimental Propane toolchain follows these rules strictly.
+The following documents defines the Propane language standard as implemented by the standard Propane toolchain.
 
 :warning: **This document is incomplete, and will continue to undergo changes.**
 
 ## Types
 
-Propane is a strongly typed language.
+Propane is a strongly typed language. Because Propane is designed to be translatable to C, the language shares many similarities to the C standard.
 
 ### Base types
 
-The Propane language provides the same basic arithmetic types as C. Implementations of Propane should guarantee the following types exist with the following sizes:
+The Propane language guarantees the following types exist with the following sizes:
 
 ```
 byte     signed 8 bit integer
@@ -82,11 +82,11 @@ global
 end
 ```
 
-Global are defined as unique data that can be accessed from any method. Globals exist at application startup and have a predetermined value. Globals that do not get initialized with a value default to zero. Global structs with multiple fields can have an initializer per field. The amount of initializer values can be fewer than the amount of fields (nested fields included), and uninitialized fields should default to zero. The amount of initializer values cannot exceed the total amount of fields.
+Global are defined as unique data that can be accessed from any method. Globals exist at application startup and have a predetermined value. Globals that do not get initialized with a value default to zero. Uninitialized global data will default to zero.
 
-Constants are similar to globals in scope and initialization, but must their value must be immutable. Despite being immuatble, it is valid to take the address of a constant and use constants in arithmetic expressions. Modifying the value of a constant directly or indirectly through pointer access is considered undefined behaviour and should result in process termination. Unlike globals, constants are not guaranteed to exist in memory at a specified location, as compilers might optimize or inline constant values depending on their usage.
+Constants are similar to globals in scope, but must their value must be immutable. Despite being immuatble, it is valid to take the address of a constant and use constants in arithmetic expressions. Modifying the value of a constant directly or indirectly through pointer access will result in undefined behaviour. Unlike globals, constants are not guaranteed to exist in memory at a specified location, as compilers might optimize or inline constant values depending on their usage.
 
-Global signature types can be initialized with a method address or a null pointer, while constant signature types must be initialized with a valid method address.
+Global signature types can be initialized with a method address or a null pointer and changed at runtime, while constant signature types must always be initialized with a valid method address.
 
 ## Methods
 
@@ -110,7 +110,7 @@ end
 
 Methods in Propane are implemented as subroutines that can be invoked from any other method. Propane methods have no support for overloading and each method name has to be unique. Arguments passed to a method are copied by value and methods cannot modify any variables of the calling method's stack, unless passed by pointer.
 
-Methods variable stacks are fixed size and cannot grow or shrink at runtime. Like in C, stack data is not initialized and accessing uninitialized data is considered undefined behaviour.
+Methods variable stacks are fixed size and cannot grow or shrink at runtime. Like in C, stack data is not initialized and accessing uninitialized data will result in undefined behaviour.
 
 ## Instruction set
 
@@ -184,7 +184,7 @@ cnz    <address>                          (compare not zero)
 
 Control flow instructions jump to another instruction within the same method.
 * `br` will unconditionally jump to label location.
-* All other instructions will jump to label if condition equals to true, where the condition is tested using the comparison  instructions defined above.
+* All other instructions will jump to label if condition equals to true, where the condition is tested using the comparison instructions defined above.
 * The `sw` instruction allows implementation of branch tables, where the first operand is an integral value, and the following operands a list of label locations. The index must be within range of the label list.
 
 ```
