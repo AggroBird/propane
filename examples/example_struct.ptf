@@ -48,6 +48,11 @@ method main returns int
 	call MultiplyVectors {0} {1}
 	
 	// Dump the result
+	// '{^}' refers to 'top of the stack'
+	// this is a special stack variable that contains
+	// the return value of the most recent instruction.
+	// Control flow instructions (like branching or calls)
+	// clear the return value.
 	dump {^}
 	
 	retv 0
