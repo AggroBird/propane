@@ -1,4 +1,4 @@
-# Propane
+# Propane Intermediate Language
 
 ## About Propane
 
@@ -11,8 +11,8 @@ Typical Propane code can look like this:
 ```c
 method main returns int
 	stack
-    	0: int
-    	1: int
+		0: int
+		1: int
 	end
     
 	// Add two numbers and return the result
@@ -54,7 +54,7 @@ Assemblies can be fed into a translator to generate other programming languages 
 ## Resources
 
 - [Propane intermediate language specification](LANGUAGE.md)
-- [C++ toolchain example](example.cpp) C++ example of generating an assembly out of intermediates, and translation to C.
+- [Toolchain example](example.cpp) C++ example of generating an assembly out of intermediates, and translation to C.
 - [Generator header](include/propane_generator.hpp) Main header required for parsers and compilers.
 - [Runtime header](include/propane_runtime.hpp) Assembly data required for cross compilers and interpreters.
 - [Experimental C translator](src/translator_c.cpp) Experimental implementation of a Propane assembly to C code generator.
