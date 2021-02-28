@@ -7,6 +7,8 @@ method AddNumbers returns int parameters
 		0: int
 	end
 	
+	// Parenthesis indicate a parameter,
+	// brackets indicate a stack variable
 	set {0} (0)
 	add {0} (1)
 	

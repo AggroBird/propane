@@ -1,0 +1,54 @@
+/*
+Simple example on how to use structs and globals in propane.
+*/
+
+struct Vector3
+	float x
+	float y
+	float z
+end
+
+struct Vector4
+	// Nested struct
+	Vector3 xyz
+	float w
+end
+
+
+// Global constants
+constant
+	Vector4 FooVector 1.3f 3.5f 7.2f 1.8f
+	Vector4 BarVector 2 2 2 2
+end
+
+method MultiplyVectors returns Vector4 parameters
+		0: Vector4
+		1: Vector4
+	end
+	
+	// Load fields by name
+	mul (0).Vector4:xyz.x (1).Vector4:xyz.x
+	mul (0).Vector4:xyz.y (1).Vector4:xyz.y
+	mul (0).Vector4:xyz.z (1).Vector4:xyz.z
+	mul (0).Vector4:w (1).Vector4:w
+	
+	retv (0)
+end
+
+method main returns int
+	stack
+		0: Vector4
+		1: Vector4
+	end
+	
+	// Initialize from constant
+	set {0} FooVector
+	set {1} BarVector
+	
+	call MultiplyVectors {0} {1}
+	
+	// Dump the result
+	dump {^}
+	
+	retv 0
+end

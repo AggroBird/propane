@@ -1,0 +1,41 @@
+/*
+Simple example on how to use pointers in propane.
+*/
+
+method InitializeIndices parameters
+		0: int*
+		1: int
+	end
+	
+	stack
+		0: int
+	end
+
+	set {0} 0
+	
+	// Simple forloop to set indices incrementally
+	loop:
+	
+	// Dereference of a pointer
+	set *(0) {0}
+	
+	// Get next element in the array, and increment the index
+	padd (0) 1
+	add {0} 1
+	
+	// Branch if less than
+	blt loop {0} (1)
+end
+
+method main returns int
+	stack
+		0: int[10]
+	end
+	
+	// Take address of first element
+	call InitializeIndices &{0}[0] 10
+	
+	dump {0}
+	
+	retv 0
+end

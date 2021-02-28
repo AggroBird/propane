@@ -1,6 +1,6 @@
 // Change this to 1 for the example
-#define WITH_EXAMPLE
-#if WITH_EXAMPLE 0
+#define WITH_EXAMPLE 0
+#if WITH_EXAMPLE
 
 #include "propane_generator.hpp"
 #include "propane_parser.hpp"
@@ -62,7 +62,7 @@ int32_t main()
 		propane::intermediate generated = gen.finalize();
 
 		// Import the definition of AddNumbers method from the example text file
-		propane::intermediate parsed = propane::parser<propane::language_propane>::parse("example.ptf");
+		propane::intermediate parsed = propane::parser<propane::language_propane>::parse("examples/example_method.ptf");
 
 
 		// Merge the two intermediates together

@@ -1,0 +1,74 @@
+/*
+Advanced example on how to potentially implement virtual tables
+in Propane.
+*/
+
+// Vtable
+struct vtable
+	void(base_class*) method
+end
+
+// Base class
+struct base_class
+	vtable* vt
+	int a
+end
+
+// Base func
+method base_func parameters base_class* bc end
+	dump *bc
+end
+
+// Child class
+struct child_class
+	base_class base
+	int b
+end
+
+// Child func
+method child_func parameters base_class* bc end
+	stack
+		child_class* cc
+	end
+	
+	conv cc bc
+	dump *cc
+end
+
+// Vtable constants
+constant
+	vtable base_class_vtable base_func
+	vtable child_class_vtable child_func
+end
+
+
+
+method main returns int
+	stack
+		0: base_class
+		1: child_class
+	
+		10: base_class*
+		11: vtable*
+	end
+	
+	// Initialize base object
+	set {0}.base_class:vt &base_class_vtable
+	set {0}.base_class:a 1
+	
+	// Initialize child object
+	set {1}.child_class:base.vt &child_class_vtable
+	set {1}.child_class:base.a 1
+	set {1}.child_class:b 2
+	
+	// Call base
+	set {10} &{0}
+	set {11} {10}->base_class:vt
+	callv {11}->vtable:method {10}
+	// Call child
+	conv {10} &{1}
+	set {11} {10}->base_class:vt
+	callv {11}->vtable:method {10}
+	
+	retv 0
+end
