@@ -43,7 +43,7 @@ Propane assemblies are exported as binary blobs that contain all the necessary i
 
 The experimental toolchain is intended to serve as a proof of concept for the intermediate language. The layout of the toolchain is as following:
 
-![alt text](https://raw.githubusercontent.com/AggroBird/propane/main/toolchain.png "Toolchain Graph Image")
+![alt text](https://github.com/AggroBird/propane/blob/main/toolchain.png?raw=true "Toolchain Graph Image")
 
 ## Resources
 
