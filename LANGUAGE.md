@@ -1,4 +1,4 @@
-# Propane Intermediate Language Specifications
+# Propane Intermediate Language Specification
 
 The following documents defines the Propane language standard as implemented by the standard Propane toolchain.
 

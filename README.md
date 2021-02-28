@@ -4,7 +4,7 @@
 
 Propane is an intermediate bytecode language that can be executed in an interpreter or cross-compiled into other destination languages. Originally designed to generate C code, Propane can be used to generate any language that supports pointer arithmetics, arrays and structs.
 
-This repository contains an experimental toolchain written in C++ with a compiler front-end to allow implementation of custom parsers and generators, an interpreter for runtime execution and a cross-compiler to generate C code from Propane assemblies. It also includes a parser for a prototype programming language to allow writing assemblies by hand for testing purposes.
+This repository contains an experimental toolchain written in C++ that has a compiler front-end to allow implementation of custom parsers and generators, an interpreter for runtime execution and a cross-compiler to generate C code from Propane assemblies. It also includes a parser for a text representation of the intermediate language to allow writing assemblies by hand for testing purposes.
 
 Typical Propane code can look like this:
 
@@ -39,10 +39,15 @@ int32_t $main()
 
 Propane assemblies are exported as binary blobs that contain all the necessary information for cross compilation including field names, label locations, stack offsets, method signatures etc.
 
+## Experimental Toolchain
+
+The experimental toolchain is intended to serve as a proof of concept for the intermediate language. The layout of the toolchain is as following:
+
+![alt text](https://raw.githubusercontent.com/AggroBird/propane/main/toolchain.png "Toolchain Graph Image")
+
 ## Resources
 
-- [Propane intermediate language specifications](LANGUAGE.md)
-- [Propane experimental toolchain documentation](TOOLCHAIN.md)
+- [Propane intermediate language specification](LANGUAGE.md)
 - [C++ toolchain example](example.cpp)
 - [Generator header](include/propane_generator.hpp) Main header required for parsers and compilers.
 - [Runtime header](include/propane_runtime.hpp) Contains assembly data required for cross compilers and interpreters.
@@ -68,7 +73,7 @@ Propane assemblies are exported as binary blobs that contain all the necessary i
 
 ## Motivations
 
-Propane has been conceived as a study project. Propane is intended to be used for building small tools and games. The toolchain has not been tested in professional environments or large projects.
+Propane has been conceived as a study project. Propane is intended to be used for building small tools and games. The experimental toolchain has not been tested in professional environments or large projects.
 
 ## Dependencies
 
