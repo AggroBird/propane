@@ -1,3 +1,4 @@
+#include "propane_parser.hpp"
 #include "propane_generator.hpp"
 #include "database.hpp"
 #include "utility.hpp"
@@ -10,7 +11,7 @@
 
 #define VALIDATE(errc, expr, fmt, ...) ENSURE_WITH_META(errc, this->get_meta(), expr, propane::generator_exception, fmt, __VA_ARGS__)
 
-#define VALIDATE_FILE_OPEN(file_open, file_path) VALIDATE(ERRC::PRS_FILE_EXCEPTION, (file_open), \
+#define VALIDATE_FILE_OPEN(expr, file_path) VALIDATE(ERRC::PRS_FILE_EXCEPTION, expr, \
 	"Failed to open file: \"%\"", file_path)
 #define UNEXPECTED_EXPRESSION(expr, expression) VALIDATE(ERRC::PRS_UNEXPECTED_EXPRESSION, expr, \
 	"Unexpected expression: '%'", expression)
@@ -64,13 +65,13 @@ namespace propane
 	};
 
 	// Experimental implementation of propane generator
-	class intermediate_parser final : public propane_generator
+	class parser_impl final : public generator
 	{
 	public:
-		NOCOPY_CLASS_DEFAULT(intermediate_parser) = delete;
+		NOCOPY_CLASS_DEFAULT(parser_impl) = delete;
 
-		intermediate_parser(const char* file_path) :
-			propane_generator(strip_filepath(file_path))
+		parser_impl(const char* file_path) :
+			generator(strip_filepath(file_path))
 		{
 			string file_text;
 
@@ -1122,8 +1123,8 @@ namespace propane
 		}
 	};
 
-	intermediate propane_generator::parse(const char* file_path)
+	intermediate parser_propane::parse(const char* file_path)
 	{
-		return intermediate_parser(file_path).finalize();
+		return parser_impl(file_path).finalize();
 	}
 }

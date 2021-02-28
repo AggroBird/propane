@@ -12,6 +12,13 @@
 
 namespace propane
 {
+	// Source/destination languages
+	enum : uint32_t
+	{
+		language_propane,
+		language_c,
+	};
+
 	// Index types
 	typedef uint32_t index_t;
 	enum : index_t { invalid_index = 0xFFFFFFFF };

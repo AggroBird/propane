@@ -1,7 +1,7 @@
 #ifndef _HEADER_INTERMEDIATE_DATA
 #define _HEADER_INTERMEDIATE_DATA
 
-#include "generator.hpp"
+#include "generation.hpp"
 #include "propane_intermediate.hpp"
 
 namespace propane

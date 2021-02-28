@@ -37,12 +37,12 @@ namespace propane
 
 	// Intermediate merger takes in two intermediates and produces
 	// the merged result
-	class intermediate_merger final : public gen_intermediate_data
+	class merger final : public gen_intermediate_data
 	{
 	public:
-		NOCOPY_CLASS_DEFAULT(intermediate_merger) = delete;
+		NOCOPY_CLASS_DEFAULT(merger) = delete;
 
-		intermediate_merger(gen_intermediate_data&& lhs, gen_intermediate_data&& rhs) :
+		merger(gen_intermediate_data&& lhs, gen_intermediate_data&& rhs) :
 			gen_intermediate_data(std::move(lhs)), merge(rhs)
 		{
 			restore_lookup_tables();
@@ -467,7 +467,7 @@ namespace propane
 	{
 		ASSERT(lhs_data.types.size() >= base_type_count(), "Merge destination does not have base types set up");
 
-		return intermediate_merger(std::move(lhs_data), std::move(rhs_data));
+		return merger(std::move(lhs_data), std::move(rhs_data));
 	}
 	gen_intermediate_data gen_intermediate_data::merge(const intermediate& lhs, const intermediate& rhs)
 	{

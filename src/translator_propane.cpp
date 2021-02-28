@@ -1,5 +1,5 @@
-#include "propane_generator.hpp"
-#include "generator.hpp"
+#include "propane_translator.hpp"
+#include "generation.hpp"
 #include "utility.hpp"
 #include "assembly_data.hpp"
 #include "errors.hpp"
@@ -15,13 +15,15 @@ using std::ofstream;
 	"Attempted to generate from an assembly that was build using an incompatible toolchain")
 #define VALIDATE_ENTRYPOINT(expr) VALIDATE(ERRC::GNR_ENTRYPOINT_NOT_FOUND, expr, \
 	"Failed to find main entrypoint in assembly")
+#define VALIDATE_FILE_OPEN(expr, file_path) VALIDATE(ERRC::GNR_FILE_EXCEPTION, expr, \
+	"Failed to open output file: \"%\"", file_path)
 
 namespace propane
 {
-	class generator_language_propane final : ofstream
+	class translator_propane_impl final : ofstream
 	{
 	public:
-		generator_language_propane(const char* out_dir, const assembly_data& asm_data) :
+		translator_propane_impl(const char* out_file, const assembly_data& asm_data) :
 			data(asm_data),
 			database(asm_data.database),
 			int_type(data.types[type_idx::i32]),
@@ -29,16 +31,15 @@ namespace propane
 			size_type(data.types[derive_type_index<size_t>::value]),
 			vptr_type(data.types[type_idx::vptr])
 		{
-			string output_file = string(out_dir);
+			string output_file = string(out_file);
 			if (!output_file.empty())
 			{
 				const char last = output_file.back();
 				if (last != '/' && last != '\\') output_file.push_back('/');
 			}
-			output_file.append("main.psrc");
 
 			this->open(output_file);
-			ASSERT(*this, "Failed to open output path '%'", out_dir);
+			VALIDATE_FILE_OPEN(this->operator bool(), out_file);
 
 			type_names.resize(data.types.size());
 
@@ -537,7 +538,7 @@ namespace propane
 		vector<string> type_names;
 	};
 
-	void propane_generator::generate(const char* out_dir, const assembly& linked_assembly)
+	void translator_propane::generate(const char* out_file, const assembly& linked_assembly)
 	{
 		VALIDATE_ASSEMBLY(linked_assembly.is_valid());
 		VALIDATE_COMPATIBILITY(linked_assembly.is_compatible());
@@ -545,6 +546,6 @@ namespace propane
 		const assembly_data& data = linked_assembly.assembly_ref();
 		VALIDATE_ENTRYPOINT(data.methods.is_valid_index(data.main));
 
-		generator_language_propane generator(out_dir, data);
+		translator_propane_impl generator(out_file, data);
 	}
 }

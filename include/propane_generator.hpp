@@ -5,30 +5,6 @@
 
 namespace propane
 {
-	enum : uint32_t
-	{
-		language_propane,
-		language_c,
-	};
-
-
-	template<uint32_t language> class generator
-	{
-	public:
-		generator() = delete;
-	};
-
-	// Experimental C generator
-	class c_generator
-	{
-	public:
-		// Takes in a finalized Propane assembly and generates a C file at specified location
-		static void generate(const char* out_dir, const class assembly& linked_assembly);
-	};
-
-	template<> class generator<language_c> : public c_generator {};
-
-
 	struct address
 	{
 		address(index_t index, address_type type,
@@ -180,16 +156,16 @@ namespace propane
 
 	// Experimental Propane bytecode generator
 	// Inherit from this to implement a parser
-	class propane_generator
+	class generator
 	{
 	public:
-		propane_generator();
+		generator();
 		// String name of the file (will be included in type/method metadata)
-		propane_generator(std::string_view name);
-		~propane_generator();
+		generator(std::string_view name);
+		~generator();
 
-		propane_generator(const propane_generator&) = delete;
-		propane_generator& operator=(const propane_generator&) = delete;
+		generator(const generator&) = delete;
+		generator& operator=(const generator&) = delete;
 
 		class type_writer final
 		{
@@ -206,7 +182,7 @@ namespace propane
 
 		private:
 			friend class generator_impl;
-			friend class propane_generator;
+			friend class generator;
 			friend class type_writer_impl;
 
 			type_writer(class generator_impl&, name_idx, type_idx, bool);
@@ -316,7 +292,7 @@ namespace propane
 
 		private:
 			friend class generator_impl;
-			friend class propane_generator;
+			friend class generator;
 			friend class method_writer_impl;
 
 			method_writer(class generator_impl&, name_idx, method_idx, signature_idx);
@@ -422,12 +398,6 @@ namespace propane
 		// The returned intermediate can be merged with other intermediates or linked and executed.
 		intermediate finalize();
 
-		// Experimental parser for parsing from text
-		static intermediate parse(const char* file_path);
-		// Experimental generator for generating to text
-		static void generate(const char* out_dir, const class assembly& linked_assembly);
-
-
 		file_meta get_meta() const;
 
 	private:
@@ -447,8 +417,6 @@ namespace propane
 			return reinterpret_cast<const class generator_impl&>(handle);
 		}
 	};
-
-	template<> class generator<language_propane> : public propane_generator {};
 }
 
 #endif
