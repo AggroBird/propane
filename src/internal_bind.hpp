@@ -108,7 +108,6 @@ namespace propane
 		// Update hash
 		internal_callable_info::hash = first ? fnv::hash(name) : fnv::append(internal_callable_info::hash, name);
 		internal_callable_info::hash = fnv::append(internal_callable_info::hash, result.return_type);
-		internal_callable_info::hash = fnv::append(internal_callable_info::hash, result.return_type);
 		for (const auto& it : result.parameters) internal_callable_info::hash = fnv::append(internal_callable_info::hash, it.type);
 
 		return result;
