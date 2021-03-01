@@ -308,12 +308,12 @@ namespace propane
 		}
 		inline void deserialize_database(const static_database<key_t, value_t>& t)
 		{
-			entries.clear();
-			entries.insert(entries.end(), t.entries.begin(), t.entries.end());
-
 			strings.clear();
 			strings.insert(strings.end(), t.strings.begin(), t.strings.end());
 			string_data = strings.data();
+
+			entries.clear();
+			entries.insert(entries.end(), t.entries.begin(), t.entries.end());
 
 			lookup.clear();
 			for (size_t idx = 0; idx < entries.size(); idx++)
@@ -389,10 +389,10 @@ namespace propane
 			}
 		};
 
-		unordered_map<database_string_view, key_t, database_hash, database_compare> lookup;
-		vector<entry_type> entries;
 		string strings;
 		const char* string_data = nullptr;
+		vector<entry_type> entries;
+		unordered_map<database_string_view, key_t, database_hash, database_compare> lookup;
 	};
 }
 
