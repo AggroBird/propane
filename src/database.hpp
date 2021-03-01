@@ -53,8 +53,8 @@ namespace propane
 
 	template<typename key_t, typename value_t> struct database_content
 	{
-		typedef find_result<key_t, value_t> find_result_type;
-		typedef find_result<key_t, const value_t> const_find_result_type;
+		using find_result_type = find_result<key_t, value_t>;
+		using const_find_result_type = find_result<key_t, const value_t>;
 
 		struct name_pair : public find_result_type
 		{
@@ -92,8 +92,8 @@ namespace propane
 
 	template<typename key_t> struct database_content<key_t, void>
 	{
-		typedef key_t find_result_type;
-		typedef key_t const_find_result_type;
+		using find_result_type = key_t;
+		using const_find_result_type = key_t;
 
 		struct name_pair
 		{
@@ -142,9 +142,9 @@ namespace propane
 
 	template<typename key_t, typename value_t> struct static_database
 	{
-		typedef database_entry<key_t, value_t> entry_type;
-		typedef database_content<key_t, value_t> content_type;
-		typedef typename content_type::const_name_pair const_name_pair_type;
+		using entry_type = database_entry<key_t, value_t>;
+		using content_type = database_content<key_t, value_t>;
+		using const_name_pair_type = typename content_type::const_name_pair;
 
 		static_block<entry_type> entries;
 		static_block<char> strings;
@@ -174,12 +174,12 @@ namespace propane
 	template<typename key_t, typename value_t> class database
 	{
 	public:
-		typedef database_entry<key_t, value_t> entry_type;
-		typedef database_content<key_t, value_t> content_type;
-		typedef typename content_type::find_result_type find_result_type;
-		typedef typename content_type::const_find_result_type const_find_result_type;
-		typedef typename content_type::name_pair name_pair_type;
-		typedef typename content_type::const_name_pair const_name_pair_type;
+		using entry_type = database_entry<key_t, value_t>;
+		using content_type = database_content<key_t, value_t>;
+		using find_result_type = typename content_type::find_result_type;
+		using const_find_result_type = typename content_type::const_find_result_type;
+		using name_pair_type = typename content_type::name_pair;
+		using const_name_pair_type = typename content_type::const_name_pair;
 
 		database() = default;
 
@@ -237,10 +237,15 @@ namespace propane
 				const size_t idx = entries.size();
 				const index_t offset = static_cast<index_t>(strings.size());
 				const index_t length = static_cast<index_t>(name.size());
+
+				// Insert entry
 				entries.push_back(entry_type(offset, length, key_t(idx), std::forward<arg_t>(arg)...));
+				// Insert string and update pointer (in case it changed)
 				strings.insert(strings.end(), name.begin(), name.end());
 				string_data = strings.data();
+				// Insert lookup
 				lookup.emplace(database_string_view(&string_data, offset, length), key_t(idx));
+
 				return entries.back().value.make_result();
 			}
 
@@ -315,6 +320,7 @@ namespace propane
 			entries.clear();
 			entries.insert(entries.end(), t.entries.begin(), t.entries.end());
 
+			// Recreate the lookup table
 			lookup.clear();
 			for (size_t idx = 0; idx < entries.size(); idx++)
 			{
@@ -345,6 +351,8 @@ namespace propane
 			string_data = strings.data();
 			entries = std::move(other.entries);
 
+			// Move the lookups and update the pointer to the string data
+			// (use extract to prevent reallocation)
 			lookup.clear();
 			while (!other.lookup.empty())
 			{

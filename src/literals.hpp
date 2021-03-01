@@ -56,8 +56,9 @@ namespace propane
 
 	template<typename value_t> constexpr value_t negate_num(value_t val, bool negate)
 	{
-		typedef std::make_signed<value_t>::type signed_type;
-		return negate ? value_t(-signed_type(val)) : val;
+		using signed_type = typename std::make_signed<value_t>::type;
+		const signed_type negative = -static_cast<signed_type>(val);
+		return negate ? static_cast<value_t>(negative) : val;
 	}
 
 	// '-'

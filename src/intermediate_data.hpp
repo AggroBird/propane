@@ -55,7 +55,7 @@ namespace propane
 		static_database<meta_idx, void> metatable;
 	};
 
-	typedef static_database<name_idx, lookup_idx> static_lookup_database_t;
+	using static_lookup_database_t = static_database<name_idx, lookup_idx>;
 	CUSTOM_SERIALIZER(gen_database, static_lookup_database_t)
 	{
 		inline static void write(block_writer & writer, const gen_database & value)
@@ -68,7 +68,7 @@ namespace propane
 		}
 	};
 
-	typedef static_database<meta_idx, void> static_meta_database_t;
+	using static_meta_database_t = static_database<meta_idx, void>;
 	CUSTOM_SERIALIZER(gen_metatable, static_meta_database_t)
 	{
 		inline static void write(block_writer & writer, const gen_metatable & value)

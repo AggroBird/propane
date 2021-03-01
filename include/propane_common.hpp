@@ -20,7 +20,7 @@ namespace propane
 	};
 
 	// Index types
-	typedef uint32_t index_t;
+	using index_t = uint32_t;
 	enum : index_t { invalid_index = 0xFFFFFFFF };
 
 	enum class type_idx : index_t
@@ -69,13 +69,13 @@ namespace propane
 
 	// Typedefs
 	static_assert(std::is_unsigned<size_t>::value, "size_t is not unsigned");
-	typedef std::make_signed<size_t>::type offset_t;
+	using offset_t = std::make_signed<size_t>::type;
 
 
 	// Aligned type
 	template<typename value_t, size_t alignment> struct aligned_t
 	{
-		typedef value_t type;
+		using type = value_t;
 
 		aligned_t() noexcept = default;
 		aligned_t(const aligned_t&) noexcept = default;
@@ -101,8 +101,8 @@ namespace propane
 
 		typename std::aligned_storage<sizeof(value_t), alignment>::type data;
 	};
-	typedef aligned_t<size_t, alignof(index_t)> aligned_size_t;
-	typedef aligned_t<offset_t, alignof(index_t)> aligned_offset_t;
+	using aligned_size_t = aligned_t<size_t, alignof(index_t)>;
+	using aligned_offset_t = aligned_t<offset_t, alignof(index_t)>;
 
 
 	// Addresses

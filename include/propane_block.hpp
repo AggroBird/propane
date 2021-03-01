@@ -51,7 +51,7 @@ namespace propane
 	template<typename value_t> class block
 	{
 	public:
-		typedef value_t value_type;
+		using value_type = value_t;
 
 		block() : ptr(nullptr), len(0)
 		{
@@ -210,7 +210,7 @@ namespace propane
 	template<typename value_t> struct static_block
 	{
 	public:
-		typedef value_t value_type;
+		using value_type = value_t;
 
 		static_block() = default;
 
@@ -337,8 +337,8 @@ namespace propane
 	template<typename key_t, typename value_t, typename compare_t = lookup_compare<key_t>> struct lookup_block : public block<table_pair<key_t, value_t>>
 	{
 	public:
-		typedef table_pair<key_t, value_t> pair_type;
-		typedef block<table_pair<key_t, value_t>> block_type;
+		using pair_type = table_pair<key_t, value_t>;
+		using block_type = block<table_pair<key_t, value_t>>;
 
 		lookup_block() = default;
 		lookup_block(size_t length) : block_type(length)
@@ -390,7 +390,7 @@ namespace propane
 	template<typename key_t, typename compare_t = lookup_compare<key_t>> struct lookup_set : public block<key_t>
 	{
 	public:
-		typedef block<key_t> block_type;
+		using block_type = block<key_t>;
 
 		lookup_set() = default;
 		lookup_set(size_t length) : block_type(length)
@@ -442,7 +442,7 @@ namespace propane
 	template<typename key_t, typename value_t, typename compare_t = lookup_compare<key_t>> struct static_lookup_block : public static_block<table_pair<key_t, value_t>>
 	{
 	public:
-		typedef table_pair<key_t, value_t> pair_type;
+		using pair_type = table_pair<key_t, value_t>;
 
 		inline pair_type* find(const key_t& key) noexcept
 		{
@@ -458,7 +458,7 @@ namespace propane
 	template<typename key_t, typename compare_t = lookup_compare<key_t>> struct static_lookup_set : public static_block<key_t>
 	{
 	public:
-		typedef block<key_t> block_type;
+		using block_type = block<key_t>;
 
 		inline key_t* find(const key_t& key) noexcept
 		{

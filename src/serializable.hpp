@@ -16,7 +16,7 @@ namespace propane
 	{
 		// Get elements
 		template<typename... elem_t> struct serializable_elements { static constexpr size_t count = sizeof...(elem_t); };
-		template<typename value_t> struct get_serializable_elements { typedef serializable_elements<> type; };
+		template<typename value_t> struct get_serializable_elements { using type = serializable_elements<>; };
 
 		// Is packed
 		template<typename value_t> struct is_packed
@@ -381,7 +381,7 @@ template<> struct propane::serialization::serializer<src_t> \
 #define SERIALIZABLE_PAIR(src_t, dst_t, ...) \
 SERIALIZABLE_CHECK(dst_t, __VA_ARGS__); \
 static_assert(propane::serialization::serializable_check<src_t, _SER_MAKE_PARAMS(src_t, __VA_ARGS__)>::value, #src_t " is not serializable: object contains members that are not serializable"); \
-template<> struct propane::serialization::get_serializable_elements<src_t> { typedef propane::serialization::serializable_elements<_SER_MAKE_PARAMS(src_t, __VA_ARGS__)> type; }; \
+template<> struct propane::serialization::get_serializable_elements<src_t> { using type = propane::serialization::serializable_elements<_SER_MAKE_PARAMS(src_t, __VA_ARGS__)>; }; \
 static_assert(propane::serialization::check_serialization_compatible<src_t, _SER_MAKE_PARAMS(dst_t, __VA_ARGS__)>::value, #dst_t " is not serializable: destination type is not compatible"); \
 template<> struct propane::serialization::is_serializable<src_t> { static constexpr bool value = true; }; \
 template<> struct propane::serialization::is_serialization_compatible<src_t, dst_t> { static constexpr bool value = true; }; \

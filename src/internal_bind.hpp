@@ -43,7 +43,7 @@ namespace propane
 	template<typename return_type, typename... parameters> class method_invoke
 	{
 	public:
-		typedef return_type(*forward_call)(parameters...);
+		using forward_call = return_type(*)(parameters...);
 
 		static inline void invoke(pointer_t ret_val, const_pointer_t param, forward_call call) noexcept
 		{
@@ -57,7 +57,7 @@ namespace propane
 	template<typename... parameters> class method_invoke<void, parameters...>
 	{
 	public:
-		typedef void(*forward_call)(parameters...);
+		using forward_call = void(*)(parameters...);
 
 		static inline void invoke(pointer_t ret_val, const_pointer_t param, forward_call call) noexcept
 		{
@@ -70,7 +70,7 @@ namespace propane
 	};
 
 
-	typedef void(*internal_call)(pointer_t, const_pointer_t);
+	using internal_call = void(*)(pointer_t, const_pointer_t);
 
 	struct internal_callable_info : public internal_call_info
 	{
@@ -82,7 +82,7 @@ namespace propane
 
 	template<size_t unique_id, typename return_type, typename... parameters> internal_callable_info bind_method(string_view name, return_type(*method)(parameters...))
 	{
-		typedef return_type(*forward_call)(parameters...);
+		using forward_call = return_type(*)(parameters...);
 
 		static forward_call call = method;
 

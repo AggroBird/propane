@@ -102,7 +102,7 @@ namespace propane
 		}
 	};
 
-	typedef string_table<name_idx> name_string_table_t;
+	using name_string_table_t = string_table<name_idx>;
 	CUSTOM_SERIALIZER(asm_database, name_string_table_t)
 	{
 		inline static void write(block_writer & writer, const asm_database & value)
@@ -115,7 +115,7 @@ namespace propane
 		}
 	};
 
-	typedef string_table<meta_idx> meta_string_table_t;
+	using meta_string_table_t = string_table<meta_idx>;
 	CUSTOM_SERIALIZER(asm_metatable, meta_string_table_t)
 	{
 		inline static void write(block_writer & writer, const asm_metatable & value)

@@ -106,6 +106,8 @@ namespace propane
 		return (idx & global_flags::constant_flag) != global_idx(0);
 	}
 
+	// These are commonly used in switch tabes
+	// because they are all (almost) equal length
 	typedef int8_t i8;
 	typedef uint8_t u8;
 	typedef int16_t i16;
@@ -117,9 +119,10 @@ namespace propane
 	typedef float f32;
 	typedef double f64;
 	typedef void* vptr;
-
-	typedef uint8_t* pointer_t;
-	typedef const uint8_t* const_pointer_t;
+	
+	// Bytecode pointers
+	using pointer_t =  uint8_t*;
+	using const_pointer_t = const uint8_t*;
 
 	inline pointer_t dereference(pointer_t addr) noexcept
 	{

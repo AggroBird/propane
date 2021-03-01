@@ -206,8 +206,7 @@ namespace propane
 	};
 	template <typename function, typename tuple_type> static inline auto expand(function func, const tuple_type& tup)
 	{
-		typedef typename std::decay<tuple_type>::type type;
-		return expand_function_recursive<function, tuple_type, std::tuple_size<type>::value, 0>::expand(func, tup);
+		return expand_function_recursive<function, tuple_type, std::tuple_size<tuple_type>::value, 0>::expand(func, tup);
 	}
 
 	// Bitcount
