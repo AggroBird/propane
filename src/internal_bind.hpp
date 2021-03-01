@@ -77,7 +77,7 @@ namespace propane
 		internal_call call = nullptr;
 
 		static size_t initialized;
-		static hash_t hash;
+		static size_t hash;
 	};
 
 	template<size_t unique_id, typename return_type, typename... parameters> internal_callable_info bind_method(string_view name, return_type(*method)(parameters...))
@@ -103,12 +103,13 @@ namespace propane
 		result.return_type = derive_type_index<return_type>::value;
 		result.parameters = block<stackvar>(sizeof...(parameters));
 		method_signature_param<parameters...>::generate(result.parameters.data(), result.parameters_size);
-		result.signature_hash = hash_signature(result.return_type, result.parameters);
 		result.call = bind::invoke;
 
 		// Update hash
-		internal_callable_info::hash = first ? hash64(name) : hash64(internal_callable_info::hash, name);
-		internal_callable_info::hash = hash64(internal_callable_info::hash, result.signature_hash);
+		internal_callable_info::hash = first ? fnv::hash(name) : fnv::append(internal_callable_info::hash, name);
+		internal_callable_info::hash = fnv::append(internal_callable_info::hash, result.return_type);
+		internal_callable_info::hash = fnv::append(internal_callable_info::hash, result.return_type);
+		for (const auto& it : result.parameters) internal_callable_info::hash = fnv::append(internal_callable_info::hash, it.type);
 
 		return result;
 	}

@@ -86,7 +86,7 @@ namespace propane
 
 	constexpr size_t icall_count = sizeof(internal_call_array) / sizeof(internal_callable_info);
 	size_t internal_callable_info::initialized = 0;
-	hash_t internal_callable_info::hash = 0;
+	size_t internal_callable_info::hash = 0;
 
 	const internal_call_info& get_internal_call(size_t idx)
 	{
@@ -108,7 +108,7 @@ namespace propane
 		return icall_count;
 	}
 
-	hash_t internal_call_hash()
+	size_t internal_call_hash()
 	{
 		return internal_callable_info::hash;
 	}

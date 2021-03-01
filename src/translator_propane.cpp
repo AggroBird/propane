@@ -31,14 +31,7 @@ namespace propane
 			size_type(data.types[derive_type_index<size_t>::value]),
 			vptr_type(data.types[type_idx::vptr])
 		{
-			string output_file = string(out_file);
-			if (!output_file.empty())
-			{
-				const char last = output_file.back();
-				if (last != '/' && last != '\\') output_file.push_back('/');
-			}
-
-			this->open(output_file);
+			this->open(out_file);
 			VALIDATE_FILE_OPEN(this->operator bool(), out_file);
 
 			type_names.resize(data.types.size());
@@ -461,7 +454,7 @@ namespace propane
 				}
 				else
 				{
-					const method_idx call_idx = method_idx(method_handle ^ size_t(data.internal_hash));
+					const method_idx call_idx = method_idx(method_handle ^ data.internal_hash);
 					ASSERT(data.methods.is_valid_index(call_idx), "Invalid method index");
 
 					file_writer.write_str(database[data.methods[call_idx].name]);
@@ -487,7 +480,7 @@ namespace propane
 		void write_offset(offset_idx idx)
 		{
 			const auto& offset = data.offsets[idx];
-			file_writer.write_str(resolve_type_name(offset.name.parent_type));
+			file_writer.write_str(resolve_type_name(offset.name.object_type));
 			for (size_t i = 0; i < offset.name.field_names.size(); i++)
 			{
 				file_writer.write_str(i == 0 ? ':' : '.');

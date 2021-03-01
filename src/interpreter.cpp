@@ -1818,7 +1818,7 @@ namespace propane
 			const_address_t method_ptr = read_address(false);
 			size_t method_handle = *reinterpret_cast<const size_t*>(method_ptr.addr);
 			ASSERT(method_handle != 0, "Attempted to invoke a null method pointer");
-			method_handle ^= size_t(data.internal_hash);
+			method_handle ^= data.internal_hash;
 			ASSERT(is_valid_method(method_handle), "Attempted to invoke an invalid method pointer");
 			const method& call_method = get_method(method_idx(method_handle));
 			push_stack_frame(call_method, get_signature(method_ptr.type->generated.signature.index));

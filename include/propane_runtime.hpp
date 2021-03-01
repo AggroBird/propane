@@ -230,8 +230,8 @@ namespace propane
 	// unwinding nested structs.
 	struct field_address
 	{
-		// Root type from which any field is initially accessed
-		type_idx parent_type;
+		// Type from which any field is initially accessed
+		type_idx object_type;
 		// Field name chain leading down to target field
 		static_block<name_idx> field_names;
 	};
@@ -317,7 +317,7 @@ namespace propane
 		// (method_idx::invalid if none was provided)
 		method_idx main;
 		// Internal hash for validation checking
-		aligned_hash_t internal_hash;
+		aligned_size_t internal_hash;
 
 		// Utility function for generating a full typename.
 		// Generated type names don't get exported into the database,

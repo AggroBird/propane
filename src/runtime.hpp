@@ -293,26 +293,6 @@ namespace propane
 		global_idx index;
 	};
 
-	// Hash func
-	inline hash_t hash_signature(type_idx return_type, span<const type_idx> parameters) noexcept
-	{
-		hash_t hash = hash64(return_type);
-		hash = hash64(hash, parameters.data(), parameters.size() * sizeof(type_idx));
-		return hash;
-	}
-	inline hash_t hash_signature(type_idx return_type, span<const stackvar> parameters) noexcept
-	{
-		hash_t hash = hash64(return_type);
-		for (const auto& it : parameters) hash = hash64(hash, it.type);
-		return hash;
-	}
-	inline hash_t hash_field_address(type_idx type, span<const name_idx> fields) noexcept
-	{
-		hash_t hash = hash64(type);
-		hash = hash64(hash, fields.data(), fields.size() * sizeof(name_idx));
-		return hash;
-	}
-
 	// Address
 	struct address_t
 	{

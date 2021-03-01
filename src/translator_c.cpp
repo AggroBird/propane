@@ -128,14 +128,7 @@ namespace propane
 			size_type(data.types[derive_type_index<size_t>::value]),
 			vptr_type(data.types[type_idx::vptr])
 		{
-			string output_file = string(out_file);
-			if (!output_file.empty())
-			{
-				const char last = output_file.back();
-				if (last != '/' && last != '\\') output_file.push_back('/');
-			}
-
-			this->open(output_file);
+			this->open(out_file);
 			VALIDATE_FILE_OPEN(this->operator bool(), out_file);
 
 			// Reserve
@@ -309,7 +302,7 @@ namespace propane
 								const size_t method_handle = *reinterpret_cast<const size_t*>(data.constants.data.data() + global_info.offset);
 								if (method_handle != 0)
 								{
-									const method_idx call_method_idx = method_idx(method_handle ^ size_t(data.internal_hash));
+									const method_idx call_method_idx = method_idx(method_handle ^ data.internal_hash);
 									ASSERT(data.methods.is_valid_index(call_method_idx), "Attempted to call an invalid method");
 									auto& const_meta = resolve_method(call_method_idx);
 									auto& const_call = get_method(call_method_idx);
@@ -1132,7 +1125,7 @@ namespace propane
 				}
 				else
 				{
-					const method_idx call_idx = method_idx(method_handle ^ size_t(data.internal_hash));
+					const method_idx call_idx = method_idx(method_handle ^ data.internal_hash);
 					ASSERT(data.methods.is_valid_index(call_idx), "Invalid method index");
 
 					const auto& call_method = get_method(call_idx);
@@ -1272,7 +1265,7 @@ namespace propane
 
 					const auto& type = *result.type;
 					ASSERT(!type.is_pointer(), "Attempted to deref a field on a non-pointer type");
-					ASSERT(type.index == field.name.parent_type, "Field type mismatch");
+					ASSERT(type.index == field.name.object_type, "Field type mismatch");
 
 					for (auto& it : field.name.field_names)
 					{
@@ -1291,7 +1284,7 @@ namespace propane
 					const auto& type = *result.type;
 					ASSERT(type.is_pointer(), "Attempted to dereference a non-pointer type");
 					const auto& underlying_type = get_type(type.generated.pointer.underlying_type);
-					ASSERT(underlying_type.index == field.name.parent_type, "Field type mismatch");
+					ASSERT(underlying_type.index == field.name.object_type, "Field type mismatch");
 
 					bool first = true;
 					for (auto& it : field.name.field_names)

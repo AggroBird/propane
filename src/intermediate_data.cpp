@@ -121,12 +121,12 @@ namespace propane
 		for (size_t i = 0; i < signatures.size(); i++)
 		{
 			const signature_idx index = signature_idx(i);
-			signature_lookup.emplace(signatures[index].hash, index);
+			signature_lookup.emplace(std::move(signatures[index].make_key()), index);
 		}
 		for (size_t i = 0; i < offsets.size(); i++)
 		{
 			const offset_idx index = offset_idx(i);
-			offset_lookup.emplace(offsets[index].name.hash, index);
+			offset_lookup.emplace(std::move(offsets[index].name.make_key()), index);
 		}
 	}
 	void gen_intermediate_data::restore_generated_types()

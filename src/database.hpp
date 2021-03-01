@@ -133,12 +133,10 @@ namespace propane
 	{
 		database_entry() = default;
 
-		template<typename... arg_t> database_entry(index_t offset, index_t length, hash_t hash, key_t key, arg_t&&... arg) :
+		template<typename... arg_t> database_entry(index_t offset, index_t length, key_t key, arg_t&&... arg) :
 			string_offset(offset, length),
-			hash(hash),
 			value(key, std::forward<arg_t>(arg)...) {}
 
-		aligned_hash_t hash;
 		database_content<key_t, value_t> value;
 	};
 
@@ -183,6 +181,25 @@ namespace propane
 		typedef typename content_type::name_pair name_pair_type;
 		typedef typename content_type::const_name_pair const_name_pair_type;
 
+		database() = default;
+
+		database(const database& other) = delete;
+		database& operator=(const database& other) = delete;
+
+		database(database&& other) noexcept
+		{
+			take_from(std::move(other));
+		}
+		database& operator=(database&& other) noexcept
+		{
+			if (&other != this)
+			{
+				take_from(std::move(other));
+			}
+			return *this;
+		}
+
+
 		inline find_result_type operator[](string_view name)
 		{
 			return emplace(name);
@@ -211,29 +228,33 @@ namespace propane
 
 		template <typename... arg_t> inline find_result_type emplace(string_view name, arg_t&&... arg)
 		{
-			const hash_t hash = hash64(name.data(), name.size() * sizeof(char));
+			const char* ptr = name.data();
+			const database_string_view view(&ptr, static_cast<index_t>(name.size()));
 
-			auto find = lookup.find(hash);
+			auto find = lookup.find(view);
 			if (find == lookup.end())
 			{
 				const size_t idx = entries.size();
-				entries.push_back(entry_type(index_t(strings.size()), index_t(name.size()), hash, key_t(idx), std::forward<arg_t>(arg)...));
+				const index_t offset = static_cast<index_t>(strings.size());
+				const index_t length = static_cast<index_t>(name.size());
+				entries.push_back(entry_type(offset, length, key_t(idx), std::forward<arg_t>(arg)...));
 				strings.insert(strings.end(), name.begin(), name.end());
-				lookup.emplace(hash, key_t(idx));
-				auto& value = entries[idx].value;
-				return value.make_result();
+				string_data = strings.data();
+				lookup.emplace(database_string_view(&string_data, offset, length), key_t(idx));
+				return entries.back().value.make_result();
 			}
 
 			auto& replace = entries[size_t(find->second)];
-			replace = entry_type(replace.offset, replace.length, hash, replace.value.key, std::forward<arg_t>(arg)...);
+			replace = entry_type(replace.offset, replace.length, replace.value.key, std::forward<arg_t>(arg)...);
 			return replace.value.make_result();
 		}
 
 		inline find_result_type find(string_view name) noexcept
 		{
-			const hash_t hash = hash64(name.data(), name.size() * sizeof(char));
+			const char* ptr = name.data();
+			const database_string_view view(&ptr, static_cast<index_t>(name.size()));
 
-			auto find = lookup.find(hash);
+			auto find = lookup.find(view);
 			if (find == lookup.end())
 			{
 				return invalid_result<key_t, value_t, false>::make();
@@ -243,9 +264,10 @@ namespace propane
 		}
 		inline const_find_result_type find(string_view name) const noexcept
 		{
-			const hash_t hash = hash64(name.data(), name.size() * sizeof(char));
+			const char* ptr = name.data();
+			const database_string_view view(&ptr, static_cast<index_t>(name.size()));
 
-			auto find = lookup.find(hash);
+			auto find = lookup.find(view);
 			if (find == lookup.end())
 			{
 				return invalid_result<key_t, value_t, true>::make();
@@ -277,26 +299,28 @@ namespace propane
 		inline void serialize_database(block_writer& writer) const
 		{
 			auto& write_entries = writer.write_deferred();
-			write_entries.write_direct(entries.data(), (index_t)entries.size());
-			write_entries.increment_length((index_t)entries.size());
+			write_entries.write_direct(entries.data(), static_cast<index_t>(entries.size()));
+			write_entries.increment_length(static_cast<index_t>(entries.size()));
 
 			auto& write_strings = writer.write_deferred();
-			write_strings.write_direct(strings.data(), (index_t)strings.size());
-			write_strings.increment_length((index_t)strings.size());
+			write_strings.write_direct(strings.data(), static_cast<index_t>(strings.size()));
+			write_strings.increment_length(static_cast<index_t>(strings.size()));
 		}
 		inline void deserialize_database(const static_database<key_t, value_t>& t)
 		{
 			entries.clear();
 			entries.insert(entries.end(), t.entries.begin(), t.entries.end());
 
-			lookup.clear();
-			for (size_t i = 0; i < entries.size(); i++)
-			{
-				lookup.emplace(entries[i].hash, key_t(i));
-			}
-
 			strings.clear();
 			strings.insert(strings.end(), t.strings.begin(), t.strings.end());
+			string_data = strings.data();
+
+			lookup.clear();
+			for (size_t idx = 0; idx < entries.size(); idx++)
+			{
+				const auto& entry = entries[idx];
+				lookup.emplace(database_string_view(&string_data, entry.offset, entry.length), key_t(idx));
+			}
 		}
 
 		inline void serialize_string_table(block_writer& writer) const
@@ -307,17 +331,68 @@ namespace propane
 				const string_offset& str_offset = it;
 				write_entries.write(str_offset);
 			}
-			write_entries.increment_length((index_t)entries.size());
+			write_entries.increment_length(static_cast<index_t>(entries.size()));
 
 			auto& write_strings = writer.write_deferred();
-			write_strings.write_direct(strings.data(), (index_t)strings.size());
-			write_strings.increment_length((index_t)strings.size());
+			write_strings.write_direct(strings.data(), static_cast<index_t>(strings.size()));
+			write_strings.increment_length(static_cast<index_t>(strings.size()));
 		}
 
 	private:
-		unordered_map<hash_t, key_t> lookup;
+		void take_from(database&& other) noexcept
+		{
+			strings = std::move(other.strings);
+			string_data = strings.data();
+			entries = std::move(other.entries);
+
+			lookup.clear();
+			while (!other.lookup.empty())
+			{
+				auto pair = other.lookup.extract(other.lookup.begin());
+				pair.key().ptr = &string_data;
+				lookup.insert(std::move(pair));
+			}
+		}
+
+		class database_string_view
+		{
+		public:
+			database_string_view() = default;
+			database_string_view(const char** ptr, index_t length) :
+				offset(0, length),
+				ptr(ptr) {}
+			database_string_view(const char** ptr, index_t offset, index_t length) :
+				offset(offset, length),
+				ptr(ptr) {}
+
+			string_offset offset = string_offset(0, 0);
+			const char** ptr = nullptr;
+		};
+
+		struct database_hash
+		{
+			inline size_t operator()(const database_string_view& str) const
+			{
+				return fnv::hash(*str.ptr + str.offset.offset, str.offset.length);
+			}
+		};
+
+		struct database_compare
+		{
+			inline bool operator()(const database_string_view& lhs, const database_string_view& rhs) const
+			{
+				if (lhs.offset.length == rhs.offset.length)
+				{
+					return memcmp(*lhs.ptr + lhs.offset.offset, *rhs.ptr + rhs.offset.offset, lhs.offset.length) == 0;
+				}
+				return false;
+			}
+		};
+
+		unordered_map<database_string_view, key_t, database_hash, database_compare> lookup;
 		vector<entry_type> entries;
 		string strings;
+		const char* string_data = nullptr;
 	};
 }
 

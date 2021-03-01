@@ -244,15 +244,15 @@ namespace propane
 				const offset_idx src_idx = offset_idx(i);
 				auto& offset = merge.offsets[src_idx];
 
-				translate(offset.name.parent_type);
+				translate(offset.name.object_type);
 				for (auto& fn : offset.name.field_names) rename(fn);
-				const hash_t hash = hash_field_address(offset.name);
-
-				auto find = offset_lookup.find(hash);
+				
+				auto key = offset.name.make_key();
+				auto find = offset_lookup.find(key);
 				if (find == offset_lookup.end())
 				{
 					const offset_idx dst_idx = offset_idx(offsets.size());
-					offset_lookup.emplace(hash, dst_idx);
+					offset_lookup.emplace(std::move(key), dst_idx);
 					offsets.push_back(std::move(offset));
 					offset_translations[src_idx] = dst_idx;
 				}
@@ -378,19 +378,19 @@ namespace propane
 
 		signature_idx merge_signature(gen_signature&& signature)
 		{
-			bool changed = translate(signature.return_type);
-			for (auto& p : signature.parameters) changed |= translate(p.type);
-			if (changed) signature.hash = hash_signature(signature);
-
+			translate(signature.return_type);
+			for (auto& p : signature.parameters) translate(p.type);
+			
 			signature.signature_type = type_idx::invalid;
 
-			auto find = signature_lookup.find(signature.hash);
+			auto key = signature.make_key();
+			auto find = signature_lookup.find(key);
 			if (find == signature_lookup.end())
 			{
 				const signature_idx dst_idx = signature_idx(signatures.size());
 				signature.index = dst_idx;
 				signatures.push_back(std::move(signature));
-				signature_lookup.emplace(signature.hash, dst_idx);
+				signature_lookup.emplace(std::move(key), dst_idx);
 				signature.index = signature_idx::invalid;
 				return dst_idx;
 			}

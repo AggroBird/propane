@@ -43,63 +43,80 @@ type(__VA_ARGS__)
 
 namespace propane
 {
-	// FNV hash
+	// Fnv hash
 	namespace fnv
 	{
-		constexpr hash_t offset = 14695981039346656037ull;
-		constexpr hash_t prime = 1099511628211ull;
-	}
-	inline constexpr hash_t hash64(hash_t hash, const char* const ptr, const size_t len) noexcept
-	{
-		for (size_t i = 0; i < len; ++i)
+		constexpr platform_architecture architecture =
+			sizeof(size_t) == 4 ? platform_architecture::x32 :
+			sizeof(size_t) == 8 ? platform_architecture::x64 :
+			platform_architecture::unknown;
+
+		template<platform_architecture arch> constexpr size_t offset = 0;
+		template<platform_architecture arch> constexpr size_t prime = 0;
+
+		template<> constexpr size_t offset<platform_architecture::x32> = size_t(2166136261u);
+		template<> constexpr size_t prime<platform_architecture::x32> = size_t(16777619u);
+
+		template<> constexpr size_t offset<platform_architecture::x64> = size_t(14695981039346656037ull);
+		template<> constexpr size_t prime<platform_architecture::x64> = size_t(1099511628211ull);
+
+
+		inline size_t append(size_t hash, const char* const ptr, const size_t len) noexcept
 		{
-			hash ^= static_cast<hash_t>(static_cast<uint8_t>(ptr[i]));
-			hash *= fnv::prime;
+			for (size_t i = 0; i < len; ++i)
+			{
+				hash ^= static_cast<size_t>(static_cast<uint8_t>(ptr[i]));
+				hash *= fnv::prime<fnv::architecture>;
+			}
+
+			return hash;
+		}
+		inline size_t hash(const char* const ptr, const size_t len) noexcept
+		{
+			return append(fnv::offset<fnv::architecture>, ptr, len);
 		}
 
-		return hash;
-	}
-	inline constexpr hash_t hash64(const char* const ptr, const size_t len) noexcept
-	{
-		return hash64(fnv::offset, ptr, len);
-	}
-	// Template version
-	template<typename value_t> inline hash_t hash64(const value_t& val) noexcept
-	{
-		static_assert(std::is_trivial<value_t>::value, "Type must be trivial");
-		return hash64(fnv::offset, reinterpret_cast<const char*>(&val), sizeof(value_t));
-	}
-	template<typename value_t> inline hash_t hash64(hash_t hash, const value_t& val) noexcept
-	{
-		static_assert(std::is_trivial<value_t>::value, "Type must be trivial");
-		return hash64(hash, reinterpret_cast<const char*>(&val), sizeof(value_t));
-	}
-	// String version
-	template<size_t len> inline constexpr hash_t hash64(const char(&str)[len]) noexcept
-	{
-		return hash64(fnv::offset, str, len - 1);
-	}
-	template<size_t len> inline constexpr hash_t hash64(hash_t hash, const char(&str)[len]) noexcept
-	{
-		return hash64(hash, str, len - 1);
-	}
-	// Stringview version
-	inline constexpr hash_t hash64(string_view str) noexcept
-	{
-		return hash64(fnv::offset, str.data(), str.size());
-	}
-	inline constexpr hash_t hash64(hash_t hash, string_view str) noexcept
-	{
-		return hash64(hash, str.data(), str.size());
-	}
-	// Void* version
-	inline hash_t hash64(hash_t hash, const void* const ptr, const size_t len) noexcept
-	{
-		return hash64(hash, (const char* const)ptr, len);
-	}
-	inline hash_t hash64(const void* const ptr, const size_t len) noexcept
-	{
-		return hash64(fnv::offset, (const char* const)ptr, len);
+		// Template version
+		template<typename value_t> inline size_t append(size_t hash, const value_t& val) noexcept
+		{
+			static_assert(std::is_trivial<value_t>::value, "Type must be trivial");
+			return append(hash, reinterpret_cast<const char*>(&val), sizeof(value_t));
+		}
+		template<typename value_t> inline size_t hash(const value_t& val) noexcept
+		{
+			static_assert(std::is_trivial<value_t>::value, "Type must be trivial");
+			return hash(reinterpret_cast<const char*>(&val), sizeof(value_t));
+		}
+
+		// String version
+		template<size_t len> inline size_t append(size_t hash, const char(&str)[len]) noexcept
+		{
+			return append(hash, str, (len - 1));
+		}
+		template<size_t len> inline size_t hash(const char(&str)[len]) noexcept
+		{
+			return hash(str, (len - 1));
+		}
+
+		// Stringview version
+		inline size_t append(size_t hash, string_view str) noexcept
+		{
+			return append(hash, str.data(), str.size());
+		}
+		inline size_t hash(string_view str) noexcept
+		{
+			return hash(str.data(), str.size());
+		}
+
+		// Void* version
+		inline size_t append(size_t hash, const void* const ptr, const size_t len) noexcept
+		{
+			return append(hash, (const char* const)ptr, len);
+		}
+		inline size_t hash(const void* const ptr, const size_t len) noexcept
+		{
+			return hash((const char* const)ptr, len);
+		}
 	}
 
 	// String format

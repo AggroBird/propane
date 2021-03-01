@@ -935,14 +935,13 @@ namespace propane
 			sig.parameters.push_back(stackvar(it));
 		}
 
-		const hash_t hash = hash_signature(sig);
-		auto find = gen.signature_lookup.find(hash);
+		auto key = sig.make_key();
+		auto find = gen.signature_lookup.find(key);
 		if (find == gen.signature_lookup.end())
 		{
 			const signature_idx index = signature_idx(gen.signatures.size());
 			sig.index = index;
-			sig.hash = hash;
-			gen.signature_lookup.emplace(hash, index);
+			gen.signature_lookup.emplace(std::move(key), index);
 			gen.signatures.push_back(std::move(sig));
 			return index;
 		}
@@ -959,16 +958,16 @@ namespace propane
 		VALIDATE_INDEX(type, gen.types.size());
 		VALIDATE_INDICES(fields, gen.database.size());
 
-		const hash_t hash = hash_field_address(type, fields);
-		auto find = gen.offset_lookup.find(hash);
+		auto key = make_key(type, fields);
+		auto find = gen.offset_lookup.find(key);
 		if (find == gen.offset_lookup.end())
 		{
 			// New offset
 			block<name_idx> field_indices(fields.data(), fields.size());
-			gen_field_address addr(type, std::move(field_indices), hash);
+			gen_field_address addr(type, std::move(field_indices));
 			const offset_idx index = offset_idx(gen.offsets.size());
 			gen.offsets.push_back(std::move(addr));
-			gen.offset_lookup.emplace(hash, index);
+			gen.offset_lookup.emplace(std::move(key), index);
 			return index;
 		}
 		else

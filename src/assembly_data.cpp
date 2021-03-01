@@ -180,7 +180,8 @@ namespace propane
 				const name_idx name = internal.database.emplace(icall.name, icall.index).key;
 
 				// Create signature
-				auto find = internal.signature_lookup.find(icall.signature_hash);
+				auto key = make_key(icall.return_type, icall.parameters);
+				auto find = internal.signature_lookup.find(key);
 				signature_idx sig_idx;
 				if (find == internal.signature_lookup.end())
 				{
@@ -188,8 +189,7 @@ namespace propane
 					gen_signature signature(sig_idx, icall.return_type, icall.parameters);
 					signature.is_resolved = true;
 					signature.parameters_size = icall.parameters_size;
-					signature.hash = icall.signature_hash;
-					internal.signature_lookup.emplace(icall.signature_hash, sig_idx);
+					internal.signature_lookup.emplace(std::move(key), sig_idx);
 					internal.signatures.push_back(std::move(signature));
 				}
 				else
@@ -525,7 +525,7 @@ namespace propane
 							idx = (index_t)method.calls[idx];
 							const size_t arg_count = size_t(read_bytecode<uint8_t>(iptr));
 							const auto& call_method = methods[method_idx(idx)];
-							VALIDATE_METHOD_DEFINITION(method.is_defined(), get_name(call_method));
+							VALIDATE_METHOD_DEFINITION(call_method.is_defined(), get_name(call_method));
 							const auto& signature = signatures[call_method.signature];
 							VALIDATE_ARGUMENT_COUNT(arg_count == signature.parameters.size(), arg_count, signature.parameters.size());
 							for (size_t i = 0; i < arg_count; i++)
@@ -683,7 +683,7 @@ namespace propane
 
 					const auto& type = types[last_type];
 					VALIDATE_FIELD_DEREFERENCE(!type.is_pointer(), get_name(type));
-					VALIDATE_FIELD_PARENT_TYPE(type.index == field.name.parent_type, get_name(field.name.parent_type), get_name(type));
+					VALIDATE_FIELD_PARENT_TYPE(type.index == field.name.object_type, get_name(field.name.object_type), get_name(type));
 
 					last_type = field.type;
 				}
@@ -699,7 +699,7 @@ namespace propane
 					const auto& type = types[last_type];
 					VALIDATE_POINTER_DEREFERENCE(type.is_pointer(), get_name(type.index));
 					const auto& underlying_type = types[type.generated.pointer.underlying_type];
-					VALIDATE_FIELD_PARENT_TYPE(underlying_type.index == field.name.parent_type, get_name(field.name.parent_type), get_name(underlying_type));
+					VALIDATE_FIELD_PARENT_TYPE(underlying_type.index == field.name.object_type, get_name(field.name.object_type), get_name(underlying_type));
 
 					last_type = field.type;
 				}
@@ -800,7 +800,7 @@ namespace propane
 			{
 				ASSERT(!f.name.field_names.empty(), "Invalid empty field name array");
 
-				const auto* type = &types[f.name.parent_type];
+				const auto* type = &types[f.name.object_type];
 				f.offset = 0;
 
 				// Resolve offset per identifier
@@ -1073,7 +1073,7 @@ namespace propane
 						ASSERT(find, "Invalid identifier");
 						VALIDATE_METHOD_INITIALIZER_DEFINITION(find->lookup == lookup_type::method, get_name(name), find.name);
 
-						write_bytecode<size_t>(lhs_addr, (size_t(find->method) ^ size_t(internal_hash)));
+						write_bytecode<size_t>(lhs_addr, (size_t(find->method) ^ internal_hash));
 					}
 					else
 					{

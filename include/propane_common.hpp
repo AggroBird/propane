@@ -66,7 +66,6 @@ namespace propane
 	enum class global_idx : index_t { invalid = invalid_index };
 	enum class meta_idx : index_t { invalid = invalid_index };
 
-	typedef uint64_t hash_t;
 
 	// Typedefs
 	static_assert(std::is_unsigned<size_t>::value, "size_t is not unsigned");
@@ -104,7 +103,6 @@ namespace propane
 	};
 	typedef aligned_t<size_t, alignof(index_t)> aligned_size_t;
 	typedef aligned_t<offset_t, alignof(index_t)> aligned_offset_t;
-	typedef aligned_t<hash_t, alignof(index_t)> aligned_hash_t;
 
 
 	// Addresses

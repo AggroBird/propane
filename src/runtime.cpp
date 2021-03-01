@@ -14,3 +14,5 @@ _BASE_TYPE_SIZE_CHECK(i64, 8);
 _BASE_TYPE_SIZE_CHECK(u64, 8);
 _BASE_TYPE_SIZE_CHECK(vptr, sizeof(propane::vptr));
 _BASE_TYPE_SIZE_CHECK(voidtype, 0);
+
+static_assert(sizeof(char) == 1, "Size of char is expected to be 1");

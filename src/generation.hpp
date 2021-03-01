@@ -141,6 +141,18 @@ namespace propane
 	};
 
 	// Methods
+	inline block<index_t> make_key(type_idx return_type, span<const stackvar> parameters)
+	{
+		block<index_t> result(parameters.size() + 1);
+		index_t* ptr = result.data();
+		*ptr++ = static_cast<index_t>(return_type);
+		for (size_t i = 0; i < parameters.size(); i++)
+		{
+			*ptr++ = static_cast<index_t>(parameters[i].type);
+		}
+		return result;
+	}
+
 	class gen_signature
 	{
 	public:
@@ -168,46 +180,54 @@ namespace propane
 			return return_type != type_idx::voidtype;
 		}
 
+		inline block<index_t> make_key() const
+		{
+			return propane::make_key(return_type, parameters);
+		}
+
 		// Intermediate
 		type_idx signature_type = type_idx::invalid;
 
-		hash_t hash = 0;
-
 		bool is_resolved = false;
 	};
-	inline hash_t hash_signature(const gen_signature& signature) noexcept
+
+	inline block<index_t> make_key(type_idx object_type, span<const name_idx> field_names)
 	{
-		return hash_signature(signature.return_type, signature.parameters);
+		block<index_t> result(field_names.size() + 1);
+		index_t* ptr = result.data();
+		*ptr++ = static_cast<index_t>(object_type);
+		for (size_t i = 0; i < field_names.size(); i++)
+		{
+			*ptr++ = static_cast<index_t>(field_names[i]);
+		}
+		return result;
 	}
 
 	struct gen_field_address
 	{
 		gen_field_address() = default;
-		gen_field_address(type_idx parent_type, block<name_idx>&& field_names, hash_t hash) :
-			parent_type(parent_type),
-			field_names(std::move(field_names)),
-			hash(hash) {}
+		gen_field_address(type_idx object_type, block<name_idx>&& field_names) :
+			object_type(object_type),
+			field_names(std::move(field_names)) {}
 
-		type_idx parent_type;
+		type_idx object_type = type_idx::invalid;
 		block<name_idx> field_names;
-		aligned_hash_t hash;
+
+		inline block<index_t> make_key() const
+		{
+			return propane::make_key(object_type, field_names);
+		}
 	};
-	inline hash_t hash_field_address(const gen_field_address& address) noexcept
-	{
-		return hash_field_address(address.parent_type, address.field_names);
-	}
 
 	struct gen_field_offset
 	{
 		gen_field_offset() = default;
 		gen_field_offset(const gen_field_address& name) :
-			name(name),
-			type(type_idx::invalid),
-			offset(0) {}
+			name(name) {}
 
 		gen_field_address name;
-		type_idx type;
-		size_t offset;
+		type_idx type = type_idx::invalid;
+		size_t offset = 0;
 	};
 
 	class gen_method
@@ -270,6 +290,24 @@ namespace propane
 	class gen_database : public database<name_idx, lookup_idx> {};
 	class gen_metatable : public database<meta_idx, void> {};
 
+
+	struct key_hash
+	{
+		inline size_t operator()(const block<index_t>& key) const
+		{
+			return fnv::hash(key.data(), key.size() * sizeof(index_t));
+		}
+	};
+
+	struct key_compare
+	{
+		inline bool operator()(const block<index_t>& lhs, const block<index_t>& rhs) const
+		{
+			if (lhs.size() != rhs.size()) return false;
+			return std::memcmp(lhs.data(), rhs.data(), lhs.size() * sizeof(index_t)) == 0;
+		}
+	};
+
 	// Intermediate
 	class gen_intermediate_data
 	{
@@ -289,10 +327,10 @@ namespace propane
 		indexed_vector<type_idx, gen_type> types;
 		indexed_vector<method_idx, gen_method> methods;
 		indexed_vector<signature_idx, gen_signature> signatures;
-		unordered_map<hash_t, signature_idx> signature_lookup;
+		unordered_map<block<index_t>, signature_idx, key_hash, key_compare> signature_lookup;
 
 		indexed_vector<offset_idx, gen_field_offset> offsets;
-		unordered_map<hash_t, offset_idx> offset_lookup;
+		unordered_map<block<index_t>, offset_idx, key_hash, key_compare> offset_lookup;
 
 		gen_data_table globals;
 		gen_data_table constants;

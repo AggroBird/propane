@@ -998,32 +998,32 @@ namespace propane
 
 					// Parse field offset address
 					const char* beg = c + 1;
-					type_idx parent_type = type_idx::invalid;
+					type_idx object_type = type_idx::invalid;
 					vector<name_idx> field_names;
 					for (c = beg; c <= end; c++)
 					{
 						if (c < end && *c == ':')
 						{
-							UNEXPECTED_CHARACTER(parent_type == type_idx::invalid, *c);
-							parent_type = declare_type(string_view(beg, c - beg));
+							UNEXPECTED_CHARACTER(object_type == type_idx::invalid, *c);
+							object_type = declare_type(string_view(beg, c - beg));
 							beg = c + 1;
 						}
 						else if (*c == '.')
 						{
-							UNEXPECTED_CHARACTER(c > beg && parent_type != type_idx::invalid, *c);
+							UNEXPECTED_CHARACTER(c > beg && object_type != type_idx::invalid, *c);
 							field_names.push_back(make_identifier(string_view(beg, c - beg)));
 							beg = c + 1;
 						}
 						else if (c == end)
 						{
-							UNEXPECTED_CHARACTER(c > beg && parent_type != type_idx::invalid, *c);
+							UNEXPECTED_CHARACTER(c > beg && object_type != type_idx::invalid, *c);
 							field_names.push_back(make_identifier(string_view(beg, c - beg)));
 							break;
 						}
 					}
 
 					result.header.set_modifier(is_deref ? address_modifier::indirect_field : address_modifier::direct_field);
-					result.payload.field = make_offset(parent_type, field_names);
+					result.payload.field = make_offset(object_type, field_names);
 
 					break;
 				}
