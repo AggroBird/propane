@@ -1,6 +1,4 @@
-// Change this to 1 for the example
-#define WITH_EXAMPLE 0
-#if WITH_EXAMPLE
+#ifndef WITHOUT_EXAMPLE
 
 #include "propane_generator.hpp"
 #include "propane_parser.hpp"
@@ -86,4 +84,5 @@ int32_t main()
 		return -1;
 	}
 }
+
 #endif
