@@ -83,7 +83,7 @@ Propane has been conceived as a study project. Propane is intended to be used fo
 
 ## Dependencies
 
-The Propane toolchain uses C++17 std::string_view and C++20 std::span. All other code should be C++14 compatible.
+The Propane toolchain requires C++20 to build.
 
 ## License
 
