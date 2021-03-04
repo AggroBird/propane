@@ -61,7 +61,7 @@ namespace propane
 
 		static inline void invoke(pointer_t ret_val, const_pointer_t param, forward_call call) noexcept
 		{
-			tuple<parameters...> tup;
+			tuple<std::decay<parameters>::type...> tup;
 
 			method_signature_param<parameters...>::read_value<0>(tup, param);
 
