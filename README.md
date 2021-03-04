@@ -85,6 +85,8 @@ Propane has been conceived as a study project. Propane is intended to be used fo
 
 The Propane toolchain requires C++20 to build.
 
+The interpreter uses platform specific code to mark the memory containing the executable code read-only. On Windows, this is implemented using the memoryapi (VirtualAlloc and VirtualProtect). On non-Windows platforms, this is implemented using posix (posix_memalign and mprotect).
+
 ## License
 
 Propane is licensed under the [MIT](LICENSE) license.
