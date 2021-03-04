@@ -60,6 +60,11 @@ namespace propane
 		{
 			return ::tan(d);
 		}
+
+		int rand()
+		{
+			return ::rand();
+		}
 	}
 
 	// Internal method binds
@@ -81,6 +86,8 @@ namespace propane
 		BIND_INTERNAL(sin),
 		BIND_INTERNAL(cos),
 		BIND_INTERNAL(tan),
+
+		BIND_INTERNAL(rand),
 	};
 
 
