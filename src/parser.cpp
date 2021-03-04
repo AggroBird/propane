@@ -437,7 +437,7 @@ namespace propane
 
 				case definition_type::stack:
 				{
-					current_method->set_stack(stackvars);
+					current_method->add_stack(stackvars);
 
 					stackvars.clear();
 
