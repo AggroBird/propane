@@ -311,7 +311,7 @@ namespace propane
 				{
 					if (addr.header.index() == address_header::index_max)
 					{
-						data.header.set_index(index_t(stackvars.size()));
+						data.header.set_index(address_header::index_max);
 					}
 				}
 				break;

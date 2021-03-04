@@ -316,7 +316,7 @@ namespace propane
 			{
 				case address_type::stackvar:
 				{
-					if (index == sv_count)
+					if (index == address_header::index_max)
 					{
 						file_writer.write_str("{^}");
 					}

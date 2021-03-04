@@ -2064,7 +2064,7 @@ namespace propane
 			{
 				case address_type::stackvar:
 				{
-					if (size_t(index) == minf.stackvars.size())
+					if (index == address_header::index_max)
 					{
 						result = return_value_addr;
 					}

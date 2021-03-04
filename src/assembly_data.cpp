@@ -610,7 +610,7 @@ namespace propane
 			{
 				case address_type::stackvar:
 				{
-					if (size_t(index) == minf.stackvars.size())
+					if (index == address_header::index_max)
 					{
 						VALIDATE_RETURN_ADDRESS(return_value != type_idx::voidtype);
 

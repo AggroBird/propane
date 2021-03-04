@@ -1187,7 +1187,7 @@ namespace propane
 			{
 				case address_type::stackvar:
 				{
-					if (size_t(index) == minf.stackvars.size())
+					if (index == address_header::index_max)
 					{
 						ASSERT(has_return_value(), "Return value address has not been set");
 
