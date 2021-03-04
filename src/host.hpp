@@ -28,40 +28,6 @@ namespace propane
 		bool protect(hostmem);
 		void free(hostmem);
 	}
-
-	class host_memory final
-	{
-	public:
-		NOCOPY_CLASS_DEFAULT(host_memory, size_t len)
-		{
-			handle = host::allocate(len);
-		}
-		~host_memory()
-		{
-			host::free(handle);
-		}
-
-		inline bool protect()
-		{
-			return host::protect(handle);
-		}
-
-		inline void* data() const noexcept
-		{
-			return handle.address;
-		}
-		inline size_t size() const noexcept
-		{
-			return handle.size;
-		}
-		inline operator bool() const noexcept
-		{
-			return handle;
-		}
-
-	private:
-		hostmem handle;
-	};
 }
 
 #endif

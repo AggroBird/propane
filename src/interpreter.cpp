@@ -20,6 +20,40 @@
 
 namespace propane
 {
+	class host_memory final
+	{
+	public:
+		NOCOPY_CLASS_DEFAULT(host_memory, size_t len)
+		{
+			handle = host::allocate(len);
+		}
+		~host_memory()
+		{
+			host::free(handle);
+		}
+
+		inline bool protect()
+		{
+			return host::protect(handle);
+		}
+
+		inline void* data() const noexcept
+		{
+			return handle.address;
+		}
+		inline size_t size() const noexcept
+		{
+			return handle.size;
+		}
+		inline operator bool() const noexcept
+		{
+			return handle;
+		}
+
+	private:
+		hostmem handle;
+	};
+
 	template<typename value_t> value_t get_value(const_address_t addr) { return *reinterpret_cast<const value_t*>(addr.addr); }
 	template<typename value_t> void dump_value(const_address_t addr) { std::cout << get_value<value_t>(addr); }
 	template<> inline void dump_value<int8_t>(const_address_t addr) { std::cout << int32_t(get_value<int8_t>(addr)); }
