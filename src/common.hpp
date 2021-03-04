@@ -30,6 +30,7 @@ using std::span;
 
 #include <iostream>
 #include <type_traits>
+#include <utility>
 
 #define CLASS_DEFAULT(type, copy, move, ...)	\
 type(const type&) = copy;						\
@@ -190,23 +191,13 @@ namespace propane
 	}
 
 	// Tuple expansion into static fuction
-	template<typename function, typename tuple_type, size_t arg_count, size_t index_count, size_t... indices> struct expand_function_recursive
+	template <typename function, typename tuple_type, size_t... indices> static inline auto expand_sequence(function func, const tuple_type& tup, std::index_sequence<indices...>)
 	{
-		static inline auto expand(function func, const tuple_type& tup)
-		{
-			return expand_function_recursive<function, tuple_type, arg_count, sizeof...(indices) + 1, indices..., index_count>::expand(func, tup);
-		}
-	};
-	template<typename function, typename tuple_type, size_t arg_count, size_t... indices> struct expand_function_recursive<function, tuple_type, arg_count, arg_count, indices...>
-	{
-		static inline auto expand(function func, const tuple_type& tup)
-		{
-			return func(std::get<indices>(tup)...);
-		}
-	};
+		return func(std::get<indices>(tup)...);
+	}
 	template <typename function, typename tuple_type> static inline auto expand(function func, const tuple_type& tup)
 	{
-		return expand_function_recursive<function, tuple_type, std::tuple_size<tuple_type>::value, 0>::expand(func, tup);
+		return expand_sequence(func, tup, std::make_index_sequence<std::tuple_size<tuple_type>::value>{});
 	}
 
 	// Bitcount
