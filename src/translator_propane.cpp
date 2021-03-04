@@ -13,8 +13,6 @@ using std::ofstream;
 	"Attempted to generate from an invalid assembly")
 #define VALIDATE_COMPATIBILITY(expr) VALIDATE(ERRC::GNR_INCOMPATIBLE_ASSEMBLY, expr, \
 	"Attempted to generate from an assembly that was build using an incompatible toolchain")
-#define VALIDATE_ENTRYPOINT(expr) VALIDATE(ERRC::GNR_ENTRYPOINT_NOT_FOUND, expr, \
-	"Failed to find main entrypoint in assembly")
 #define VALIDATE_FILE_OPEN(expr, file_path) VALIDATE(ERRC::GNR_FILE_EXCEPTION, expr, \
 	"Failed to open output file: \"%\"", file_path)
 
@@ -537,7 +535,6 @@ namespace propane
 		VALIDATE_COMPATIBILITY(linked_assembly.is_compatible());
 
 		const assembly_data& data = linked_assembly.assembly_ref();
-		VALIDATE_ENTRYPOINT(data.methods.is_valid_index(data.main));
 
 		translator_propane_impl generator(out_file, data);
 	}
