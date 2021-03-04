@@ -2,6 +2,7 @@
 #define _HEADER_PROPANE_GENERATOR
 
 #include "propane_intermediate.hpp"
+#include "propane_runtime.hpp"
 
 namespace propane
 {
@@ -173,9 +174,14 @@ namespace propane
 			type_writer(const type_writer&) = delete;
 			type_writer& operator=(const type_writer&) = delete;
 
+			name_idx name() const;
+			type_idx index() const;
+
 			// Field declaration for structs
 			void declare_field(type_idx type, name_idx name);
 			void declare_field(type_idx type, std::string_view name);
+
+			std::span<const field> fields() const;
 
 			// Finalize
 			void finalize();
@@ -211,12 +217,17 @@ namespace propane
 			method_writer(const method_writer&) = delete;
 			method_writer& operator=(const method_writer&) = delete;
 
+			name_idx name() const;
+			method_idx index() const;
+
 			// Variable stack
-			void set_stack(std::span<const type_idx> types);
-			inline void set_stack(std::initializer_list<type_idx> types)
+			void add_stack(std::span<const type_idx> types);
+			inline void add_stack(std::initializer_list<type_idx> types)
 			{
-				set_stack(init_span(types));
+				add_stack(init_span(types));
 			}
+
+			std::span<const stackvar> stack() const;
 
 			// Declare label for later use
 			label_idx declare_label(std::string_view label_name);

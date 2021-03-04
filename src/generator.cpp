@@ -42,6 +42,8 @@
 	"Parameter index out of range (%/%)", size_t(idx), max)
 #define VALIDATE_NONCONST(expr) VALIDATE(ERRC::GNR_INVALID_CONSTANT, expr, \
 	"Constant is not valid as left-hand side operand")
+#define VALIDATE_HAS_RETURNED(expr, method_name, method_meta) VALIDATE(ERRC::GNR_MISSING_RET_VAL, expr, \
+	"Method is expecting a return value (see declaration for '%' at %)", method_name, method_meta)
 
 #define VALIDATE_TYPE(id, max) { VALIDATE_INDEX(id, max); VALIDATE_NONVOID(id); }
 #define VALIDATE_TYPES(set, max) { for(const auto& id : set) { VALIDATE_INDEX(id, max); VALIDATE_NONVOID(id); } }
@@ -193,8 +195,6 @@ namespace propane
 		~method_writer_impl();
 
 
-		bool has_stack = false;
-
 		// Lookup tables, to prevent duplicate indices
 		unordered_map<method_idx, index_t> call_lookup;
 		unordered_map<name_idx, index_t> global_lookup;
@@ -206,6 +206,8 @@ namespace propane
 		database<label_idx, void> label_names;
 
 		size_t parameter_count = 0;
+		size_t last_return = 0;
+		bool expects_return_value = false;
 
 		generator_impl& gen;
 
@@ -222,6 +224,7 @@ namespace propane
 			}
 
 			// Export labels
+			labels.reserve(write_labels.size());
 			for (auto& label : write_labels)
 			{
 				auto branch = unresolved_branches.find(label.second);
@@ -527,6 +530,8 @@ namespace propane
 			VALIDATE_RET_VAL(expected, gen.database[name].name, gen.make_meta(index));
 
 			append_bytecode(opcode::ret);
+
+			last_return = bytecode.size();
 		}
 		void write_retv(address addr)
 		{
@@ -538,6 +543,8 @@ namespace propane
 				write_subcode_zero();
 				write_operand(addr);
 			}
+
+			last_return = bytecode.size();
 		}
 
 		void write_dump(address addr)
@@ -581,6 +588,15 @@ namespace propane
 		destruct<type_writer_impl>(handle.data);
 	}
 
+	name_idx generator::type_writer::name() const
+	{
+		return impl().name;
+	}
+	type_idx generator::type_writer::index() const
+	{
+		return impl().index;
+	}
+
 	void generator::type_writer::declare_field(type_idx type, name_idx name)
 	{
 		auto& writer = impl();
@@ -606,6 +622,10 @@ namespace propane
 		VALIDATE_TYPE(type, gen.types.size());
 
 		return declare_field(type, gen.emplace_identifier(name));
+	}
+	span<const field> generator::type_writer::fields() const
+	{
+		return impl().fields;
 	}
 
 	void generator::type_writer::finalize()
@@ -636,7 +656,9 @@ namespace propane
 	{
 		flags |= extended_flags::is_defined;
 		this->signature = signature;
-		this->parameter_count = gen.signatures[signature].parameters.size();
+		const auto& sig = gen.signatures[signature];
+		this->parameter_count = sig.parameters.size();
+		this->expects_return_value = sig.has_return_value();
 
 		meta.index = gen.meta_index;
 		meta.line_number = gen.line_number;
@@ -655,20 +677,30 @@ namespace propane
 		destruct<method_writer_impl>(handle.data);
 	}
 
-	void generator::method_writer::set_stack(span<const type_idx> types)
+	name_idx generator::method_writer::name() const
+	{
+		return impl().name;
+	}
+	method_idx generator::method_writer::index() const
+	{
+		return impl().index;
+	}
+
+	void generator::method_writer::add_stack(span<const type_idx> types)
 	{
 		auto& writer = impl();
 
-		VALIDATE_STACK_DEC(!writer.has_stack && writer.bytecode.empty(), writer.gen.database[writer.name].name);
 		VALIDATE_TYPES(types, writer.gen.types.size());
 
-		writer.stackvars.reserve(types.size());
+		writer.stackvars.reserve(writer.stackvars.size() + types.size());
 		for (auto it : types)
 		{
 			writer.stackvars.push_back(stackvar(it));
 		}
-
-		writer.has_stack = true;
+	}
+	std::span<const stackvar> generator::method_writer::stack() const
+	{
+		return impl().stackvars;
 	}
 
 	label_idx generator::method_writer::declare_label(string_view label_name)
@@ -871,6 +903,12 @@ namespace propane
 		auto& writer = impl();
 		auto& gen = writer.gen;
 
+		// Ensure the method has returned a value
+		if (writer.expects_return_value)
+		{
+			VALIDATE_HAS_RETURNED(!writer.bytecode.empty() && writer.last_return == writer.bytecode.size(), gen.database[writer.name].name, gen.make_meta(writer.index));
+		}
+
 		writer.resolve_labels();
 
 		gen.methods[writer.index] = std::move(writer);
@@ -883,7 +921,7 @@ namespace propane
 	// Generator
 	generator_impl::generator_impl()
 	{
-
+		initialize_base_types();
 	}
 	generator_impl::~generator_impl()
 	{
