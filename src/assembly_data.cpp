@@ -647,7 +647,6 @@ namespace propane
 					ASSERT(index < table.info.size(), "Parameter index out of range");
 
 					last_type = table.info[global].type;
-
 				}
 				break;
 
