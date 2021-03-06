@@ -10,11 +10,11 @@ namespace propane
 {
 	template<typename value_t, bool pointer> struct decay_base
 	{
-		typedef std::decay<value_t>::type type;
+		typedef typename std::decay<value_t>::type type;
 	};
 	template<typename value_t> struct decay_base<value_t, true>
 	{
-		typedef std::decay<typename std::remove_pointer<value_t>::type>::type* type;
+		typedef typename std::decay<typename std::remove_pointer<value_t>::type>::type* type;
 	};
 
 	template <class value_t> using decay_base_t = typename decay_base<value_t, std::is_pointer<value_t>::value>::type;
