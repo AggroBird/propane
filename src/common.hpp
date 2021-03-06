@@ -80,12 +80,12 @@ namespace propane
 		// Template version
 		template<typename value_t> inline size_t append(size_t hash, const value_t& val) noexcept
 		{
-			static_assert(std::is_trivial<value_t>::value, "Type must be trivial");
+			static_assert(std::is_trivial_v<value_t>, "Type must be trivial");
 			return append(hash, reinterpret_cast<const char*>(&val), sizeof(value_t));
 		}
 		template<typename value_t> inline size_t hash(const value_t& val) noexcept
 		{
-			static_assert(std::is_trivial<value_t>::value, "Type must be trivial");
+			static_assert(std::is_trivial_v<value_t>, "Type must be trivial");
 			return hash(reinterpret_cast<const char*>(&val), sizeof(value_t));
 		}
 
@@ -197,7 +197,7 @@ namespace propane
 	}
 	template <typename function, typename tuple_type> static inline auto expand(function func, const tuple_type& tup)
 	{
-		return expand_sequence(func, tup, std::make_index_sequence<std::tuple_size<tuple_type>::value>{});
+		return expand_sequence(func, tup, std::make_index_sequence<std::tuple_size_v<tuple_type>>{});
 	}
 
 	// Bitcount

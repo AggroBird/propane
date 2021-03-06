@@ -160,7 +160,7 @@ namespace propane
 			{
 				len = length;
 				ptr = alloc(len);
-				block_data<value_t, std::is_trivially_default_constructible<value_t>::value>::construct(ptr, len);
+				block_data<value_t, std::is_trivially_default_constructible_v<value_t>>::construct(ptr, len);
 			}
 			else
 			{
@@ -172,7 +172,7 @@ namespace propane
 		{
 			if (ptr)
 			{
-				block_data<value_t, std::is_trivially_destructible<value_t>::value>::deconstruct(ptr, len);
+				block_data<value_t, std::is_trivially_destructible_v<value_t>>::deconstruct(ptr, len);
 				dealloc(ptr);
 				ptr = nullptr;
 			}
@@ -184,7 +184,7 @@ namespace propane
 			{
 				len = length;
 				ptr = alloc(len);
-				block_data<value_t, std::is_trivially_copyable<value_t>::value>::copy(ptr, data, len);
+				block_data<value_t, std::is_trivially_copyable_v<value_t>>::copy(ptr, data, len);
 			}
 			else
 			{

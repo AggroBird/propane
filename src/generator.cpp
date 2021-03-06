@@ -246,7 +246,7 @@ namespace propane
 		}
 		template<typename value_t> inline void append_bytecode(const value_t& val)
 		{
-			static_assert(std::is_trivial<value_t>::value && !std::is_same<string_view, value_t>::value, "Type must be trivially copyable");
+			static_assert(std::is_trivial_v<value_t> && !std::is_same_v<string_view, value_t>, "Type must be trivially copyable");
 			append_bytecode(&val, sizeof(value_t));
 		}
 

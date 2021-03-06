@@ -31,12 +31,12 @@ namespace propane
 		// Write direct
 		template<typename value_t> inline void write_direct(const value_t& value)
 		{
-			static_assert(std::is_trivially_copyable<value_t>::value, "Trivial type required");
+			static_assert(std::is_trivially_copyable_v<value_t>, "Trivial type required");
 			append(reinterpret_cast<const uint8_t*>(&value), uint32_t(sizeof(value_t)));
 		}
 		template<typename value_t> inline void write_direct(const value_t* value_ptr, uint32_t count)
 		{
-			static_assert(std::is_trivially_copyable<value_t>::value, "Trivial type required");
+			static_assert(std::is_trivially_copyable_v<value_t>, "Trivial type required");
 			append(reinterpret_cast<const uint8_t*>(value_ptr), uint32_t(sizeof(value_t)) * count);
 		}
 		inline void write_direct(string_view str)

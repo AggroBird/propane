@@ -25,8 +25,8 @@ namespace propane
 			data(asm_data),
 			database(asm_data.database),
 			int_type(data.types[type_idx::i32]),
-			offset_type(data.types[derive_type_index<offset_t>::value]),
-			size_type(data.types[derive_type_index<size_t>::value]),
+			offset_type(data.types[derive_type_index_v<offset_t>]),
+			size_type(data.types[derive_type_index_v<size_t>]),
 			vptr_type(data.types[type_idx::vptr])
 		{
 			this->open(out_file);

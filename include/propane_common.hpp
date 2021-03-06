@@ -68,8 +68,8 @@ namespace propane
 
 
 	// Typedefs
-	static_assert(std::is_unsigned<size_t>::value, "size_t is not unsigned");
-	using offset_t = std::make_signed<size_t>::type;
+	static_assert(std::is_unsigned_v<size_t>, "size_t is not unsigned");
+	using offset_t = std::make_signed_t<size_t>;
 
 
 	// Aligned type
@@ -99,7 +99,7 @@ namespace propane
 			return reinterpret_cast<const value_t&>(data);
 		}
 
-		typename std::aligned_storage<sizeof(value_t), alignment>::type data;
+		std::aligned_storage_t<sizeof(value_t), alignment> data;
 	};
 	using aligned_size_t = aligned_t<size_t, alignof(index_t)>;
 	using aligned_offset_t = aligned_t<offset_t, alignof(index_t)>;

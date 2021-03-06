@@ -21,13 +21,14 @@ namespace propane
 		// Is packed
 		template<typename value_t> struct is_packed
 		{
-			static constexpr bool value = std::is_arithmetic<value_t>::value || std::is_enum<value_t>::value;
+			static constexpr bool value = std::is_arithmetic_v<value_t> || std::is_enum_v<value_t>;
 		};
+		template<typename value_t> inline constexpr bool is_packed_v = is_packed<value_t>::value;
 
 		// Is serializable
 		template<typename value_t> struct is_serializable
 		{
-			static constexpr bool value = is_packed<value_t>::value;
+			static constexpr bool value = is_packed_v<value_t>;
 		};
 		template<> struct is_serializable<std::string> { static constexpr bool value = true; };
 		template<> struct is_serializable<std::string_view> { static constexpr bool value = true; };
@@ -35,11 +36,12 @@ namespace propane
 		template<typename value_t> struct is_serializable<std::vector<value_t>> { static constexpr bool value = is_serializable<value_t>::value; };
 		template<typename key_t, typename value_t> struct is_serializable<std::map<key_t, value_t>> { static constexpr bool value = is_serializable<key_t>::value && is_serializable<value_t>::value; };
 		template<typename key_t, typename value_t> struct is_serializable<indexed_vector<key_t, value_t>> { static constexpr bool value = is_serializable<value_t>::value; };
+		template<typename value_t> inline constexpr bool is_serializable_v = is_serializable<value_t>::value;
 
 		// Compatibility
 		template<typename lhs_t, typename rhs_t> struct is_serialization_compatible
 		{
-			static constexpr bool value = std::is_same<lhs_t, rhs_t>::value || (is_serializable<lhs_t>::value && is_serializable<rhs_t>::value);
+			static constexpr bool value = std::is_same_v<lhs_t, rhs_t> || (is_serializable_v<lhs_t> && is_serializable_v<rhs_t>);
 		};
 		template<> struct is_serialization_compatible<std::string, static_string> { static constexpr bool value = true; };
 		template<> struct is_serialization_compatible<std::string_view, static_string> { static constexpr bool value = true; };
@@ -59,6 +61,7 @@ namespace propane
 		{
 			static constexpr bool value = is_serialization_compatible<lhs_value_t, rhs_value_t>::value;
 		};
+		template<typename lhs_t, typename rhs_t> inline constexpr bool is_serialization_compatible_v = is_serialization_compatible<lhs_t, rhs_t>::value;
 
 		// Serializable size check
 		template<typename value_t, typename... rest_t> struct serializable_size_check_recursive;
@@ -76,6 +79,7 @@ namespace propane
 			static constexpr size_t object_size = sizeof(value_t);
 			static constexpr bool value = member_size == object_size;
 		};
+		template<typename value_t, typename... rest_t> inline constexpr size_t serializable_size_check_v = serializable_size_check<value_t, rest_t...>::value;
 
 		// Get type at idx
 		template<typename> constexpr bool false_condition = false;
@@ -100,35 +104,37 @@ namespace propane
 			using elements = typename get_serializable_elements<elem_t>::type;
 			using element = typename serializable_element<idx, elements>::type;
 
-			static constexpr bool value = is_serialization_compatible<element, value_t>::value;
+			static constexpr bool value = is_serialization_compatible_v<element, value_t>;
 		};
 		template<typename elem_t, size_t idx, typename value_t, typename... rest_t> struct check_serialization_compatible_recursive
 		{
 			using elements = typename get_serializable_elements<elem_t>::type;
 			using element = typename serializable_element<idx, elements>::type;
 
-			static constexpr bool value = is_serialization_compatible<element, value_t>::value && check_serialization_compatible_recursive<elem_t, idx + 1, rest_t...>::value;
+			static constexpr bool value = is_serialization_compatible_v<element, value_t> && check_serialization_compatible_recursive<elem_t, idx + 1, rest_t...>::value;
 		};
 
 		template<typename elem_t, typename... rest_t> struct check_serialization_compatible
 		{
 			static constexpr bool value = check_serialization_compatible_recursive<elem_t, 0, rest_t...>::value;
 		};
+		template<typename value_t, typename... rest_t> inline constexpr bool check_serialization_compatible_v = check_serialization_compatible<value_t, rest_t...>::value;
 
 		// Serialization check
 		template<typename value_t, typename... rest_t> struct serializable_check_recursive;
 		template<typename value_t> struct serializable_check_recursive<value_t>
 		{
-			static constexpr bool value = is_serializable<value_t>::value;
+			static constexpr bool value = is_serializable_v<value_t>;
 		};
 		template<typename value_t, typename... rest_t> struct serializable_check_recursive
 		{
-			static constexpr bool value = is_serializable<value_t>::value && serializable_check_recursive<rest_t...>::value;
+			static constexpr bool value = is_serializable_v<value_t> && serializable_check_recursive<rest_t...>::value;
 		};
 		template<typename value_t, typename... rest_t> struct serializable_check
 		{
 			static constexpr bool value = serializable_check_recursive<rest_t...>::value;
 		};
+		template<typename value_t, typename... rest_t> inline constexpr bool serializable_check_v = serializable_check<value_t, rest_t...>::value;
 
 		template<typename value_t> struct serializer;
 
@@ -142,13 +148,13 @@ namespace propane
 		{
 			inline static void write(block_writer& writer, const value_t& value)
 			{
-				static_assert(is_serializable<value_t>::value, "Type is not serializable");
+				static_assert(is_serializable_v<value_t>, "Type is not serializable");
 
 				serializer<value_t>::write(writer, value);
 			}
 			inline static void write(block_writer& writer, const value_t* ptr, size_t count)
 			{
-				static_assert(is_serializable<value_t>::value, "Type is not serializable");
+				static_assert(is_serializable_v<value_t>, "Type is not serializable");
 
 				for (size_t i = 0; i < count; i++)
 				{
@@ -157,13 +163,13 @@ namespace propane
 			}
 			inline static void read(const void*& data, value_t& value)
 			{
-				static_assert(is_serializable<value_t>::value, "Type is not serializable");
+				static_assert(is_serializable_v<value_t>, "Type is not serializable");
 
 				serializer<value_t>::read(data, value);
 			}
 			inline static void read(const void*& data, value_t* ptr, size_t count)
 			{
-				static_assert(is_serializable<value_t>::value, "Type is not serializable");
+				static_assert(is_serializable_v<value_t>, "Type is not serializable");
 
 				for (size_t i = 0; i < count; i++)
 				{
@@ -175,25 +181,25 @@ namespace propane
 		{
 			inline static void write(block_writer& writer, const value_t& value)
 			{
-				static_assert(std::is_trivially_copyable<value_t>::value, "type is not trivially copyable");
+				static_assert(std::is_trivially_copyable_v<value_t>, "type is not trivially copyable");
 
 				writer.write_direct(value);
 			}
 			inline static void write(block_writer& writer, const value_t* ptr, size_t count)
 			{
-				static_assert(std::is_trivially_copyable<value_t>::value, "type is not trivially copyable");
+				static_assert(std::is_trivially_copyable_v<value_t>, "type is not trivially copyable");
 
 				writer.write_direct(ptr, uint32_t(count));
 			}
 			inline static void read(const void*& data, value_t& value)
 			{
-				static_assert(std::is_trivially_copyable<value_t>::value, "type is not trivially copyable");
+				static_assert(std::is_trivially_copyable_v<value_t>, "type is not trivially copyable");
 
 				value = *reinterpret_cast<const value_t*&>(data)++;
 			}
 			inline static void read(const void*& data, value_t* ptr, size_t count)
 			{
-				static_assert(std::is_trivially_copyable<value_t>::value, "type is not trivially copyable");
+				static_assert(std::is_trivially_copyable_v<value_t>, "type is not trivially copyable");
 
 				std::memcpy(ptr, data, count * sizeof(value_t));
 				reinterpret_cast<const value_t*&>(data) += count;
@@ -205,13 +211,13 @@ namespace propane
 		{
 			inline static void write(block_writer& writer, const value_t& value)
 			{
-				static_assert(serialization::is_serializable<value_t>::value, "type is not serializable");
+				static_assert(serialization::is_serializable_v<value_t>, "type is not serializable");
 
-				serialize_binary<value_t, is_packed<value_t>::value>::write(writer, value);
+				serialize_binary<value_t, is_packed_v<value_t>>::write(writer, value);
 			}
 			inline static void read(const void*& data, value_t& value)
 			{
-				serialize_binary<value_t, is_packed<value_t>::value>::read(data, value);
+				serialize_binary<value_t, is_packed_v<value_t>>::read(data, value);
 			}
 		};
 
@@ -221,7 +227,7 @@ namespace propane
 			inline static void write(block_writer& writer, const std::vector<value_t>& value)
 			{
 				auto& w = writer.write_deferred();
-				serialize_binary<value_t, is_packed<value_t>::value>::write(w, value.data(), value.size());
+				serialize_binary<value_t, is_packed_v<value_t>>::write(w, value.data(), value.size());
 				w.increment_length(uint32_t(value.size()));
 			}
 			inline static void read(const void*& data, std::vector<value_t>& value)
@@ -229,7 +235,7 @@ namespace propane
 				const auto& r = read_data<static_block<value_t>>(data);
 				value.resize(r.size());
 				const void* ptr = r.data();
-				serialize_binary<value_t, is_packed<value_t>::value>::read(ptr, value.data(), value.size());
+				serialize_binary<value_t, is_packed_v<value_t>>::read(ptr, value.data(), value.size());
 			}
 		};
 
@@ -239,7 +245,7 @@ namespace propane
 			inline static void write(block_writer& writer, const block<value_t>& value)
 			{
 				auto& w = writer.write_deferred();
-				serialize_binary<value_t, is_packed<value_t>::value>::write(w, value.data(), value.size());
+				serialize_binary<value_t, is_packed_v<value_t>>::write(w, value.data(), value.size());
 				w.increment_length(uint32_t(value.size()));
 			}
 			inline static void read(const void*& data, block<value_t>& value)
@@ -247,7 +253,7 @@ namespace propane
 				const auto& r = read_data<static_block<value_t>>(data);
 				value = block<value_t>(r.size());
 				const void* ptr = r.data();
-				serialize_binary<value_t, is_packed<value_t>::value>::read(ptr, value.data(), value.size());
+				serialize_binary<value_t, is_packed_v<value_t>>::read(ptr, value.data(), value.size());
 			}
 		};
 
@@ -276,7 +282,7 @@ namespace propane
 			inline static void write(block_writer& writer, const indexed_vector<key_t, value_t>& value)
 			{
 				auto& w = writer.write_deferred();
-				serialize_binary<value_t, is_packed<value_t>::value>::write(w, value.data(), value.size());
+				serialize_binary<value_t, is_packed_v<value_t>>::write(w, value.data(), value.size());
 				w.increment_length(uint32_t(value.size()));
 			}
 			inline static void read(const void*& data, indexed_vector<key_t, value_t>& value)
@@ -284,7 +290,7 @@ namespace propane
 				const auto& r = read_data<indexed_static_block<key_t, value_t>>(data);
 				value.resize(r.size());
 				const void* ptr = r.data();
-				serialize_binary<value_t, is_packed<value_t>::value>::read(ptr, value.data(), value.size());
+				serialize_binary<value_t, is_packed_v<value_t>>::read(ptr, value.data(), value.size());
 			}
 		};
 
@@ -359,8 +365,8 @@ namespace propane
 #define _SER_MAKE_FORWARD(i, ...) _SER_EVAL(_SER_MAKE_INIT _SER_TRANSFORM(i, _SER_MAKE_FWD, (__VA_ARGS__)))
 
 #define SERIALIZABLE_CHECK(src_t, ...) \
-static_assert(std::is_trivially_default_constructible<src_t>::value, #src_t " is not serializable: type is not trivially default constructible"); \
-static_assert(propane::serialization::serializable_size_check<src_t, _SER_MAKE_PARAMS(src_t, __VA_ARGS__)>::value, #src_t " is not serializable: object contains padding"); \
+static_assert(std::is_trivially_default_constructible_v<src_t>, #src_t " is not serializable: type is not trivially default constructible"); \
+static_assert(propane::serialization::serializable_size_check_v<src_t, _SER_MAKE_PARAMS(src_t, __VA_ARGS__)>, #src_t " is not serializable: object contains padding"); \
 template<> struct propane::serialization::is_packed<src_t> { static constexpr bool value = true; }; \
 template<> struct propane::serialization::is_serializable<src_t> { static constexpr bool value = true; }
 
@@ -380,9 +386,9 @@ template<> struct propane::serialization::serializer<src_t> \
 
 #define SERIALIZABLE_PAIR(src_t, dst_t, ...) \
 SERIALIZABLE_CHECK(dst_t, __VA_ARGS__); \
-static_assert(propane::serialization::serializable_check<src_t, _SER_MAKE_PARAMS(src_t, __VA_ARGS__)>::value, #src_t " is not serializable: object contains members that are not serializable"); \
+static_assert(propane::serialization::serializable_check_v<src_t, _SER_MAKE_PARAMS(src_t, __VA_ARGS__)>, #src_t " is not serializable: object contains members that are not serializable"); \
 template<> struct propane::serialization::get_serializable_elements<src_t> { using type = propane::serialization::serializable_elements<_SER_MAKE_PARAMS(src_t, __VA_ARGS__)>; }; \
-static_assert(propane::serialization::check_serialization_compatible<src_t, _SER_MAKE_PARAMS(dst_t, __VA_ARGS__)>::value, #dst_t " is not serializable: destination type is not compatible"); \
+static_assert(propane::serialization::check_serialization_compatible_v<src_t, _SER_MAKE_PARAMS(dst_t, __VA_ARGS__)>, #dst_t " is not serializable: destination type is not compatible"); \
 template<> struct propane::serialization::is_serializable<src_t> { static constexpr bool value = true; }; \
 template<> struct propane::serialization::is_serialization_compatible<src_t, dst_t> { static constexpr bool value = true; }; \
 template<> struct propane::serialization::serializer<src_t> \

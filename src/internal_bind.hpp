@@ -10,14 +10,14 @@ namespace propane
 {
 	template<typename value_t, bool pointer> struct decay_base
 	{
-		typedef typename std::decay<value_t>::type type;
+		typedef std::decay_t<value_t> type;
 	};
 	template<typename value_t> struct decay_base<value_t, true>
 	{
-		typedef typename std::decay<typename std::remove_pointer<value_t>::type>::type* type;
+		typedef std::decay_t<std::remove_pointer_t<value_t>>* type;
 	};
 
-	template <class value_t> using decay_base_t = typename decay_base<value_t, std::is_pointer<value_t>::value>::type;
+	template <class value_t> using decay_base_t = typename decay_base<value_t, std::is_pointer_v<value_t>>::type;
 
 	// Internal call templates
 	template<typename... parameters> class method_signature_param;
@@ -38,10 +38,10 @@ namespace propane
 	public:
 		static inline void generate(stackvar* result, size_t& offset) noexcept
 		{
-			constexpr type_idx val = derive_type_index<decay_base_t<param>>::value;
+			constexpr type_idx val = derive_type_index_v<decay_base_t<param>>;
 			static_assert(val != type_idx::invalid, "Unsupported base type provided");
 			*result++ = stackvar(val, offset);
-			offset += derive_base_size<decay_base_t<param>>::value;
+			offset += derive_base_size_v<decay_base_t<param>>;
 			method_signature_param<parameters...>::generate(result, offset);
 		}
 		template<size_t idx, typename... tuple_args> static inline void read_value(tuple<tuple_args...>& tup, const_pointer_t& data) noexcept
@@ -72,7 +72,7 @@ namespace propane
 
 		static inline void invoke(pointer_t ret_val, const_pointer_t param, forward_call call) noexcept
 		{
-			tuple<std::decay<parameters>::type...> tup;
+			tuple<std::decay_t<parameters>...> tup;
 
 			method_signature_param<parameters...>::read_value<0>(tup, param);
 
@@ -111,7 +111,7 @@ namespace propane
 		internal_callable_info result;
 		result.index = method_idx(internal_callable_info::initialized++);
 		result.name = name;
-		result.return_type = derive_type_index<decay_base_t<return_type>>::value;
+		result.return_type = derive_type_index_v<decay_base_t<return_type>>;
 		result.parameters = block<stackvar>(sizeof...(parameters));
 		method_signature_param<parameters...>::generate(result.parameters.data(), result.parameters_size);
 		result.call = bind::invoke;

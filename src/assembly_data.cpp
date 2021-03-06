@@ -161,8 +161,8 @@ namespace propane
 	{
 	public:
 		assembly_linker(gen_intermediate_data&& data) :
-			size_type(derive_type_index<size_t>::value),
-			offset_type(derive_type_index<offset_t>::value),
+			size_type(derive_type_index_v<size_t>),
+			offset_type(derive_type_index_v<offset_t>),
 			ptr_size(get_base_type_size(type_idx::vptr))
 		{
 			internal_hash = internal_call_hash();
@@ -191,7 +191,7 @@ namespace propane
 					// Create signature
 					signature_idx sig_idx;
 					const internal_call_info& icall = find_internal->second;
-					make_key(icall.return_type, icall.parameters, keybuf);
+					make_key<stackvar>(icall.return_type, icall.parameters, keybuf);
 					auto find = data.signature_lookup.find(keybuf);
 					if (find == data.signature_lookup.end())
 					{

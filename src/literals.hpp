@@ -56,7 +56,7 @@ namespace propane
 
 	template<typename value_t> constexpr value_t negate_num(value_t val, bool negate)
 	{
-		using signed_type = typename std::make_signed<value_t>::type;
+		using signed_type = std::make_signed_t<value_t>;
 		const signed_type negative = -static_cast<signed_type>(val);
 		return negate ? static_cast<value_t>(negative) : val;
 	}
@@ -105,7 +105,7 @@ namespace propane
 	// Cast the result to the template type
 	template<typename value_t> parse_result<value_t> parse_integer(const char*& beg, const char* end)
 	{
-		static_assert(std::is_integral<value_t>::value || std::is_enum<value_t>::value, "Type has to be integer");
+		static_assert(std::is_integral_v<value_t> || std::is_enum_v<value_t>, "Type has to be integer");
 
 		parse_result<value_t> result;
 		if (auto literal = parse_literal(beg, end))
@@ -123,7 +123,7 @@ namespace propane
 				case type_idx::u64: { result.value = value_t(literal.value.u64); break; }
 				default: return result;
 			}
-			result.type = derive_type_index<value_t>::value;
+			result.type = derive_type_index_v<value_t>;
 		}
 		return result;
 	}

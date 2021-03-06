@@ -98,7 +98,7 @@ inline uint32_t errc_to_uint(ERRC errc) noexcept
 }
 template<typename value_t> inline bool validate_expression(value_t expr) noexcept
 {
-	static_assert(std::is_same<value_t, bool>::value, "Expression does not yield a boolean");
+	static_assert(std::is_same_v<value_t, bool>, "Expression does not yield a boolean");
 	return false;
 }
 template<> inline bool validate_expression<bool>(bool expr) noexcept

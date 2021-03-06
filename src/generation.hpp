@@ -143,7 +143,7 @@ namespace propane
 	// Key generation
 	template<typename value_t> inline void append_key(vector<uint8_t>& out_key, value_t val)
 	{
-		static_assert(std::is_unsigned<value_t>::value || std::is_unsigned<std::underlying_type<value_t>::type>::value, "Type must be unsigned");
+		static_assert(std::is_unsigned_v<value_t> || std::is_unsigned_v<std::underlying_type_t<value_t>>, "Type must be unsigned");
 		const uint64_t max_val = static_cast<uint64_t>(val);
 		if (max_val <= (std::numeric_limits<uint8_t>::max() >> 2))
 		{
@@ -175,7 +175,7 @@ namespace propane
 			append_key(out_key, param[i]);
 		}
 	}
-	inline void make_key(type_idx type, span<const stackvar> param, vector<uint8_t>& out_key)
+	template<> inline void make_key<stackvar>(type_idx type, span<const stackvar> param, vector<uint8_t>& out_key)
 	{
 		out_key.clear();
 		append_key(out_key, type);
@@ -215,7 +215,7 @@ namespace propane
 
 		inline void make_key(vector<uint8_t>& out_key) const
 		{
-			return propane::make_key(return_type, parameters, out_key);
+			return propane::make_key<stackvar>(return_type, parameters, out_key);
 		}
 
 		// Intermediate
@@ -236,7 +236,7 @@ namespace propane
 
 		inline void make_key(vector<uint8_t>& out_key) const
 		{
-			return propane::make_key(object_type, span<const name_idx>(field_names.data(), field_names.size()), out_key);
+			return propane::make_key<name_idx>(object_type, field_names, out_key);
 		}
 	};
 

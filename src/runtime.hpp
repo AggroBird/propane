@@ -136,6 +136,7 @@ namespace propane
 	// Derivatives
 	template<typename value_t> struct derive_base_size { static constexpr size_t value = sizeof(value_t); };
 	template<> struct derive_base_size<void> { static constexpr size_t value = 0; };
+	template<typename value_t> inline constexpr size_t derive_base_size_v = derive_base_size<value_t>::value;
 
 	template<typename value_t> struct derive_type_index { static constexpr type_idx value = type_idx::invalid; };
 	template<> struct derive_type_index<i8> { static constexpr type_idx value = type_idx::i8; };
@@ -150,6 +151,7 @@ namespace propane
 	template<> struct derive_type_index<f64> { static constexpr type_idx value = type_idx::f64; };
 	template<> struct derive_type_index<vptr> { static constexpr type_idx value = type_idx::vptr; };
 	template<> struct derive_type_index<void> { static constexpr type_idx value = type_idx::voidtype; };
+	template<typename value_t> inline constexpr type_idx derive_type_index_v = derive_type_index<value_t>::value;
 
 	struct base_type_info
 	{
@@ -163,7 +165,7 @@ namespace propane
 
 		template<typename value_t> static constexpr base_type_info make(const char* name)
 		{
-			return base_type_info(name, derive_type_index<value_t>::value, derive_base_size<value_t>::value);
+			return base_type_info(name, derive_type_index_v<value_t>, derive_base_size_v<value_t>);
 		}
 
 		string_view name;
@@ -340,27 +342,27 @@ namespace propane
 	// Read/write bytecode
 	template<typename value_t> value_t read_bytecode(pointer_t& iptr) noexcept
 	{
-		static_assert(std::is_trivial<value_t>::value, "Trivial type required");
+		static_assert(std::is_trivial_v<value_t>, "Trivial type required");
 		return *reinterpret_cast<value_t*&>(iptr)++;
 	}
 	template<typename value_t> value_t& read_bytecode_ref(pointer_t& iptr) noexcept
 	{
-		static_assert(std::is_trivial<value_t>::value, "Trivial type required");
+		static_assert(std::is_trivial_v<value_t>, "Trivial type required");
 		return *reinterpret_cast<value_t*&>(iptr)++;
 	}
 	template<typename value_t> value_t read_bytecode(const_pointer_t& iptr) noexcept
 	{
-		static_assert(std::is_trivial<value_t>::value, "Trivial type required");
+		static_assert(std::is_trivial_v<value_t>, "Trivial type required");
 		return *reinterpret_cast<const value_t*&>(iptr)++;
 	}
 	template<typename value_t> void write_bytecode(pointer_t& iptr, const value_t& data) noexcept
 	{
-		static_assert(std::is_trivial<value_t>::value, "Trivial type required");
+		static_assert(std::is_trivial_v<value_t>, "Trivial type required");
 		*reinterpret_cast<value_t*&>(iptr)++ = data;
 	}
 	template<typename value_t> void append_bytecode(vector<uint8_t>& buf, const value_t& data)
 	{
-		static_assert(std::is_trivial<value_t>::value, "Trivial type required");
+		static_assert(std::is_trivial_v<value_t>, "Trivial type required");
 		const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&data);
 		buf.insert(buf.end(), ptr, ptr + sizeof(value_t));
 	}
@@ -422,13 +424,13 @@ namespace propane
 	}
 	template<typename dst_t> dst_t& write(address_t addr) noexcept
 	{
-		static_assert(std::is_trivial<dst_t>::value, "Type must be trivial");
+		static_assert(std::is_trivial_v<dst_t>, "Type must be trivial");
 		dst_t& dst = *reinterpret_cast<dst_t*>(addr.addr);
 		return dst;
 	}
 	template<typename dst_t> dst_t& write(void* ptr) noexcept
 	{
-		static_assert(std::is_trivial<dst_t>::value, "Type must be trivial");
+		static_assert(std::is_trivial_v<dst_t>, "Type must be trivial");
 		dst_t& dst = *reinterpret_cast<dst_t*>(ptr);
 		return dst;
 	}
@@ -436,7 +438,7 @@ namespace propane
 	// Compare
 	template<typename value_t> constexpr int32_t compare(value_t lhs, value_t rhs)
 	{
-		static_assert(std::is_arithmetic<value_t>::value || std::is_pointer<value_t>::value, "Arithmetic type required for compare");
+		static_assert(std::is_arithmetic_v<value_t> || std::is_pointer_v<value_t>, "Arithmetic type required for compare");
 		return (lhs < rhs) ? -1 : (lhs > rhs) ? 1 : 0;
 	}
 }

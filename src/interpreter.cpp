@@ -88,8 +88,8 @@ namespace propane
 			constants(asm_data.constants.info.data(), asm_data.constants.data.data()),
 			database(asm_data.database),
 			int_type(get_type(type_idx::i32)),
-			offset_type(get_type(derive_type_index<offset_t>::value)),
-			size_type(get_type(derive_type_index<size_t>::value)),
+			offset_type(get_type(derive_type_index_v<offset_t>)),
+			size_type(get_type(derive_type_index_v<size_t>)),
 			vptr_type(get_type(type_idx::vptr))
 		{
 			// Try and find a stack that fits
