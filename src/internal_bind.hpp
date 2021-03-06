@@ -3,11 +3,22 @@
 
 #include "internal.hpp"
 
-#define BIND_INTERNAL(name) bind_method<__LINE__>(#name, internal::name)
-#define BIND_INTERNAL_FUNC(name, func) bind_method<__LINE__>(name, func)
+#define BIND_INTERNAL(name, method) bind_method<__LINE__>(name, method)
+#define BIND_OVERLOAD(name, method, signature) bind_overload<__LINE__, signature>(name, method)
 
 namespace propane
 {
+	template<typename value_t, bool pointer> struct decay_base
+	{
+		typedef std::decay<value_t>::type type;
+	};
+	template<typename value_t> struct decay_base<value_t, true>
+	{
+		typedef std::decay<typename std::remove_pointer<value_t>::type>::type* type;
+	};
+
+	template <class value_t> using decay_base_t = typename decay_base<value_t, std::is_pointer<value_t>::value>::type;
+
 	// Internal call templates
 	template<typename... parameters> class method_signature_param;
 	template<> class method_signature_param<>
@@ -27,10 +38,10 @@ namespace propane
 	public:
 		static inline void generate(stackvar* result, size_t& offset) noexcept
 		{
-			constexpr type_idx val = derive_type_index<param>::value;
+			constexpr type_idx val = derive_type_index<decay_base_t<param>>::value;
 			static_assert(val != type_idx::invalid, "Unsupported base type provided");
 			*result++ = stackvar(val, offset);
-			offset += derive_base_size<param>::value;
+			offset += derive_base_size<decay_base_t<param>>::value;
 			method_signature_param<parameters...>::generate(result, offset);
 		}
 		template<size_t idx, typename... tuple_args> static inline void read_value(tuple<tuple_args...>& tup, const_pointer_t& data) noexcept
@@ -100,7 +111,7 @@ namespace propane
 		internal_callable_info result;
 		result.index = method_idx(internal_callable_info::initialized++);
 		result.name = name;
-		result.return_type = derive_type_index<return_type>::value;
+		result.return_type = derive_type_index<decay_base_t<return_type>>::value;
 		result.parameters = block<stackvar>(sizeof...(parameters));
 		method_signature_param<parameters...>::generate(result.parameters.data(), result.parameters_size);
 		result.call = bind::invoke;
@@ -111,6 +122,10 @@ namespace propane
 		for (const auto& it : result.parameters) internal_callable_info::hash = fnv::append(internal_callable_info::hash, it.type);
 
 		return result;
+	}
+	template<size_t unique_id, typename overload> inline internal_callable_info bind_overload(string_view name, overload method)
+	{
+		return bind_method<unique_id>(name, method);
 	}
 }
 

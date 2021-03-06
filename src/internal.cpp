@@ -8,86 +8,45 @@ namespace propane
 	// Internal method definitions
 	namespace internal
 	{
-		void* malloc(size_t size)
-		{
-			return ::malloc(size);
-		}
-		void free(void* ptr)
-		{
-			return ::free(ptr);
-		}
-
 		void memset(void* ptr, uint8_t set, size_t len)
 		{
 			::memset(ptr, set, len);
 		}
-		void memcpy(void* dst, void* src, size_t len)
+		void memcpy(void* dst, const void* src, size_t len)
 		{
 			::memcpy(dst, src, len);
 		}
-		void memmove(void* dst, void* src, size_t len)
+		void memmove(void* dst, const void* src, size_t len)
 		{
 			::memmove(dst, src, len);
 		}
 
 		int64_t time()
 		{
-			return ::time(0);
-		}
-
-		double floor(double d)
-		{
-			return ::floor(d);
-		}
-		double ceil(double d)
-		{
-			return ::ceil(d);
-		}
-		double round(double d)
-		{
-			return ::round(d);
-		}
-
-		double sin(double d)
-		{
-			return ::sin(d);
-		}
-		double cos(double d)
-		{
-			return ::cos(d);
-		}
-		double tan(double d)
-		{
-			return ::tan(d);
-		}
-
-		int rand()
-		{
-			return ::rand();
+			return ::time(nullptr);
 		}
 	}
 
 	// Internal method binds
 	const internal_callable_info internal_call_array[]
 	{
-		BIND_INTERNAL(malloc),
-		BIND_INTERNAL(free),
+		BIND_INTERNAL("malloc", ::malloc),
+		BIND_INTERNAL("free", ::free),
 
-		BIND_INTERNAL(memset),
-		BIND_INTERNAL(memcpy),
-		BIND_INTERNAL(memmove),
+		BIND_INTERNAL("memset", internal::memset),
+		BIND_INTERNAL("memcpy", internal::memcpy),
+		BIND_INTERNAL("memmove", internal::memmove),
 
-		BIND_INTERNAL(time),
+		BIND_INTERNAL("time", internal::time),
 
-		BIND_INTERNAL(floor),
-		BIND_INTERNAL(ceil),
-		BIND_INTERNAL(round),
+		BIND_OVERLOAD("floor", ::floor, double(double)),
+		BIND_OVERLOAD("ceil", ::ceil, double(double)),
+		BIND_OVERLOAD("round", ::round, double(double)),
+		BIND_OVERLOAD("sin", ::sin, double(double)),
+		BIND_OVERLOAD("cos", ::cos, double(double)),
+		BIND_OVERLOAD("tan", ::tan, double(double)),
 
-		BIND_INTERNAL(sin),
-		BIND_INTERNAL(cos),
-		BIND_INTERNAL(tan),
-
-		BIND_INTERNAL(rand),
+		BIND_INTERNAL("rand", ::rand),
 	};
 
 
@@ -122,9 +81,11 @@ namespace propane
 
 	void call_internal(method_idx index, void* return_value_address, const void* parameter_stack_address)
 	{
-		if (size_t(index) < icall_count)
+		if (size_t(index) >= icall_count)
 		{
-			internal_call_array[size_t(index)].call(reinterpret_cast<pointer_t>(return_value_address), reinterpret_cast<const_pointer_t>(parameter_stack_address));
+			fprintf(stderr, "Internal method call index out of range");
+			abort();
 		}
+		internal_call_array[size_t(index)].call(reinterpret_cast<pointer_t>(return_value_address), reinterpret_cast<const_pointer_t>(parameter_stack_address));
 	}
 }

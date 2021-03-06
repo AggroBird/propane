@@ -2248,8 +2248,11 @@ namespace propane
 			}
 			else
 			{
+				ASSERT(method.bytecode.size() == sizeof(method_idx), "Invalid internal index");
+				const method_idx internal_idx = *reinterpret_cast<const method_idx*>(method.bytecode.data());
+
 				// Invoke internal
-				call_internal(method.index, stack_data + return_offset, stack_data + param_offset);
+				call_internal(internal_idx, stack_data + return_offset, stack_data + param_offset);
 
 				// Set return value here since we return immediately
 				return_value_addr = return_value ? address_t(&return_type, stack_data + return_offset) : address_t();
