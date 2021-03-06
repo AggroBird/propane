@@ -6,34 +6,34 @@
 
 namespace propane
 {
-	class intermediate
-	{
-	public:
-		intermediate() = default;
-		~intermediate() = default;
+    class intermediate
+    {
+    public:
+        intermediate() = default;
+        ~intermediate() = default;
 
-		intermediate(const intermediate&) = default;
-		intermediate& operator=(const intermediate&) = default;
+        intermediate(const intermediate&) = default;
+        intermediate& operator=(const intermediate&) = default;
 
-		intermediate(intermediate&&) noexcept = default;
-		intermediate& operator=(intermediate&&) noexcept = default;
+        intermediate(intermediate&&) noexcept = default;
+        intermediate& operator=(intermediate&&) noexcept = default;
 
-		bool is_valid() const noexcept;
-		operator bool() const noexcept;
+        bool is_valid() const noexcept;
+        operator bool() const noexcept;
 
-		toolchain_version version() const noexcept;
-		bool is_compatible() const noexcept;
+        toolchain_version version() const noexcept;
+        bool is_compatible() const noexcept;
 
-		std::span<const uint8_t> data() const noexcept;
-		bool load(std::span<const uint8_t> from_bytes);
+        std::span<const uint8_t> data() const noexcept;
+        bool load(std::span<const uint8_t> from_bytes);
 
-		intermediate operator+(const intermediate&) const;
-		intermediate& operator+=(const intermediate&);
+        intermediate operator+(const intermediate&) const;
+        intermediate& operator+=(const intermediate&);
 
-	private:
-		friend class gen_intermediate_data;
-		block<uint8_t> content;
-	};
+    private:
+        friend class gen_intermediate_data;
+        block<uint8_t> content;
+    };
 }
 
 #endif

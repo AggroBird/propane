@@ -5,20 +5,20 @@
 
 namespace propane
 {
-	template<uint32_t language> class parser
-	{
-	public:
-		parser() = delete;
-	};
+    template<uint32_t language> class parser
+    {
+    public:
+        parser() = delete;
+    };
 
-	// Experimental parser for parsing Propane from text
-	class parser_propane
-	{
-	public:
-		static intermediate parse(const char* file_path);
-	};
+    // Experimental parser for parsing Propane from text
+    class parser_propane
+    {
+    public:
+        static intermediate parse(const char* file_path);
+    };
 
-	template<> class parser<language_propane> : public parser_propane {};
+    template<> class parser<language_propane> : public parser_propane {};
 }
 
 #endif

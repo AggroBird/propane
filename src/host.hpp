@@ -11,23 +11,23 @@
 
 namespace propane
 {
-	struct hostmem
-	{
-		void* address;
-		size_t size;
+    struct hostmem
+    {
+        void* address;
+        size_t size;
 
-		inline operator bool() const noexcept
-		{
-			return address != nullptr;
-		}
-	};
+        inline operator bool() const noexcept
+        {
+            return address != nullptr;
+        }
+    };
 
-	namespace host
-	{
-		hostmem allocate(size_t);
-		bool protect(hostmem);
-		void free(hostmem);
-	}
+    namespace host
+    {
+        hostmem allocate(size_t);
+        bool protect(hostmem);
+        void free(hostmem);
+    }
 }
 
 #endif

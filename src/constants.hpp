@@ -6,15 +6,15 @@
 
 namespace propane
 {
-	namespace constants
-	{
-		constexpr string_view intermediate_header = "PINT";
-		constexpr string_view assembly_header = "PASM";
-		constexpr string_view footer = "END";
+    namespace constants
+    {
+        constexpr string_view intermediate_header = "PINT";
+        constexpr string_view assembly_header = "PASM";
+        constexpr string_view footer = "END";
 
-		bool validate_intermediate_header(span<const uint8_t> data) noexcept;
-		bool validate_assembly_header(span<const uint8_t> data) noexcept;
-	}
+        bool validate_intermediate_header(span<const uint8_t> data) noexcept;
+        bool validate_assembly_header(span<const uint8_t> data) noexcept;
+    }
 }
 
 #endif

@@ -1,6 +1,6 @@
-<?xml version="1.0" encoding="utf-8"?> 
+<?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
-  
+
   <Type Name="propane::block&lt;*&gt;">
     <Intrinsic Name="size" Expression="len" />
     <DisplayString>{{ size={len} }}</DisplayString>
@@ -22,7 +22,7 @@
       </ArrayItems>
     </Expand>
   </Type>
-  
+
   <Type Name="propane::aligned_t&lt;*&gt;">
     <DisplayString>{*(type*)&amp;data}</DisplayString>
   </Type>
@@ -36,5 +36,5 @@
       </IndexListItems>
     </Expand>
   </Type>
-  
+
 </AutoVisualizer>

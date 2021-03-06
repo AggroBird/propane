@@ -6,35 +6,35 @@
 
 namespace propane
 {
-	class assembly
-	{
-	public:
-		assembly() = default;
-		explicit assembly(const class intermediate&);
-		~assembly() = default;
+    class assembly
+    {
+    public:
+        assembly() = default;
+        explicit assembly(const class intermediate&);
+        ~assembly() = default;
 
-		assembly(const assembly&) = default;
-		assembly& operator=(const assembly&) = default;
+        assembly(const assembly&) = default;
+        assembly& operator=(const assembly&) = default;
 
-		assembly(assembly&&) noexcept = default;
-		assembly& operator=(assembly&&) noexcept = default;
+        assembly(assembly&&) noexcept = default;
+        assembly& operator=(assembly&&) noexcept = default;
 
-		bool is_valid() const noexcept;
-		operator bool() const noexcept;
+        bool is_valid() const noexcept;
+        operator bool() const noexcept;
 
-		toolchain_version version() const noexcept;
-		bool is_compatible() const noexcept;
+        toolchain_version version() const noexcept;
+        bool is_compatible() const noexcept;
 
-		const assembly_data& assembly_ref() const noexcept;
-		std::span<const uint8_t> assembly_binary() const noexcept;
+        const assembly_data& assembly_ref() const noexcept;
+        std::span<const uint8_t> assembly_binary() const noexcept;
 
-		std::span<const uint8_t> data() const noexcept;
-		bool load(std::span<const uint8_t> from_bytes);
+        std::span<const uint8_t> data() const noexcept;
+        bool load(std::span<const uint8_t> from_bytes);
 
-	private:
-		friend class asm_assembly_data;
-		block<uint8_t> content;
-	};
+    private:
+        friend class asm_assembly_data;
+        block<uint8_t> content;
+    };
 }
 
 #endif
