@@ -48,6 +48,8 @@ namespace propane
 			restore_lookup_tables();
 			restore_generated_types();
 
+			keybuf.reserve(32);
+
 			initialize_translations(type_translations, merge.types.size());
 			initialize_translations(method_translations, merge.methods.size());
 			initialize_translations(signature_translations, merge.signatures.size());
@@ -247,12 +249,12 @@ namespace propane
 				translate(offset.name.object_type);
 				for (auto& fn : offset.name.field_names) rename(fn);
 				
-				auto key = offset.name.make_key();
-				auto find = offset_lookup.find(key);
+				offset.name.make_key(keybuf);
+				auto find = offset_lookup.find(keybuf);
 				if (find == offset_lookup.end())
 				{
 					const offset_idx dst_idx = offset_idx(offsets.size());
-					offset_lookup.emplace(std::move(key), dst_idx);
+					offset_lookup.emplace(keybuf, dst_idx);
 					offsets.push_back(std::move(offset));
 					offset_translations[src_idx] = dst_idx;
 				}
@@ -334,6 +336,8 @@ namespace propane
 		indexed_block<name_idx, name_idx> name_translations;
 		indexed_block<meta_idx, meta_idx> meta_translations;
 
+		vector<uint8_t> keybuf;
+
 		template<typename value_t> inline void initialize_translations(indexed_block<value_t, value_t>& block, size_t num)
 		{
 			if (num > 0)
@@ -383,14 +387,14 @@ namespace propane
 			
 			signature.signature_type = type_idx::invalid;
 
-			auto key = signature.make_key();
-			auto find = signature_lookup.find(key);
+			signature.make_key(keybuf);
+			auto find = signature_lookup.find(keybuf);
 			if (find == signature_lookup.end())
 			{
 				const signature_idx dst_idx = signature_idx(signatures.size());
 				signature.index = dst_idx;
 				signatures.push_back(std::move(signature));
-				signature_lookup.emplace(std::move(key), dst_idx);
+				signature_lookup.emplace(keybuf, dst_idx);
 				signature.index = signature_idx::invalid;
 				return dst_idx;
 			}

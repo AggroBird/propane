@@ -140,19 +140,52 @@ namespace propane
 		metadata meta = { meta_idx::invalid, 0 };
 	};
 
-	// Methods
-	inline block<index_t> make_key(type_idx return_type, span<const stackvar> parameters)
+	// Key generation
+	template<typename value_t> inline void append_key(vector<uint8_t>& out_key, value_t val)
 	{
-		block<index_t> result(parameters.size() + 1);
-		index_t* ptr = result.data();
-		*ptr++ = static_cast<index_t>(return_type);
-		for (size_t i = 0; i < parameters.size(); i++)
+		static_assert(std::is_unsigned<value_t>::value || std::is_unsigned<std::underlying_type<value_t>::type>::value, "Type must be unsigned");
+		const uint64_t max_val = static_cast<uint64_t>(val);
+		if (max_val <= (std::numeric_limits<uint8_t>::max() >> 2))
 		{
-			*ptr++ = static_cast<index_t>(parameters[i].type);
+			const uint8_t u8 = static_cast<uint8_t>(max_val << 2);
+			append_bytecode(out_key, u8);
 		}
-		return result;
+		else if (max_val <= (std::numeric_limits<uint16_t>::max() >> 2))
+		{
+			const uint16_t u16 = static_cast<uint16_t>(max_val << 2) | uint16_t(1);
+			append_bytecode(out_key, u16);
+		}
+		else if (max_val <= (std::numeric_limits<uint32_t>::max() >> 2))
+		{
+			const uint32_t u32 = static_cast<uint32_t>(max_val << 2) | uint32_t(2);
+			append_bytecode(out_key, u32);
+		}
+		else
+		{
+			append_bytecode(out_key, uint8_t(3));
+			append_bytecode(out_key, max_val);
+		}
+	}
+	template<typename value_t> inline void make_key(type_idx type, span<const value_t> param, vector<uint8_t>& out_key)
+	{
+		out_key.clear();
+		append_key(out_key, type);
+		for (size_t i = 0; i < param.size(); i++)
+		{
+			append_key(out_key, param[i]);
+		}
+	}
+	inline void make_key(type_idx type, span<const stackvar> param, vector<uint8_t>& out_key)
+	{
+		out_key.clear();
+		append_key(out_key, type);
+		for (size_t i = 0; i < param.size(); i++)
+		{
+			append_key(out_key, param[i].type);
+		}
 	}
 
+	// Methods
 	class gen_signature
 	{
 	public:
@@ -180,9 +213,9 @@ namespace propane
 			return return_type != type_idx::voidtype;
 		}
 
-		inline block<index_t> make_key() const
+		inline void make_key(vector<uint8_t>& out_key) const
 		{
-			return propane::make_key(return_type, parameters);
+			return propane::make_key(return_type, parameters, out_key);
 		}
 
 		// Intermediate
@@ -190,18 +223,6 @@ namespace propane
 
 		bool is_resolved = false;
 	};
-
-	inline block<index_t> make_key(type_idx object_type, span<const name_idx> field_names)
-	{
-		block<index_t> result(field_names.size() + 1);
-		index_t* ptr = result.data();
-		*ptr++ = static_cast<index_t>(object_type);
-		for (size_t i = 0; i < field_names.size(); i++)
-		{
-			*ptr++ = static_cast<index_t>(field_names[i]);
-		}
-		return result;
-	}
 
 	struct gen_field_address
 	{
@@ -213,9 +234,9 @@ namespace propane
 		type_idx object_type = type_idx::invalid;
 		block<name_idx> field_names;
 
-		inline block<index_t> make_key() const
+		inline void make_key(vector<uint8_t>& out_key) const
 		{
-			return propane::make_key(object_type, field_names);
+			return propane::make_key(object_type, span<const name_idx>(field_names.data(), field_names.size()), out_key);
 		}
 	};
 
@@ -293,18 +314,18 @@ namespace propane
 
 	struct key_hash
 	{
-		inline size_t operator()(const block<index_t>& key) const
+		inline size_t operator()(const vector<uint8_t>& key) const
 		{
-			return fnv::hash(key.data(), key.size() * sizeof(index_t));
+			return fnv::hash(key.data(), key.size() * sizeof(vector<uint8_t>::value_type));
 		}
 	};
 
 	struct key_compare
 	{
-		inline bool operator()(const block<index_t>& lhs, const block<index_t>& rhs) const
+		inline bool operator()(const vector<uint8_t>& lhs, const vector<uint8_t>& rhs) const
 		{
 			if (lhs.size() != rhs.size()) return false;
-			return std::memcmp(lhs.data(), rhs.data(), lhs.size() * sizeof(index_t)) == 0;
+			return std::memcmp(lhs.data(), rhs.data(), lhs.size() * sizeof(vector<uint8_t>::value_type)) == 0;
 		}
 	};
 
@@ -327,10 +348,10 @@ namespace propane
 		indexed_vector<type_idx, gen_type> types;
 		indexed_vector<method_idx, gen_method> methods;
 		indexed_vector<signature_idx, gen_signature> signatures;
-		unordered_map<block<index_t>, signature_idx, key_hash, key_compare> signature_lookup;
+		unordered_map<vector<uint8_t>, signature_idx, key_hash, key_compare> signature_lookup;
 
 		indexed_vector<offset_idx, gen_field_offset> offsets;
-		unordered_map<block<index_t>, offset_idx, key_hash, key_compare> offset_lookup;
+		unordered_map<vector<uint8_t>, offset_idx, key_hash, key_compare> offset_lookup;
 
 		gen_data_table globals;
 		gen_data_table constants;

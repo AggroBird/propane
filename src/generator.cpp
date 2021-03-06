@@ -148,6 +148,9 @@ namespace propane
 		meta_idx meta_index = meta_idx::invalid;
 		index_t line_number = 0;
 
+		vector<uint8_t> keybuf;
+
+
 		inline file_meta get_meta() const
 		{
 			return file_meta(metatable[meta_index].name, line_number);
@@ -922,6 +925,8 @@ namespace propane
 	generator_impl::generator_impl()
 	{
 		initialize_base_types();
+
+		keybuf.reserve(32);
 	}
 	generator_impl::~generator_impl()
 	{
@@ -965,21 +970,22 @@ namespace propane
 		VALIDATE_TYPES(parameter_types, gen.types.size());
 		VALIDATE_PARAM_COUNT(parameter_types.size());
 
-		gen_signature sig;
-		sig.return_type = return_type;
-		sig.parameters.reserve(parameter_types.size());
-		for (auto it : parameter_types)
-		{
-			sig.parameters.push_back(stackvar(it));
-		}
-
-		auto key = sig.make_key();
-		auto find = gen.signature_lookup.find(key);
+		make_key(return_type, parameter_types, gen.keybuf);
+		auto find = gen.signature_lookup.find(gen.keybuf);
 		if (find == gen.signature_lookup.end())
 		{
 			const signature_idx index = signature_idx(gen.signatures.size());
+
+			gen_signature sig;
 			sig.index = index;
-			gen.signature_lookup.emplace(std::move(key), index);
+			sig.return_type = return_type;
+			sig.parameters.reserve(parameter_types.size());
+			for (auto it : parameter_types)
+			{
+				sig.parameters.push_back(stackvar(it));
+			}
+
+			gen.signature_lookup.emplace(gen.keybuf, index);
 			gen.signatures.push_back(std::move(sig));
 			return index;
 		}
@@ -996,8 +1002,8 @@ namespace propane
 		VALIDATE_INDEX(type, gen.types.size());
 		VALIDATE_INDICES(fields, gen.database.size());
 
-		auto key = make_key(type, fields);
-		auto find = gen.offset_lookup.find(key);
+		make_key(type, fields, gen.keybuf);
+		auto find = gen.offset_lookup.find(gen.keybuf);
 		if (find == gen.offset_lookup.end())
 		{
 			// New offset
@@ -1005,7 +1011,7 @@ namespace propane
 			gen_field_address addr(type, std::move(field_indices));
 			const offset_idx index = offset_idx(gen.offsets.size());
 			gen.offsets.push_back(std::move(addr));
-			gen.offset_lookup.emplace(std::move(key), index);
+			gen.offset_lookup.emplace(gen.keybuf, index);
 			return index;
 		}
 		else

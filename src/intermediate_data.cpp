@@ -118,15 +118,20 @@ namespace propane
 
 	void gen_intermediate_data::restore_lookup_tables()
 	{
+		vector<uint8_t> keybuf;
+		keybuf.reserve(32);
+
 		for (size_t i = 0; i < signatures.size(); i++)
 		{
 			const signature_idx index = signature_idx(i);
-			signature_lookup.emplace(std::move(signatures[index].make_key()), index);
+			signatures[index].make_key(keybuf);
+			signature_lookup.emplace(keybuf, index);
 		}
 		for (size_t i = 0; i < offsets.size(); i++)
 		{
 			const offset_idx index = offset_idx(i);
-			offset_lookup.emplace(std::move(offsets[index].name.make_key()), index);
+			offsets[index].name.make_key(keybuf);
+			offset_lookup.emplace(keybuf, index);
 		}
 	}
 	void gen_intermediate_data::restore_generated_types()

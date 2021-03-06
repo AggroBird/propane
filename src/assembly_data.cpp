@@ -160,52 +160,61 @@ namespace propane
 	class assembly_linker final : public asm_assembly_data
 	{
 	public:
-		assembly_linker(gen_intermediate_data&& im_data) :
+		assembly_linker(gen_intermediate_data&& data) :
 			size_type(derive_type_index<size_t>::value),
 			offset_type(derive_type_index<offset_t>::value),
 			ptr_size(get_base_type_size(type_idx::vptr))
 		{
 			internal_hash = internal_call_hash();
 
-			im_data.restore_generated_types();
+			data.restore_generated_types();
 
-			// Initialize internal calls
-			gen_intermediate_data internal;
-			internal.initialize_base_types();
-
+			// Link internals
 			const size_t icall_count = internal_call_count();
+			unordered_map<string_view, internal_call_info> internals;
+			vector<uint8_t> keybuf;
 			for (size_t i = 0; i < icall_count; i++)
 			{
 				const internal_call_info& icall = get_internal_call(i);
-				const name_idx name = internal.database.emplace(icall.name, icall.index).key;
-
-				// Create signature
-				auto key = make_key(icall.return_type, icall.parameters);
-				auto find = internal.signature_lookup.find(key);
-				signature_idx sig_idx;
-				if (find == internal.signature_lookup.end())
-				{
-					sig_idx = signature_idx(internal.signatures.size());
-					gen_signature signature(sig_idx, icall.return_type, icall.parameters);
-					signature.is_resolved = true;
-					signature.parameters_size = icall.parameters_size;
-					internal.signature_lookup.emplace(std::move(key), sig_idx);
-					internal.signatures.push_back(std::move(signature));
-				}
-				else
-				{
-					sig_idx = find->second;
-				}
-
-				// Create method
-				gen_method method(name, icall.index);
-				method.signature = sig_idx;
-				method.flags |= (extended_flags::is_defined | type_flags::is_internal);
-				internal.methods.push_back(std::move(method));
+				internals.emplace(icall.name, icall);
 			}
+			for (auto& it : data.methods)
+			{
+				if (!it.is_defined())
+				{
+					const string_view method_name = data.database[it.name].name;
+					auto find_internal = internals.find(method_name);
+					VALIDATE_METHOD_DEFINITION(find_internal != internals.end(), method_name);
 
-			// Merge internals
-			gen_intermediate_data data = gen_intermediate_data::merge(std::move(internal), std::move(im_data));
+					keybuf.reserve(32);
+
+					// Create signature
+					signature_idx sig_idx;
+					const internal_call_info& icall = find_internal->second;
+					make_key(icall.return_type, icall.parameters, keybuf);
+					auto find = data.signature_lookup.find(keybuf);
+					if (find == data.signature_lookup.end())
+					{
+						sig_idx = signature_idx(data.signatures.size());
+						gen_signature signature(sig_idx, icall.return_type, icall.parameters);
+						signature.is_resolved = true;
+						signature.parameters_size = icall.parameters_size;
+						data.signature_lookup.emplace(keybuf, sig_idx);
+						data.signatures.push_back(std::move(signature));
+					}
+					else
+					{
+						sig_idx = find->second;
+					}
+
+					// Create method
+					gen_method method(it.name, it.index);
+					method.signature = sig_idx;
+					append_bytecode(method.bytecode, icall.index);
+					method.flags |= (extended_flags::is_defined | type_flags::is_internal);
+					it = std::move(method);
+				}
+			}
 
 			// Move over objects
 			for (auto& t : data.types) types.push_back(std::move(t));
