@@ -689,7 +689,7 @@ namespace propane
         return impl().index;
     }
 
-    void generator::method_writer::add_stack(span<const type_idx> types)
+    void generator::method_writer::push(span<const type_idx> types)
     {
         auto& writer = impl();
 

@@ -221,10 +221,10 @@ namespace propane
             method_idx index() const;
 
             // Variable stack
-            void add_stack(std::span<const type_idx> types);
-            inline void add_stack(std::initializer_list<type_idx> types)
+            void push(std::span<const type_idx> types);
+            inline void push(std::initializer_list<type_idx> types)
             {
-                add_stack(init_span(types));
+                push(init_span(types));
             }
 
             std::span<const stackvar> stack() const;

@@ -1,4 +1,4 @@
-#ifndef WITHOUT_EXAMPLE
+#if !WITHOUT_EXAMPLE
 
 #include "propane_generator.hpp"
 #include "propane_parser.hpp"
@@ -21,7 +21,7 @@ int32_t main()
         propane::generator::method_writer& main = gen.define_method(main_idx, main_sig);
 
         // Create a stack with two integers, 4 and 5, and an extra number to hold the result
-        main.set_stack({
+        main.push({
                 propane::type_idx::i32,
                 propane::type_idx::i32,
                 propane::type_idx::i32
