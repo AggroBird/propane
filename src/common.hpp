@@ -31,6 +31,7 @@ using std::span;
 #include <iostream>
 #include <type_traits>
 #include <utility>
+#include <cstring>
 
 #define CLASS_DEFAULT(type, copy, move, ...)    \
 type(const type&) = copy;                       \

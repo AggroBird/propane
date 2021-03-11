@@ -2,6 +2,7 @@
 
 #include <cstring>
 #include <cstdlib>
+#include <cmath>
 
 namespace propane
 {
