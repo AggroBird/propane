@@ -302,23 +302,23 @@ namespace propane
     struct address_t
     {
         address_t(const type* type = nullptr, pointer_t addr = nullptr) :
-            type(type),
+            type_ptr(type),
             addr(addr) {}
 
-        const type* type;
+        const type* type_ptr;
         pointer_t addr;
     };
 
     struct const_address_t
     {
         const_address_t(const type* type = nullptr, const_pointer_t addr = nullptr) :
-            type(type),
+            type_ptr(type),
             addr(addr) {}
         const_address_t(const address_t& addr) :
-            type(addr.type),
+            type_ptr(addr.type_ptr),
             addr(addr.addr) {}
 
-        const type* type;
+        const type* type_ptr;
         const_pointer_t addr;
     };
 

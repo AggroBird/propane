@@ -7,30 +7,30 @@ namespace propane
 {
     union literal_t
     {
-        literal_t() : u64(0) {}
-        literal_t(i8 i8) : i8(i8) {}
-        literal_t(u8 u8) : u8(u8) {}
-        literal_t(i16 i16) : i16(i16) {}
-        literal_t(u16 u16) : u16(u16) {}
-        literal_t(i32 i32) : i32(i32) {}
-        literal_t(u32 u32) : u32(u32) {}
-        literal_t(i64 i64) : i64(i64) {}
-        literal_t(u64 u64) : u64(u64) {}
-        literal_t(f32 f32) : f32(f32) {}
-        literal_t(f64 f64) : f64(f64) {}
-        literal_t(vptr vptr) : vptr(vptr) {}
+        literal_t() : as_u64(0) {}
+        literal_t(i8 i8) : as_i8(i8) {}
+        literal_t(u8 u8) : as_u8(u8) {}
+        literal_t(i16 i16) : as_i16(i16) {}
+        literal_t(u16 u16) : as_u16(u16) {}
+        literal_t(i32 i32) : as_i32(i32) {}
+        literal_t(u32 u32) : as_u32(u32) {}
+        literal_t(i64 i64) : as_i64(i64) {}
+        literal_t(u64 u64) : as_u64(u64) {}
+        literal_t(f32 f32) : as_f32(f32) {}
+        literal_t(f64 f64) : as_f64(f64) {}
+        literal_t(vptr vptr) : as_vptr(vptr) {}
 
-        i8 i8;
-        u8 u8;
-        i16 i16;
-        u16 u16;
-        i32 i32;
-        u32 u32;
-        i64 i64;
-        u64 u64;
-        f32 f32;
-        f64 f64;
-        vptr vptr;
+        i8 as_i8;
+        u8 as_u8;
+        i16 as_i16;
+        u16 as_u16;
+        i32 as_i32;
+        u32 as_u32;
+        i64 as_i64;
+        u64 as_u64;
+        f32 as_f32;
+        f64 as_f64;
+        vptr as_vptr;
     };
     static_assert(sizeof(literal_t) == sizeof(uint64_t), "Literal size invalid");
 
@@ -113,14 +113,14 @@ namespace propane
             switch (literal.type)
             {
                 // First, cast to the encountered constant, then negate if applicable, then cast to the destination number type
-                case type_idx::i8: { result.value = value_t(literal.value.i8); break; }
-                case type_idx::u8: { result.value = value_t(literal.value.u8); break; }
-                case type_idx::i16: { result.value = value_t(literal.value.i16); break; }
-                case type_idx::u16: { result.value = value_t(literal.value.u16); break; }
-                case type_idx::i32: { result.value = value_t(literal.value.i32); break; }
-                case type_idx::u32: { result.value = value_t(literal.value.u32); break; }
-                case type_idx::i64: { result.value = value_t(literal.value.i64); break; }
-                case type_idx::u64: { result.value = value_t(literal.value.u64); break; }
+                case type_idx::i8: { result.value = value_t(literal.value.as_i8); break; }
+                case type_idx::u8: { result.value = value_t(literal.value.as_u8); break; }
+                case type_idx::i16: { result.value = value_t(literal.value.as_i16); break; }
+                case type_idx::u16: { result.value = value_t(literal.value.as_u16); break; }
+                case type_idx::i32: { result.value = value_t(literal.value.as_i32); break; }
+                case type_idx::u32: { result.value = value_t(literal.value.as_u32); break; }
+                case type_idx::i64: { result.value = value_t(literal.value.as_i64); break; }
+                case type_idx::u64: { result.value = value_t(literal.value.as_u64); break; }
                 default: return result;
             }
             result.type = derive_type_index_v<value_t>;

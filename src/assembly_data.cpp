@@ -1163,8 +1163,6 @@ namespace propane
         unordered_map<name_idx, global_idx> method_ptr_lookup;
     };
 
-    static const assembly_data empty_assembly;
-
     namespace constants
     {
         constexpr size_t data_offset = assembly_header.size() + sizeof(toolchain_version);
@@ -1212,6 +1210,8 @@ namespace propane
             return *reinterpret_cast<const assembly_data*>(content.data() + constants::data_offset);
         }
 
+        static thread_local assembly_data empty_assembly;
+        memset(&empty_assembly, 0, sizeof(empty_assembly));
         return empty_assembly;
     }
     span<const uint8_t> assembly::assembly_binary() const noexcept

@@ -3,6 +3,8 @@
 #include "errors.hpp"
 #include "host.hpp"
 
+#include <cmath>
+
 #define VALIDATE(errc, expr, fmt, ...) ENSURE(errc, expr, propane::runtime_exception, fmt, __VA_ARGS__)
 
 #define VALIDATE_ASSEMBLY(expr) VALIDATE(ERRC::RTM_INVALID_ASSEMBLY, expr, \
@@ -337,7 +339,7 @@ namespace propane
                 case subcode(42): write<double>(lhs_addr) = (double)read<uint64_t>(rhs_addr); return;
                 case subcode(43): write<double>(lhs_addr) = (double)read<float>(rhs_addr); return;
                 case subcode(44): write<double>(lhs_addr) = read<double>(rhs_addr); return;
-                case subcode(45): memcpy(lhs_addr.addr, rhs_addr.addr, rhs_addr.type->total_size); break;
+                case subcode(45): memcpy(lhs_addr.addr, rhs_addr.addr, rhs_addr.type_ptr->total_size); break;
             }
         }
         inline void conv() noexcept
@@ -945,7 +947,7 @@ namespace propane
             auto lhs_addr = read_address(false);
             auto rhs_addr = read_address(true);
 
-            const size_t underlying_size = lhs_addr.type->generated.pointer.underlying_size;
+            const size_t underlying_size = lhs_addr.type_ptr->generated.pointer.underlying_size;
             switch (sub)
             {
                 case subcode(0): write<pointer_t>(lhs_addr) += ((size_t)underlying_size * (size_t)read<int8_t>(rhs_addr)); return;
@@ -964,7 +966,7 @@ namespace propane
             auto lhs_addr = read_address(false);
             auto rhs_addr = read_address(true);
 
-            const size_t underlying_size = lhs_addr.type->generated.pointer.underlying_size;
+            const size_t underlying_size = lhs_addr.type_ptr->generated.pointer.underlying_size;
             switch (sub)
             {
                 case subcode(0): write<pointer_t>(lhs_addr) -= ((size_t)underlying_size * (size_t)read<int8_t>(rhs_addr)); return;
@@ -982,7 +984,7 @@ namespace propane
             auto lhs_addr = read_address(false);
             auto rhs_addr = read_address(true);
 
-            const offset_t underlying_size = offset_t(lhs_addr.type->generated.pointer.underlying_size);
+            const offset_t underlying_size = offset_t(lhs_addr.type_ptr->generated.pointer.underlying_size);
             const offset_t lhs = reinterpret_cast<offset_t>(dereference(lhs_addr.addr));
             const offset_t rhs = reinterpret_cast<offset_t>(dereference(rhs_addr.addr));
             write<offset_t>(push_return_value(offset_type).addr) = (lhs - rhs) / underlying_size;
@@ -1810,7 +1812,7 @@ namespace propane
             const_address_t idx_addr = read_address(false);
 
             uint32_t idx = 0;
-            switch (idx_addr.type->index)
+            switch (idx_addr.type_ptr->index)
             {
                 case type_idx::i8: idx = (uint32_t)read<i8>(idx_addr.addr); break;
                 case type_idx::u8: idx = (uint32_t)read<u8>(idx_addr.addr); break;
@@ -1855,7 +1857,7 @@ namespace propane
             method_handle ^= data.internal_hash;
             ASSERT(is_valid_method(method_handle), "Attempted to invoke an invalid method pointer");
             const method& call_method = get_method(method_idx(method_handle));
-            push_stack_frame(call_method, get_signature(method_ptr.type->generated.signature.index));
+            push_stack_frame(call_method, get_signature(method_ptr.type_ptr->generated.signature.index));
         }
         inline void ret()
         {
@@ -1887,7 +1889,7 @@ namespace propane
 
         void dump_recursive(const_address_t addr)
         {
-            const auto& type = *addr.type;
+            const auto& type = *addr.type_ptr;
             std::cout << get_name(type);
             switch (type.index)
             {
@@ -1915,7 +1917,7 @@ namespace propane
                         for (size_t i = 0; i < type.generated.array.array_size; i++)
                         {
                             addr.addr = ptr + underlying_type.total_size * i;
-                            addr.type = &get_type(underlying_type.index);
+                            addr.type_ptr = &get_type(underlying_type.index);
                             std::cout << (i == 0 ? " " : ", ");
                             dump_recursive(addr);
                         }
@@ -1929,7 +1931,7 @@ namespace propane
                         {
                             auto& field = type.fields[i];
                             addr.addr = ptr + field.offset;
-                            addr.type = &get_type(field.type);
+                            addr.type_ptr = &get_type(field.type);
                             std::cout << (i == 0 ? " " : ", ");
                             std::cout << database[field.name] << " = ";
                             dump_recursive(addr);
@@ -2120,7 +2122,7 @@ namespace propane
                 {
                     const auto& field = offsets[size_t(addr.field)];
                     result.addr += field.offset;
-                    result.type = &get_type(field.type);
+                    result.type_ptr = &get_type(field.type);
                 }
                 break;
 
@@ -2128,22 +2130,22 @@ namespace propane
                 {
                     const auto& field = offsets[size_t(addr.field)];
                     result.addr = dereference(result.addr) + field.offset;
-                    result.type = &get_type(field.type);
+                    result.type_ptr = &get_type(field.type);
                 }
                 break;
 
                 case address_modifier::subscript:
                 {
-                    const auto& type = *result.type;
+                    const auto& type = *result.type_ptr;
                     if (type.is_pointer())
                     {
-                        result.type = &get_type(type.generated.pointer.underlying_type);
-                        result.addr = dereference(result.addr) + result.type->total_size * addr.offset;
+                        result.type_ptr = &get_type(type.generated.pointer.underlying_type);
+                        result.addr = dereference(result.addr) + result.type_ptr->total_size * addr.offset;
                     }
                     else if (type.is_array())
                     {
-                        result.type = &get_type(type.generated.array.underlying_type);
-                        result.addr = result.addr + result.type->total_size * addr.offset;
+                        result.type_ptr = &get_type(type.generated.array.underlying_type);
+                        result.addr = result.addr + result.type_ptr->total_size * addr.offset;
                     }
                 }
                 break;
@@ -2155,9 +2157,9 @@ namespace propane
 
                 case address_prefix::indirection:
                 {
-                    const auto& type = *result.type;
+                    const auto& type = *result.type_ptr;
 
-                    result.type = &get_type(type.generated.pointer.underlying_type);
+                    result.type_ptr = &get_type(type.generated.pointer.underlying_type);
                     result.addr = dereference(result.addr);
                 }
                 break;
@@ -2167,17 +2169,17 @@ namespace propane
                     tmp_var[is_rhs] = reinterpret_cast<size_t>(result.addr);
                     result.addr = reinterpret_cast<pointer_t>(&tmp_var[is_rhs]);
 
-                    const type_idx dst_type = result.type->pointer_type;
-                    result.type = dst_type == type_idx::invalid ? &vptr_type : &get_type(dst_type);
+                    const type_idx dst_type = result.type_ptr->pointer_type;
+                    result.type_ptr = dst_type == type_idx::invalid ? &vptr_type : &get_type(dst_type);
                 }
                 break;
 
                 case address_prefix::size_of:
                 {
-                    tmp_var[is_rhs] = result.type->total_size;
+                    tmp_var[is_rhs] = result.type_ptr->total_size;
                     result.addr = reinterpret_cast<pointer_t>(&tmp_var[is_rhs]);
 
-                    result.type = &size_type;
+                    result.type_ptr = &size_type;
                 }
                 break;
             }

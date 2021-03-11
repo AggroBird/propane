@@ -79,7 +79,9 @@ namespace propane
             {
                 ifstream file(file_path);
                 VALIDATE_FILE_OPEN(file.is_open(), file_path);
-                file_text = (stringstream() << file.rdbuf() << '\n').str();
+                stringstream str_stream;
+                str_stream << file.rdbuf() << '\n';
+                file_text = str_stream.str();
             }
 
             const char* beg = file_text.data();
