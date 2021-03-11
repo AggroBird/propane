@@ -201,7 +201,7 @@ namespace propane
             {
                 static_assert(std::is_trivially_copyable_v<value_t>, "type is not trivially copyable");
 
-                std::memcpy(ptr, data, count * sizeof(value_t));
+                memcpy(ptr, data, count * sizeof(value_t));
                 reinterpret_cast<const value_t*&>(data) += count;
             }
         };

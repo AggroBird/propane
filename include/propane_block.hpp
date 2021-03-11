@@ -43,7 +43,7 @@ namespace propane
         }
         inline static void copy(value_t* dst, const value_t* src, size_t length) noexcept
         {
-            std::memcpy(dst, src, sizeof(value_t) * length);
+            memcpy(dst, src, sizeof(value_t) * length);
         }
     };
 

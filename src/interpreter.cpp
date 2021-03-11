@@ -337,7 +337,7 @@ namespace propane
                 case subcode(42): write<double>(lhs_addr) = (double)read<uint64_t>(rhs_addr); return;
                 case subcode(43): write<double>(lhs_addr) = (double)read<float>(rhs_addr); return;
                 case subcode(44): write<double>(lhs_addr) = read<double>(rhs_addr); return;
-                case subcode(45): std::memcpy(lhs_addr.addr, rhs_addr.addr, rhs_addr.type->total_size); break;
+                case subcode(45): memcpy(lhs_addr.addr, rhs_addr.addr, rhs_addr.type->total_size); break;
             }
         }
         inline void conv() noexcept
@@ -2328,7 +2328,7 @@ namespace propane
         const auto asm_binary = linked_assembly.assembly_binary();
         host_memory host_mem(asm_binary.size());
         ASSERT(host_mem, "Failed to allocate memory pages from host");
-        std::memcpy(host_mem.data(), asm_binary.data(), asm_binary.size());
+        memcpy(host_mem.data(), asm_binary.data(), asm_binary.size());
         const bool protect = host_mem.protect();
         ASSERT(protect, "Failed to switch host memory pages to protected");
 

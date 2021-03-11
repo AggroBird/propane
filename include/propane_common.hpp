@@ -255,16 +255,22 @@ namespace propane
     {
     public:
         propane_exception(uint32_t errc, const char* const msg) :
-            std::exception(msg),
-            errc(errc) {}
+            errc(errc),
+            msg(msg) {}
 
         inline uint32_t error_code() const noexcept
         {
             return errc;
         }
 
+        virtual const char* what() const noexcept override
+        {
+            return msg.data();
+        }
+
     private:
         uint32_t errc;
+        std::string msg;
     };
 
     class generator_exception : public propane_exception
