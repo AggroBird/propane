@@ -7,7 +7,7 @@
 #include <fstream>
 using std::ofstream;
 
-#define VALIDATE(errc, expr, fmt, ...) ENSURE(errc, expr, propane::generator_exception, fmt, __VA_ARGS__)
+#define VALIDATE(errc, expr, ...) ENSURE(errc, expr, propane::generator_exception, __VA_ARGS__)
 
 #define VALIDATE_ASSEMBLY(expr) VALIDATE(ERRC::GNR_INVALID_ASSEMBLY, expr, \
     "Attempted to generate from an invalid assembly")

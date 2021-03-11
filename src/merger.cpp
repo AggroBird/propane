@@ -3,7 +3,7 @@
 #include "errors.hpp"
 #include "utility.hpp"
 
-#define VALIDATE(errc, expr, fmt, ...) ENSURE(errc, expr, propane::merger_exception, fmt, __VA_ARGS__)
+#define VALIDATE(errc, expr, ...) ENSURE(errc, expr, propane::merger_exception, __VA_ARGS__)
 
 #define VALIDATE_INTERMEDIATE(expr) VALIDATE(ERRC::MRG_INVALID_INTERMEDIATE, expr, \
     "Attempted to merge an invalid intermediate")

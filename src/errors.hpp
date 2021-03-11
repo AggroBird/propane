@@ -107,24 +107,24 @@ template<> inline bool validate_expression<bool>(bool expr) noexcept
 }
 
 #if 1
-#define ENSURE(errc, expr, excep, fmt, ...)                 \
+#define ENSURE(errc, expr, excep, ...)                      \
 {                                                           \
     if(!validate_expression(expr))                          \
     {                                                       \
         throw excep(                                        \
             errc_to_uint(errc),                             \
-            propane::format(fmt, __VA_ARGS__).data());      \
+            propane::format(__VA_ARGS__).data());           \
         abort();                                            \
     }                                                       \
 }
-#define ENSURE_WITH_META(errc, meta, expr, excep, fmt, ...) \
+#define ENSURE_WITH_META(errc, meta, expr, excep, ...)      \
 {                                                           \
     if(!validate_expression(expr))                          \
     {                                                       \
         const auto meta_copy = meta;                        \
         throw excep(                                        \
             errc_to_uint(errc),                             \
-            propane::format(fmt, __VA_ARGS__).data(),       \
+            propane::format(__VA_ARGS__).data(),            \
             meta_copy.file_name,                            \
             meta_copy.line_number);                         \
         abort();                                            \
@@ -135,8 +135,8 @@ template<> inline bool validate_expression<bool>(bool expr) noexcept
     if(!(expr))                                                                     \
     {                                                                               \
         const std::string str = propane::format("%:%, assertion failed: " fmt,      \
-            propane::strip_filepath(__FILE__), __LINE__, __VA_ARGS__);              \
-        fprintf(stderr, str.data());                                                \
+            propane::strip_filepath(__FILE__), __LINE__, 0);              \
+        fprintf(stderr, "%s", str.data());                                          \
         abort();                                                                    \
     }                                                                               \
 }

@@ -4,7 +4,7 @@
 #include "constants.hpp"
 #include "utility.hpp"
 
-#define VALIDATE(errc, expr, fmt, ...) ENSURE(errc, expr, propane::linker_exception, fmt, __VA_ARGS__)
+#define VALIDATE(errc, expr, ...) ENSURE(errc, expr, propane::linker_exception, __VA_ARGS__)
 
 #define VALIDATE_INTERMEDIATE(expr) VALIDATE(ERRC::LNK_INVALID_INTERMEDIATE, expr, \
     "Attempted to link an invalid intermediate")

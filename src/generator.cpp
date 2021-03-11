@@ -4,7 +4,7 @@
 #include "internal.hpp"
 #include "utility.hpp"
 
-#define VALIDATE(errc, expr, fmt, ...) ENSURE_WITH_META(errc, this->get_meta(), expr, propane::generator_exception, fmt, __VA_ARGS__)
+#define VALIDATE(errc, expr, ...) ENSURE_WITH_META(errc, this->get_meta(), expr, propane::generator_exception, __VA_ARGS__)
 
 #define VALIDATE_IDENTIFIER(str) VALIDATE(ERRC::GNR_INVALID_IDENTIFIER, propane::is_identifier(str), \
     "Invalid identifier: '%'", str)

@@ -5,7 +5,7 @@
 
 #include <cmath>
 
-#define VALIDATE(errc, expr, fmt, ...) ENSURE(errc, expr, propane::runtime_exception, fmt, __VA_ARGS__)
+#define VALIDATE(errc, expr, ...) ENSURE(errc, expr, propane::runtime_exception, __VA_ARGS__)
 
 #define VALIDATE_ASSEMBLY(expr) VALIDATE(ERRC::RTM_INVALID_ASSEMBLY, expr, \
     "Attempted to execute an invalid assembly")

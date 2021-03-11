@@ -9,7 +9,7 @@
 #include <charconv>
 #include <system_error>
 
-#define VALIDATE(errc, expr, fmt, ...) ENSURE_WITH_META(errc, this->get_meta(), expr, propane::generator_exception, fmt, __VA_ARGS__)
+#define VALIDATE(errc, expr, ...) ENSURE_WITH_META(errc, this->get_meta(), expr, propane::generator_exception, __VA_ARGS__)
 
 #define VALIDATE_FILE_OPEN(expr, file_path) VALIDATE(ERRC::PRS_FILE_EXCEPTION, expr, \
     "Failed to open file: \"%\"", file_path)
