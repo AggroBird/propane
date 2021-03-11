@@ -33,8 +33,11 @@
 
 // This only works in the assembly_linker class
 #define VALIDATE_INSTRUCTION(errc, expr, fmt, ...) VALIDATE(ERRC::LNK_INVALID_IMPLICIT_CONVERSION, expr, \
+    fmt " (See definition of method '%' at '%', instruction #%: %)", __VA_ARGS__ \
+    this->database[this->current_method->name].name, this->make_meta(this->current_method->index), this->iidx, propane::opcode_str(this->op))
+#define VALIDATE_INSTRUCTION_NOARG(errc, expr, fmt) VALIDATE(ERRC::LNK_INVALID_IMPLICIT_CONVERSION, expr, \
     fmt " (See definition of method '%' at '%', instruction #%: %)", \
-    __VA_ARGS__ this->database[this->current_method->name].name, this->make_meta(this->current_method->index), this->iidx, propane::opcode_str(this->op))
+    this->database[this->current_method->name].name, this->make_meta(this->current_method->index), this->iidx, propane::opcode_str(this->op))
 
 #define VALIDATE_IMPLICIT_CONVERSION(expr, lhs_type, rhs_type) VALIDATE_INSTRUCTION(ERRC::LNK_INVALID_IMPLICIT_CONVERSION, expr, \
     "Invalid implicit conversion between types '%' and '%'", this->get_name(lhs_type), this->get_name(rhs_type),)
@@ -54,8 +57,8 @@
     "Provided argument count does not match signature parameter count: % provided where % was expected", provided, expected,)
 #define VALIDATE_SIGNATURE_TYPE_INVOCATION(expr, type) VALIDATE_INSTRUCTION(ERRC::LNK_NON_SIGNATURE_TYPE_INVOKE, expr, \
     "Type '%' is not a valid method pointer", this->get_name(type),)
-#define VALIDATE_RETURN_ADDRESS(expr) VALIDATE_INSTRUCTION(ERRC::LNK_INVALID_RETURN_ADDRESS, expr, \
-    "Return value address is not valid here",)
+#define VALIDATE_RETURN_ADDRESS(expr) VALIDATE_INSTRUCTION_NOARG(ERRC::LNK_INVALID_RETURN_ADDRESS, expr, \
+    "Return value address is not valid here")
 #define VALIDATE_ARRAY_INDEX(expr, index, array_type_name) VALIDATE_INSTRUCTION(ERRC::LNK_ARRAY_INDEX_OUT_OF_RANGE, expr, \
     "Constant array index out of range (Index % in array %)", index, array_type_name,)
 #define VALIDATE_OFFSET_MODIFIER(expr, type_name) VALIDATE_INSTRUCTION(ERRC::LNK_INVALID_OFFSET_MODIFIER, expr, \
