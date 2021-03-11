@@ -1072,11 +1072,11 @@ namespace propane
             if (is_float)
             {
                 type_idx btype = type_idx::f64;
-                double f;
-                std::from_chars_result result = std::from_chars(beg, end, f);
-                if (result.ptr < end)
+                char* result_end = (char*)end;
+                double f = strtod(beg, &result_end);
+                if (result_end < end)
                 {
-                    beg = result.ptr;
+                    beg = result_end;
 
                     const auto offset = end - beg;
                     if (offset == 1 && (beg[0] == 'f' || beg[0] == 'F'))
