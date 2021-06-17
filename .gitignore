@@ -33,6 +33,3 @@ bin
 # Test
 buildtool
 test
-test.cpp
-timer.hpp
-notes.txt
