@@ -402,6 +402,15 @@ namespace propane
         vector<entry_type> entries;
         unordered_map<database_string_view, key_t, database_hash, database_compare> lookup;
     };
+
+    inline string_view get_database_entry(const string_table<name_idx>& database, name_idx name)
+    {
+        return database[name];
+    }
+    template<typename value_t> inline string_view get_database_entry(const database<name_idx, value_t>& database, name_idx name)
+    {
+        return database[name].name;
+    }
 }
 
 #endif

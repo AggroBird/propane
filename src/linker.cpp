@@ -3,6 +3,7 @@
 #include "errors.hpp"
 #include "constants.hpp"
 #include "utility.hpp"
+#include "name_generator.hpp"
 
 #define VALIDATE(errc, expr, ...) ENSURE(errc, expr, propane::linker_exception, __VA_ARGS__)
 
@@ -75,88 +76,6 @@
 
 namespace propane
 {
-    inline string_view get_database_entry(const string_table<name_idx>& database, name_idx name)
-    {
-        return database[name];
-    }
-    template<typename value_t> inline string_view get_database_entry(const database<name_idx, value_t>& database, name_idx name)
-    {
-        return database[name].name;
-    }
-
-    // Type name generator
-    template<typename type_list_t, typename signature_list_t, typename database_t> struct name_generator
-    {
-        name_generator(type_idx type, std::string& out_name, const type_list_t& types, const signature_list_t& signatures, const database_t& database) :
-            types(types),
-            signatures(signatures),
-            database(database)
-        {
-            out_name.clear();
-            const bool result = generate_recursive(type, out_name);
-            ASSERT(result, "Failed to generate name");
-        }
-
-    private:
-        const type_list_t& types;
-        const signature_list_t& signatures;
-        const database_t& database;
-
-        bool generate_recursive(type_idx type, std::string& out_name) const
-        {
-            if (types.is_valid_index(type))
-            {
-                const auto& t = types[type];
-
-                if (t.is_pointer())
-                {
-                    // Generate pointer name
-                    if (generate_recursive(t.generated.pointer.underlying_type, out_name))
-                    {
-                        out_name.push_back('*');
-                        return true;
-                    }
-                }
-                else if (t.is_array())
-                {
-                    // Generate array name
-                    if (generate_recursive(t.generated.array.underlying_type, out_name))
-                    {
-                        out_name.push_back('[');
-                        out_name.append(std::to_string(t.generated.array.array_size));
-                        out_name.push_back(']');
-                        return true;
-                    }
-                }
-                else if (t.is_signature())
-                {
-                    // Generate signature name
-                    const auto& signature = signatures[t.generated.signature.index];
-                    if (generate_recursive(signature.return_type, out_name))
-                    {
-                        out_name.push_back('(');
-                        for (size_t i = 0; i < signature.parameters.size(); i++)
-                        {
-                            if (i != 0) out_name.push_back(',');
-                            if (!generate_recursive(signature.parameters[i].type, out_name))
-                                return false;
-                        }
-                        out_name.push_back(')');
-                        return true;
-                    }
-                }
-                else if (database.is_valid_index(t.name))
-                {
-                    // Generate name from identifier
-                    out_name.append(get_database_entry(database, t.name));
-                    return true;
-                }
-            }
-
-            return false;
-        }
-    };
-
     // Assembly linker takes in an intermediate that has been merged
     // and links up the references. It recompiles the bytecode and replaces
     // the lookup indices with the actual type/method indices
@@ -1166,79 +1085,6 @@ namespace propane
         unordered_map<name_idx, global_idx> method_ptr_lookup;
     };
 
-    namespace constants
-    {
-        constexpr size_t data_offset = assembly_header.size() + sizeof(toolchain_version);
-        constexpr size_t total_size = data_offset + footer.size();
-    }
-
-
-    assembly::assembly(const intermediate& im)
-    {
-        VALIDATE_INTERMEDIATE(im.is_valid());
-        VALIDATE_COMPATIBILITY(im.is_compatible());
-
-        gen_intermediate_data data = gen_intermediate_data::deserialize(im);
-
-        asm_assembly_data::serialize(*this, assembly_linker(std::move(data)));
-    }
-
-
-    bool assembly::is_valid() const noexcept
-    {
-        return constants::validate_assembly_header(content);
-    }
-    assembly::operator bool() const noexcept
-    {
-        return is_valid();
-    }
-
-    toolchain_version assembly::version() const noexcept
-    {
-        if (content.size() >= constants::data_offset)
-        {
-            return *reinterpret_cast<const toolchain_version*>(content.data() + constants::assembly_header.size());
-        }
-        return toolchain_version();
-    }
-    bool assembly::is_compatible() const noexcept
-    {
-        return version().is_compatible();
-    }
-
-    const assembly_data& assembly::assembly_ref() const noexcept
-    {
-        if (is_valid())
-        {
-            return *reinterpret_cast<const assembly_data*>(content.data() + constants::data_offset);
-        }
-
-        static thread_local assembly_data empty_assembly;
-        memset(&empty_assembly, 0, sizeof(empty_assembly));
-        return empty_assembly;
-    }
-    span<const uint8_t> assembly::assembly_binary() const noexcept
-    {
-        if (is_valid())
-        {
-            return span<const uint8_t>(content.data() + constants::data_offset, content.size() - constants::total_size);
-        }
-
-        return span<const uint8_t>();
-    }
-
-    span<const uint8_t> assembly::data() const noexcept
-    {
-        return content;
-    }
-    bool assembly::load(span<const uint8_t> from_bytes)
-    {
-        if (!constants::validate_assembly_header(from_bytes)) return false;
-
-        content = block<uint8_t>(from_bytes.data(), from_bytes.size());
-        return true;
-    }
-
     void asm_assembly_data::serialize(assembly& dst, const asm_assembly_data& data)
     {
         block_writer writer;
@@ -1251,8 +1097,13 @@ namespace propane
         dst.content = block<uint8_t>(serialized.data(), serialized.size());
     }
 
-    void assembly_data::generate_name(type_idx type, string& out_name) const
+    assembly::assembly(const intermediate& im)
     {
-        name_generator(type, out_name, types, signatures, database);
+        VALIDATE_INTERMEDIATE(im.is_valid());
+        VALIDATE_COMPATIBILITY(im.is_compatible());
+
+        gen_intermediate_data data = gen_intermediate_data::deserialize(im);
+
+        asm_assembly_data::serialize(*this, assembly_linker(std::move(data)));
     }
 }
