@@ -2,7 +2,6 @@
 #define _HEADER_PROPANE_ASSEMBLY
 
 #include "propane_runtime.hpp"
-#include "propane_block.hpp"
 
 namespace propane
 {
