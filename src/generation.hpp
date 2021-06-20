@@ -1,7 +1,7 @@
 #ifndef _HEADER_GENERATOR
 #define _HEADER_GENERATOR
 
-#include "internal.hpp"
+#include "runtime.hpp"
 #include "database.hpp"
 
 namespace propane
@@ -194,7 +194,7 @@ namespace propane
             index(index),
             return_type(return_type),
             parameters(std::move(parameters)) {}
-        gen_signature(signature_idx index, type_idx return_type, const block<stackvar>& parameters) :
+        gen_signature(signature_idx index, type_idx return_type, span<const stackvar> parameters) :
             index(index),
             return_type(return_type)
         {
@@ -281,9 +281,9 @@ namespace propane
             return flags & extended_flags::is_resolved;
         }
 
-        inline bool is_internal() const noexcept
+        inline bool is_external() const noexcept
         {
-            return flags & type_flags::is_internal;
+            return flags & type_flags::is_external;
         }
 
         inline void translate_method(method_idx src, method_idx dst)

@@ -4,7 +4,6 @@
 #include "utility.hpp"
 #include "errors.hpp"
 #include "literals.hpp"
-#include "internal.hpp"
 
 #include <charconv>
 #include <system_error>

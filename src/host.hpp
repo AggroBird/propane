@@ -27,6 +27,10 @@ namespace propane
         hostmem allocate(size_t);
         bool protect(hostmem);
         void free(hostmem);
+
+        void* openlib(const char*);
+        void closelib(void*);
+        void* loadsym(void*, const char*);
     }
 }
 

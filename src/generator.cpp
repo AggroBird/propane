@@ -1,7 +1,6 @@
 #include "propane_generator.hpp"
 #include "generation.hpp"
 #include "errors.hpp"
-#include "internal.hpp"
 #include "utility.hpp"
 
 #define VALIDATE(errc, expr, ...) ENSURE_WITH_META(errc, this->get_meta(), expr, propane::generator_exception, __VA_ARGS__)
@@ -51,17 +50,6 @@
 
 namespace propane
 {
-    template<typename value_t, size_t len, typename... args> inline value_t& construct(uint8_t(&data)[len], args&... arg)
-    {
-        static_assert(sizeof(value_t) <= len, "Value type size greater than buffer size");
-        return *new (reinterpret_cast<value_t*>(data)) value_t(arg...);
-    }
-    template<typename value_t, size_t len> inline void destruct(uint8_t(&data)[len])
-    {
-        reinterpret_cast<value_t*>(data)->~value_t();
-        memset(data, 0, len);
-    }
-
     static constexpr size_t method_parameter_max = 256;
     static constexpr size_t global_initializer_max = 65536;
 
@@ -582,27 +570,28 @@ namespace propane
 
     }
 
-    generator::type_writer::type_writer(generator_impl& gen, name_idx name, type_idx index, bool is_union)
+    generator::type_writer::type_writer(generator_impl& gen, name_idx name, type_idx index, bool is_union) :
+        handle(gen, name, index, is_union)
     {
-        construct<type_writer_impl>(handle.data, gen, name, index, is_union);
+        
     }
     generator::type_writer::~type_writer()
     {
-        destruct<type_writer_impl>(handle.data);
+        
     }
 
     name_idx generator::type_writer::name() const
     {
-        return impl().name;
+        return self().name;
     }
     type_idx generator::type_writer::index() const
     {
-        return impl().index;
+        return self().index;
     }
 
     void generator::type_writer::declare_field(type_idx type, name_idx name)
     {
-        auto& writer = impl();
+        auto& writer = self();
         auto& gen = writer.gen;
 
         VALIDATE_TYPE(type, gen.types.size());
@@ -618,7 +607,7 @@ namespace propane
     }
     void generator::type_writer::declare_field(type_idx type, string_view name)
     {
-        auto& writer = impl();
+        auto& writer = self();
         auto& gen = writer.gen;
 
         VALIDATE_IDENTIFIER(name);
@@ -628,12 +617,12 @@ namespace propane
     }
     span<const field> generator::type_writer::fields() const
     {
-        return impl().fields;
+        return self().fields;
     }
 
     void generator::type_writer::finalize()
     {
-        auto& writer = impl();
+        auto& writer = self();
         auto& gen = writer.gen;
 
         auto& dst = gen.types[writer.index];
@@ -671,27 +660,28 @@ namespace propane
 
     }
 
-    generator::method_writer::method_writer(class generator_impl& gen, name_idx name, method_idx index, signature_idx signature)
+    generator::method_writer::method_writer(class generator_impl& gen, name_idx name, method_idx index, signature_idx signature) :
+        handle(gen, name, index, signature)
     {
-        construct<method_writer_impl>(handle.data, gen, name, index, signature);
+        
     }
     generator::method_writer::~method_writer()
     {
-        destruct<method_writer_impl>(handle.data);
+        
     }
 
     name_idx generator::method_writer::name() const
     {
-        return impl().name;
+        return self().name;
     }
     method_idx generator::method_writer::index() const
     {
-        return impl().index;
+        return self().index;
     }
 
     void generator::method_writer::push(span<const type_idx> types)
     {
-        auto& writer = impl();
+        auto& writer = self();
 
         VALIDATE_TYPES(types, writer.gen.types.size());
 
@@ -703,18 +693,18 @@ namespace propane
     }
     std::span<const stackvar> generator::method_writer::stack() const
     {
-        return impl().stackvars;
+        return self().stackvars;
     }
 
     label_idx generator::method_writer::declare_label(string_view label_name)
     {
         VALIDATE_IDENTIFIER(label_name);
 
-        return impl().label_names.emplace(label_name);
+        return self().label_names.emplace(label_name);
     }
     void generator::method_writer::write_label(label_idx label)
     {
-        auto& writer = impl();
+        auto& writer = self();
 
         VALIDATE_INDEX(label, writer.label_names.size());
 
@@ -726,184 +716,184 @@ namespace propane
 
     void generator::method_writer::write_noop()
     {
-        impl().append_bytecode(opcode::noop);
+        self().append_bytecode(opcode::noop);
     }
 
     void generator::method_writer::write_set(address lhs, address rhs)
     {
-        impl().write_sub_expression(opcode::set, lhs, rhs);
+        self().write_sub_expression(opcode::set, lhs, rhs);
     }
     void generator::method_writer::write_conv(address lhs, address rhs)
     {
-        impl().write_sub_expression(opcode::conv, lhs, rhs);
+        self().write_sub_expression(opcode::conv, lhs, rhs);
     }
 
     void generator::method_writer::write_not(address lhs)
     {
-        impl().write_sub_expression(opcode::ari_not, lhs);
+        self().write_sub_expression(opcode::ari_not, lhs);
     }
     void generator::method_writer::write_neg(address lhs)
     {
-        impl().write_sub_expression(opcode::ari_neg, lhs);
+        self().write_sub_expression(opcode::ari_neg, lhs);
     }
     void generator::method_writer::write_mul(address lhs, address rhs)
     {
-        impl().write_sub_expression(opcode::ari_mul, lhs, rhs);
+        self().write_sub_expression(opcode::ari_mul, lhs, rhs);
     }
     void generator::method_writer::write_div(address lhs, address rhs)
     {
-        impl().write_sub_expression(opcode::ari_div, lhs, rhs);
+        self().write_sub_expression(opcode::ari_div, lhs, rhs);
     }
     void generator::method_writer::write_mod(address lhs, address rhs)
     {
-        impl().write_sub_expression(opcode::ari_mod, lhs, rhs);
+        self().write_sub_expression(opcode::ari_mod, lhs, rhs);
     }
     void generator::method_writer::write_add(address lhs, address rhs)
     {
-        impl().write_sub_expression(opcode::ari_add, lhs, rhs);
+        self().write_sub_expression(opcode::ari_add, lhs, rhs);
     }
     void generator::method_writer::write_sub(address lhs, address rhs)
     {
-        impl().write_sub_expression(opcode::ari_sub, lhs, rhs);
+        self().write_sub_expression(opcode::ari_sub, lhs, rhs);
     }
     void generator::method_writer::write_lsh(address lhs, address rhs)
     {
-        impl().write_sub_expression(opcode::ari_lsh, lhs, rhs);
+        self().write_sub_expression(opcode::ari_lsh, lhs, rhs);
     }
     void generator::method_writer::write_rsh(address lhs, address rhs)
     {
-        impl().write_sub_expression(opcode::ari_rsh, lhs, rhs);
+        self().write_sub_expression(opcode::ari_rsh, lhs, rhs);
     }
     void generator::method_writer::write_and(address lhs, address rhs)
     {
-        impl().write_sub_expression(opcode::ari_and, lhs, rhs);
+        self().write_sub_expression(opcode::ari_and, lhs, rhs);
     }
     void generator::method_writer::write_xor(address lhs, address rhs)
     {
-        impl().write_sub_expression(opcode::ari_xor, lhs, rhs);
+        self().write_sub_expression(opcode::ari_xor, lhs, rhs);
     }
     void generator::method_writer::write_or(address lhs, address rhs)
     {
-        impl().write_sub_expression(opcode::ari_or, lhs, rhs);
+        self().write_sub_expression(opcode::ari_or, lhs, rhs);
     }
 
     void generator::method_writer::write_padd(address lhs, address rhs)
     {
-        impl().write_sub_expression(opcode::padd, lhs, rhs);
+        self().write_sub_expression(opcode::padd, lhs, rhs);
     }
     void generator::method_writer::write_psub(address lhs, address rhs)
     {
-        impl().write_sub_expression(opcode::psub, lhs, rhs);
+        self().write_sub_expression(opcode::psub, lhs, rhs);
     }
     void generator::method_writer::write_pdif(address lhs, address rhs)
     {
-        impl().write_expression(opcode::pdif, lhs, rhs);
+        self().write_expression(opcode::pdif, lhs, rhs);
     }
 
     void generator::method_writer::write_cmp(address lhs, address rhs)
     {
-        impl().write_sub_expression(opcode::cmp, lhs, rhs);
+        self().write_sub_expression(opcode::cmp, lhs, rhs);
     }
     void generator::method_writer::write_ceq(address lhs, address rhs)
     {
-        impl().write_sub_expression(opcode::ceq, lhs, rhs);
+        self().write_sub_expression(opcode::ceq, lhs, rhs);
     }
     void generator::method_writer::write_cne(address lhs, address rhs)
     {
-        impl().write_sub_expression(opcode::cne, lhs, rhs);
+        self().write_sub_expression(opcode::cne, lhs, rhs);
     }
     void generator::method_writer::write_cgt(address lhs, address rhs)
     {
-        impl().write_sub_expression(opcode::cgt, lhs, rhs);
+        self().write_sub_expression(opcode::cgt, lhs, rhs);
     }
     void generator::method_writer::write_cge(address lhs, address rhs)
     {
-        impl().write_sub_expression(opcode::cge, lhs, rhs);
+        self().write_sub_expression(opcode::cge, lhs, rhs);
     }
     void generator::method_writer::write_clt(address lhs, address rhs)
     {
-        impl().write_sub_expression(opcode::clt, lhs, rhs);
+        self().write_sub_expression(opcode::clt, lhs, rhs);
     }
     void generator::method_writer::write_cle(address lhs, address rhs)
     {
-        impl().write_sub_expression(opcode::cle, lhs, rhs);
+        self().write_sub_expression(opcode::cle, lhs, rhs);
     }
     void generator::method_writer::write_cze(address addr)
     {
-        impl().write_sub_expression(opcode::cze, addr);
+        self().write_sub_expression(opcode::cze, addr);
     }
     void generator::method_writer::write_cnz(address addr)
     {
-        impl().write_sub_expression(opcode::cnz, addr);
+        self().write_sub_expression(opcode::cnz, addr);
     }
 
     void generator::method_writer::write_br(label_idx label)
     {
-        impl().write_branch(opcode::br, label);
+        self().write_branch(opcode::br, label);
     }
     void generator::method_writer::write_beq(label_idx label, address lhs, address rhs)
     {
-        impl().write_branch(opcode::beq, label, lhs, rhs);
+        self().write_branch(opcode::beq, label, lhs, rhs);
     }
     void generator::method_writer::write_bne(label_idx label, address lhs, address rhs)
     {
-        impl().write_branch(opcode::bne, label, lhs, rhs);
+        self().write_branch(opcode::bne, label, lhs, rhs);
     }
     void generator::method_writer::write_bgt(label_idx label, address lhs, address rhs)
     {
-        impl().write_branch(opcode::bgt, label, lhs, rhs);
+        self().write_branch(opcode::bgt, label, lhs, rhs);
     }
     void generator::method_writer::write_bge(label_idx label, address lhs, address rhs)
     {
-        impl().write_branch(opcode::bge, label, lhs, rhs);
+        self().write_branch(opcode::bge, label, lhs, rhs);
     }
     void generator::method_writer::write_blt(label_idx label, address lhs, address rhs)
     {
-        impl().write_branch(opcode::blt, label, lhs, rhs);
+        self().write_branch(opcode::blt, label, lhs, rhs);
     }
     void generator::method_writer::write_ble(label_idx label, address lhs, address rhs)
     {
-        impl().write_branch(opcode::ble, label, lhs, rhs);
+        self().write_branch(opcode::ble, label, lhs, rhs);
     }
     void generator::method_writer::write_bze(label_idx label, address lhs)
     {
-        impl().write_branch(opcode::bze, label, lhs);
+        self().write_branch(opcode::bze, label, lhs);
     }
     void generator::method_writer::write_bnz(label_idx label, address lhs)
     {
-        impl().write_branch(opcode::bnz, label, lhs);
+        self().write_branch(opcode::bnz, label, lhs);
     }
 
     void generator::method_writer::write_sw(address addr, span<const label_idx> labels)
     {
-        impl().write_sw(addr, labels);
+        self().write_sw(addr, labels);
     }
 
     void generator::method_writer::write_call(method_idx method, span<const address> args)
     {
-        impl().write_call(method, args);
+        self().write_call(method, args);
     }
     void generator::method_writer::write_callv(address addr, span<const address> args)
     {
-        impl().write_callv(addr, args);
+        self().write_callv(addr, args);
     }
     void generator::method_writer::write_ret()
     {
-        impl().write_ret();
+        self().write_ret();
     }
     void generator::method_writer::write_retv(address addr)
     {
-        impl().write_retv(addr);
+        self().write_retv(addr);
     }
 
     void generator::method_writer::write_dump(address addr)
     {
-        impl().write_dump(addr);
+        self().write_dump(addr);
     }
 
     void generator::method_writer::finalize()
     {
-        auto& writer = impl();
+        auto& writer = self();
         auto& gen = writer.gen;
 
         // Ensure the method has returned a value
@@ -942,29 +932,29 @@ namespace propane
 
     generator::generator()
     {
-        construct<generator_impl>(handle.data);
+        
     }
     generator::generator(string_view name)
     {
-        auto& gen = construct<generator_impl>(handle.data);
+        auto& gen = self();
         gen.initialize_base_types();
         gen.meta_index = gen.metatable.emplace(name);
     }
     generator::~generator()
     {
-        destruct<generator_impl>(handle.data);
+        
     }
 
     name_idx generator::make_identifier(string_view name)
     {
         VALIDATE_IDENTIFIER(name);
 
-        return impl().emplace_identifier(name);
+        return self().emplace_identifier(name);
     }
 
     signature_idx generator::make_signature(type_idx return_type, span<const type_idx> parameter_types)
     {
-        auto& gen = impl();
+        auto& gen = self();
 
         VALIDATE_INDEX(return_type, gen.types.size());
         VALIDATE_TYPES(parameter_types, gen.types.size());
@@ -997,7 +987,7 @@ namespace propane
 
     offset_idx generator::make_offset(type_idx type, span<const name_idx> fields)
     {
-        auto& gen = impl();
+        auto& gen = self();
 
         VALIDATE_INDEX(type, gen.types.size());
         VALIDATE_INDICES(fields, gen.database.size());
@@ -1022,12 +1012,12 @@ namespace propane
 
     void generator::define_global(name_idx name, bool is_constant, type_idx type, span<const constant> values)
     {
-        impl().define_data(is_constant ? lookup_type::constant : lookup_type::global, type, name, values);
+        self().define_data(is_constant ? lookup_type::constant : lookup_type::global, type, name, values);
     }
 
     type_idx generator::declare_type(name_idx name)
     {
-        auto& gen = impl();
+        auto& gen = self();
 
         VALIDATE_INDEX(name, gen.database.size());
 
@@ -1052,7 +1042,7 @@ namespace propane
     }
     generator::type_writer& generator::define_type(type_idx type, bool is_union)
     {
-        auto& gen = impl();
+        auto& gen = self();
 
         VALIDATE_INDEX(type, gen.types.size());
 
@@ -1072,7 +1062,7 @@ namespace propane
 
     type_idx generator::declare_pointer_type(type_idx base_type)
     {
-        auto& gen = impl();
+        auto& gen = self();
 
         VALIDATE_INDEX(base_type, gen.types.size());
 
@@ -1094,7 +1084,7 @@ namespace propane
     }
     type_idx generator::declare_array_type(type_idx base_type, size_t array_size)
     {
-        auto& gen = impl();
+        auto& gen = self();
 
         VALIDATE_INDEX(base_type, gen.types.size());
         VALIDATE_ARRAY_LENGTH(array_size);
@@ -1118,7 +1108,7 @@ namespace propane
     }
     type_idx generator::declare_signature_type(signature_idx signature)
     {
-        auto& gen = impl();
+        auto& gen = self();
 
         VALIDATE_INDEX(signature, gen.signatures.size());
 
@@ -1141,7 +1131,7 @@ namespace propane
 
     method_idx generator::declare_method(name_idx name)
     {
-        auto& gen = impl();
+        auto& gen = self();
 
         VALIDATE_INDEX(name, gen.database.size());
 
@@ -1166,7 +1156,7 @@ namespace propane
     }
     generator::method_writer& generator::define_method(method_idx method, signature_idx signature)
     {
-        auto& gen = impl();
+        auto& gen = self();
 
         VALIDATE_INDEX(method, gen.methods.size());
         VALIDATE_INDEX(signature, gen.signatures.size());
@@ -1187,12 +1177,12 @@ namespace propane
 
     void generator::set_line_number(index_t line_number) noexcept
     {
-        impl().line_number = line_number;
+        self().line_number = line_number;
     }
 
     intermediate generator::finalize()
     {
-        auto& gen = impl();
+        auto& gen = self();
 
         // Finalize can throw
         // Finalize cleans up the writer and sets itself null in the array
@@ -1213,14 +1203,14 @@ namespace propane
 
     file_meta generator::type_writer::get_meta() const
     {
-        return impl().gen.get_meta();
+        return self().gen.get_meta();
     }
     file_meta generator::method_writer::get_meta() const
     {
-        return impl().gen.get_meta();
+        return self().gen.get_meta();
     }
     file_meta generator::get_meta() const
     {
-        return impl().get_meta();
+        return self().get_meta();
     }
 }

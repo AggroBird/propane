@@ -85,7 +85,7 @@ namespace propane
         {
             for (auto& m : data.methods)
             {
-                if (m.is_internal()) continue;
+                if (m.is_external()) continue;
 
                 const auto& signature = data.signatures[m.signature];
                 file_writer.write_strs("method ", database[m.name]);
@@ -452,7 +452,7 @@ namespace propane
                 }
                 else
                 {
-                    const method_idx call_idx = method_idx(method_handle ^ data.internal_hash);
+                    const method_idx call_idx = method_idx(method_handle ^ data.runtime_hash);
                     ASSERT(data.methods.is_valid_index(call_idx), "Invalid method index");
 
                     file_writer.write_str(database[data.methods[call_idx].name]);

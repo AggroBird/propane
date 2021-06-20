@@ -146,18 +146,9 @@ namespace propane
             modifyable_address(index_t(name), address_type::global) {}
     };
 
-    template<typename value_t> inline std::span<const value_t> init_span(std::initializer_list<value_t> init) noexcept
-    {
-        return std::span<const value_t>(init.begin(), init.size());
-    }
-    template<typename value_t> inline std::span<const value_t> init_span(const value_t& init) noexcept
-    {
-        return std::span<const value_t>(&init, 1);
-    }
-
     // Experimental Propane bytecode generator
     // Inherit from this to implement a parser
-    class generator
+    class generator : public handle<class generator_impl, sizeof(size_t) * 128>
     {
     public:
         generator();
@@ -168,7 +159,7 @@ namespace propane
         generator(const generator&) = delete;
         generator& operator=(const generator&) = delete;
 
-        class type_writer final
+        class type_writer final : public handle<class type_writer_impl, sizeof(size_t) * 32>
         {
         public:
             type_writer(const type_writer&) = delete;
@@ -194,24 +185,10 @@ namespace propane
             type_writer(class generator_impl&, name_idx, type_idx, bool);
             ~type_writer();
 
-            struct handle
-            {
-                uint8_t data[sizeof(size_t) * 32];
-            } handle;
-
-            inline class type_writer_impl& impl() noexcept
-            {
-                return reinterpret_cast<class type_writer_impl&>(handle);
-            }
-            inline const class type_writer_impl& impl() const noexcept
-            {
-                return reinterpret_cast<const class type_writer_impl&>(handle);
-            }
-
             file_meta get_meta() const;
         };
 
-        class method_writer final
+        class method_writer final : public handle<class method_writer_impl, sizeof(size_t) * 128>
         {
         public:
             method_writer(const method_writer&) = delete;
@@ -308,21 +285,7 @@ namespace propane
 
             method_writer(class generator_impl&, name_idx, method_idx, signature_idx);
             ~method_writer();
-
-            struct handle_type
-            {
-                uint8_t data[sizeof(size_t) * 128];
-            } handle;
-
-            inline class method_writer_impl& impl() noexcept
-            {
-                return reinterpret_cast<class method_writer_impl&>(handle);
-            }
-            inline const class method_writer_impl& impl() const noexcept
-            {
-                return reinterpret_cast<const class method_writer_impl&>(handle);
-            }
-
+            
             file_meta get_meta() const;
         };
 
@@ -413,20 +376,6 @@ namespace propane
 
     private:
         friend class generator_impl;
-
-        struct handle_type
-        {
-            uint8_t data[sizeof(size_t) * 128];
-        } handle;
-
-        inline class generator_impl& impl() noexcept
-        {
-            return reinterpret_cast<class generator_impl&>(handle);
-        }
-        inline const class generator_impl& impl() const noexcept
-        {
-            return reinterpret_cast<const class generator_impl&>(handle);
-        }
     };
 }
 

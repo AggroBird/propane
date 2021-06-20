@@ -1,5 +1,6 @@
 #if !WITHOUT_EXAMPLE
 
+#include "propane_library.hpp"
 #include "propane_generator.hpp"
 #include "propane_parser.hpp"
 #include "propane_assembly.hpp"
@@ -49,6 +50,11 @@ int32_t main()
         main.write_call(add_idx, { propane::stack(2), propane::constant(15) });
         main.write_set(propane::stack(2), propane::retval());
 
+        // Call a method that is imported from a dynamic library
+        // (the library will be set up later)
+        const propane::method_idx native_idx = gen.declare_method("native_call");
+        main.write_call(native_idx, {});
+
         // Print our result (should print 35)
         main.write_dump(propane::stack(2));
 
@@ -62,12 +68,30 @@ int32_t main()
         // Import the definition of AddNumbers method from the example text file
         propane::intermediate parsed = propane::parser<propane::language_propane>::parse("examples/example_method.ptf");
 
-
         // Merge the two intermediates together
         generated += parsed;
 
+
+        // Setup a native function
+        const auto native_call = []()
+        {
+            std::cout << "Hello from C++!" << std::endl;
+        };
+
+        // Bind the native function to a library. If no function pointer is provided,
+        // the library will use the system to load a DLL called 'native_lib' and
+        // attempt to import the function from that instead.
+        propane::library dynlib("native_lib",
+        {
+            propane::external_call::bind<void()>("native_call", native_call),
+        });
+
+        propane::runtime runtime;
+        runtime += dynlib;
+
+
         // Link into an assembly
-        propane::assembly assembly = propane::assembly(generated);
+        propane::assembly assembly = propane::assembly(generated, runtime);
 
 
         // Translate assembly into C and Propane text
@@ -76,7 +100,7 @@ int32_t main()
 
 
         // Execute the example
-        return propane::execute_assembly(assembly);
+        return runtime.execute(assembly);
     }
     catch (propane::propane_exception& e)
     {

@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <cstdlib>
 #include <sys/mman.h>
+#include <dlfcn.h>
 
 namespace propane
 {
@@ -35,6 +36,19 @@ namespace propane
     void host::free(hostmem mem)
     {
         ::free(mem.address);
+    }
+
+    void* host::openlib(const char* path)
+    {
+        return ::dlopen(path, RTLD_LAZY);
+    }
+    void host::closelib(void* handle)
+    {
+        ::dlclose(handle);
+    }
+    void* host::loadsym(void* handle, const char* name)
+    {
+        return ::dlsym(handle, name);
     }
 }
 

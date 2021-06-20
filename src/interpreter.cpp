@@ -1,7 +1,7 @@
 #include "assembly_data.hpp"
 #include "database.hpp"
 #include "errors.hpp"
-#include "host.hpp"
+#include "library.hpp"
 
 #include <cmath>
 
@@ -78,9 +78,10 @@ namespace propane
     class interpreter final
     {
     public:
-        NOCOPY_CLASS_DEFAULT(interpreter, assembly_data& asm_data, method& main, runtime_parameters parameters) :
+        NOCOPY_CLASS_DEFAULT(interpreter, assembly_data& asm_data, method& main, runtime_data& runtime, runtime_parameters parameters) :
             parameters(parameters),
             data(asm_data),
+            runtime(runtime),
             types(asm_data.types.data()),
             methods(asm_data.methods.data()),
             signatures(asm_data.signatures.data()),
@@ -1854,7 +1855,7 @@ namespace propane
             const_address_t method_ptr = read_address(false);
             size_t method_handle = *reinterpret_cast<const size_t*>(method_ptr.addr);
             ASSERT(method_handle != 0, "Attempted to invoke a null method pointer");
-            method_handle ^= data.internal_hash;
+            method_handle ^= data.runtime_hash;
             ASSERT(is_valid_method(method_handle), "Attempted to invoke an invalid method pointer");
             const method& call_method = get_method(method_idx(method_handle));
             push_stack_frame(call_method, get_signature(method_ptr.type_ptr->generated.signature.index));
@@ -1995,6 +1996,7 @@ namespace propane
 
         // Data
         const assembly_data& data;
+        runtime_data& runtime;
         // Lookup
         const type* const types;
         const method* const methods;
@@ -2205,9 +2207,9 @@ namespace propane
             }
 
             // Push stack frame
-            const bool is_internal = method.is_internal();
+            const bool is_external = method.is_external();
             const auto frame_offset = stack_size;
-            if (!is_internal)
+            if (!is_external)
             {
                 push_stack_bytes(sizeof(stack_frame_t));
             }
@@ -2226,7 +2228,7 @@ namespace propane
                 set(sub, param_addr, arg_addr);
             }
 
-            if (!is_internal)
+            if (!is_external)
             {
                 callstack_depth++;
                 VALIDATE_CALLSTACK_LIMIT(callstack_depth <= parameters.max_callstack_depth, parameters.max_callstack_depth);
@@ -2250,15 +2252,30 @@ namespace propane
             }
             else
             {
-                ASSERT(method.bytecode.size() == sizeof(method_idx), "Invalid internal index");
-                const method_idx internal_idx = *reinterpret_cast<const method_idx*>(method.bytecode.data());
+                ASSERT(method.bytecode.size() == sizeof(index_t), "Invalid external index");
+                const index_t external_idx = *reinterpret_cast<const index_t*>(method.bytecode.data());
 
-                // Invoke internal
-                call_internal(internal_idx, stack_data + return_offset, stack_data + param_offset);
+                // Ensure method handle
+                ASSERT(runtime.calls.is_valid_index(external_idx), "Invalid external index");
+                auto& call = runtime.calls[external_idx];
+                if (!call.handle)
+                {
+                    auto& lib = *runtime.libraries[call.library];
+                    if (!lib.is_open())
+                    {
+                        const bool opened = lib.open();
+                        ASSERT(opened, "Failed to load library");
+                    }
+                    call.handle = lib.get_proc(call.name.data());
+                    ASSERT(call.handle, "Failed to find function");
+                }
 
+                // Invoke external
+                call.forward(call.handle, stack_data + return_offset, stack_data + param_offset);
+                
                 // Set return value here since we return immediately
                 return_value_addr = return_value ? address_t(&return_type, stack_data + return_offset) : address_t();
-
+                
                 // Pop stackframe
                 stack_size = frame_offset;
             }
@@ -2316,7 +2333,7 @@ namespace propane
     };
 
 
-    int32_t execute_assembly(const assembly& linked_assembly, runtime_parameters parameters)
+    int32_t runtime::execute(const assembly& linked_assembly, runtime_parameters parameters)
     {
         VALIDATE_ASSEMBLY(linked_assembly.is_valid());
         VALIDATE_COMPATIBILITY(linked_assembly.is_compatible());
@@ -2324,8 +2341,12 @@ namespace propane
         // Find main
         const assembly_data& asm_data = linked_assembly.assembly_ref();
         VALIDATE_ENTRYPOINT(asm_data.methods.is_valid_index(asm_data.main));
-        ASSERT(asm_data.internal_hash == internal_call_hash(), "Internal call hash value mismatch");
 
+        // Setup runtime
+        auto& rt_data = self();
+        const size_t runtime_hash = rt_data.rehash();
+        ASSERT(asm_data.runtime_hash == runtime_hash, "Runtime hash value mismatch");
+        
         // Copy assembly binary into a protected memory area
         const auto asm_binary = linked_assembly.assembly_binary();
         host_memory host_mem(asm_binary.size());
@@ -2336,6 +2357,6 @@ namespace propane
 
         // Execute
         assembly_data& protected_data = *reinterpret_cast<assembly_data*>(host_mem.data());
-        return interpreter(protected_data, protected_data.methods[protected_data.main], parameters);
+        return interpreter(protected_data, protected_data.methods[protected_data.main], rt_data, parameters);
     }
 }

@@ -218,9 +218,9 @@ namespace propane
         // Metadata
         metadata meta;
 
-        inline bool is_internal() const noexcept
+        inline bool is_external() const noexcept
         {
-            return flags & type_flags::is_internal;
+            return flags & type_flags::is_external;
         }
     };
 
@@ -316,21 +316,14 @@ namespace propane
         // Index of main entry point method
         // (method_idx::invalid if none was provided)
         method_idx main;
-        // Internal hash for validation checking
-        aligned_size_t internal_hash;
+        // Runtime hash for validation checking
+        aligned_size_t runtime_hash;
 
         // Utility function for generating a full typename.
         // Generated type names don't get exported into the database,
         // so this function can help generating a typename for debugging purposes.
         void generate_name(type_idx type, std::string& out_name) const;
     };
-
-    // Invoke internal method
-    // Return value address must point to a location in memory where
-    // enough space is reserved for the return value.
-    // Parameter stack address must point to a location in memory where
-    // all arguments have been initialized properly for the method call.
-    void call_internal(method_idx index, void* return_value_address, const void* parameter_stack_address);
 
     struct runtime_parameters
     {
@@ -344,8 +337,22 @@ namespace propane
         size_t max_callstack_depth;
     };
 
-    // Experimental interpreter
-    int32_t execute_assembly(const class assembly& linked_assembly, runtime_parameters parameters = runtime_parameters());
+    class runtime : public handle<class runtime_data, sizeof(size_t) * 40>
+    {
+    public:
+        runtime(std::span<const class library> libs = std::span<const class library>());
+        explicit runtime(const class library& lib);
+        ~runtime();
+
+        runtime& operator+=(const class library&);
+
+        int32_t execute(const class assembly& linked_assembly, runtime_parameters parameters = runtime_parameters());
+
+        size_t hash() const noexcept;
+
+    private:
+        friend class assembly_linker;
+    };
 }
 
 #endif

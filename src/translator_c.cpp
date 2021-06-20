@@ -1,7 +1,6 @@
 #include "propane_translator.hpp"
 #include "generation.hpp"
 #include "assembly_data.hpp"
-#include "internal.hpp"
 #include "errors.hpp"
 
 #include <fstream>
@@ -231,7 +230,7 @@ namespace propane
             if (meta.is_declared) return meta;
             meta.is_declared = true;
 
-            if (!meta.is_defined && !m.is_internal())
+            if (!meta.is_defined && !m.is_external())
             {
                 const auto& signature = get_signature(m.signature);
                 resolve_signature(signature);
@@ -302,7 +301,7 @@ namespace propane
                                 const size_t method_handle = *reinterpret_cast<const size_t*>(data.constants.data.data() + global_info.offset);
                                 if (method_handle != 0)
                                 {
-                                    const method_idx call_method_idx = method_idx(method_handle ^ data.internal_hash);
+                                    const method_idx call_method_idx = method_idx(method_handle ^ data.runtime_hash);
                                     ASSERT(data.methods.is_valid_index(call_method_idx), "Attempted to call an invalid method");
                                     auto& const_meta = resolve_method(call_method_idx);
                                     auto& const_call = get_method(call_method_idx);
@@ -1125,7 +1124,7 @@ namespace propane
                 }
                 else
                 {
-                    const method_idx call_idx = method_idx(method_handle ^ data.internal_hash);
+                    const method_idx call_idx = method_idx(method_handle ^ data.runtime_hash);
                     ASSERT(data.methods.is_valid_index(call_idx), "Invalid method index");
 
                     const auto& call_method = get_method(call_idx);

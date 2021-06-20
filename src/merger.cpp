@@ -1,5 +1,4 @@
 #include "intermediate_data.hpp"
-#include "internal.hpp"
 #include "errors.hpp"
 #include "utility.hpp"
 

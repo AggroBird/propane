@@ -9,6 +9,7 @@ namespace propane
     {
     public:
         assembly() = default;
+        explicit assembly(const class intermediate&, const class runtime&);
         explicit assembly(const class intermediate&);
         ~assembly() = default;
 

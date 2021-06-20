@@ -302,11 +302,11 @@ namespace propane
 
     template<typename key_t, typename compare_t> struct lookup_find
     {
-        template<typename value_t> inline static key_t get_key(const table_pair<key_t, value_t>& pair) noexcept
+        template<typename value_t> inline static const key_t& get_key(const table_pair<key_t, value_t>& pair) noexcept
         {
             return pair.key;
         }
-        inline static key_t get_key(const key_t& key) noexcept
+        inline static const key_t& get_key(const key_t& key) noexcept
         {
             return key;
         }

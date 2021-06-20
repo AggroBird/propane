@@ -4,6 +4,7 @@
 #include "constants.hpp"
 #include "utility.hpp"
 #include "name_generator.hpp"
+#include "library.hpp"
 
 #define VALIDATE(errc, expr, ...) ENSURE(errc, expr, propane::linker_exception, __VA_ARGS__)
 
@@ -82,45 +83,39 @@ namespace propane
     class assembly_linker final : public asm_assembly_data
     {
     public:
-        assembly_linker(gen_intermediate_data&& data) :
+        assembly_linker(gen_intermediate_data&& data, const runtime& runtime) :
             size_type(derive_type_index_v<size_t>),
             offset_type(derive_type_index_v<offset_t>),
             ptr_size(get_base_type_size(type_idx::vptr))
         {
-            internal_hash = internal_call_hash();
-
             data.restore_generated_types();
 
-            // Link internals
-            const size_t icall_count = internal_call_count();
-            unordered_map<string_view, internal_call_info> internals;
-            vector<uint8_t> keybuf;
-            for (size_t i = 0; i < icall_count; i++)
+            // Setup runtime
+            auto& rt_data = runtime.self();
+            runtime_hash = const_cast<runtime_data&>(rt_data).rehash();
+            if (!rt_data.calls.empty())
             {
-                const internal_call_info& icall = get_internal_call(i);
-                internals.emplace(icall.name, icall);
-            }
-            for (auto& it : data.methods)
-            {
-                if (!it.is_defined())
+                vector<uint8_t> keybuf;
+                keybuf.reserve(32);
+                for (auto& it : data.methods)
                 {
+                    if (it.is_defined()) continue;
+                
                     const string_view method_name = data.database[it.name].name;
-                    auto find_internal = internals.find(method_name);
-                    VALIDATE_METHOD_DEFINITION(find_internal != internals.end(), method_name);
-
-                    keybuf.reserve(32);
-
+                    auto find_external = rt_data.call_lookup.find(method_name);
+                    VALIDATE_METHOD_DEFINITION(find_external != rt_data.call_lookup.end(), method_name);
+                    
                     // Create signature
                     signature_idx sig_idx;
-                    const internal_call_info& icall = find_internal->second;
-                    make_key<stackvar>(icall.return_type, icall.parameters, keybuf);
+                    const external_call_info& call = rt_data.calls[find_external->second];
+                    make_key<stackvar>(call.return_type, call.parameters, keybuf);
                     auto find = data.signature_lookup.find(keybuf);
                     if (find == data.signature_lookup.end())
                     {
                         sig_idx = signature_idx(data.signatures.size());
-                        gen_signature signature(sig_idx, icall.return_type, icall.parameters);
+                        gen_signature signature(sig_idx, call.return_type, call.parameters);
                         signature.is_resolved = true;
-                        signature.parameters_size = icall.parameters_size;
+                        signature.parameters_size = call.parameters_size;
                         data.signature_lookup.emplace(keybuf, sig_idx);
                         data.signatures.push_back(std::move(signature));
                     }
@@ -128,16 +123,16 @@ namespace propane
                     {
                         sig_idx = find->second;
                     }
-
+                    
                     // Create method
                     gen_method method(it.name, it.index);
                     method.signature = sig_idx;
-                    append_bytecode(method.bytecode, icall.index);
-                    method.flags |= (extended_flags::is_defined | type_flags::is_internal);
+                    append_bytecode(method.bytecode, call.index);
+                    method.flags |= (extended_flags::is_defined | type_flags::is_external);
                     it = std::move(method);
                 }
             }
-
+            
             // Move over objects
             for (auto& t : data.types) types.push_back(std::move(t));
             for (auto& m : data.methods) methods.push_back(std::move(m));
@@ -257,7 +252,7 @@ namespace propane
             }
 
             // Recompile
-            if (!method.is_internal() && !method.bytecode.empty())
+            if (!method.is_external() && !method.bytecode.empty())
             {
                 current_method = &method;
                 current_signature = &signatures[method.signature];
@@ -1003,7 +998,7 @@ namespace propane
                         ASSERT(find, "Invalid identifier");
                         VALIDATE_METHOD_INITIALIZER_DEFINITION(find->lookup == lookup_type::method, get_name(name), find.name);
 
-                        write_bytecode<size_t>(lhs_addr, (size_t(find->method) ^ internal_hash));
+                        write_bytecode<size_t>(lhs_addr, (size_t(find->method) ^ runtime_hash));
                     }
                     else
                     {
@@ -1097,13 +1092,17 @@ namespace propane
         dst.content = block<uint8_t>(serialized.data(), serialized.size());
     }
 
-    assembly::assembly(const intermediate& im)
+    assembly::assembly(const intermediate& im, const runtime& runtime)
     {
         VALIDATE_INTERMEDIATE(im.is_valid());
         VALIDATE_COMPATIBILITY(im.is_compatible());
 
         gen_intermediate_data data = gen_intermediate_data::deserialize(im);
 
-        asm_assembly_data::serialize(*this, assembly_linker(std::move(data)));
+        asm_assembly_data::serialize(*this, assembly_linker(std::move(data), runtime));
+    }
+    assembly::assembly(const intermediate& im) : assembly(im, runtime())
+    {
+
     }
 }

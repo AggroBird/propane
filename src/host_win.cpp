@@ -37,6 +37,19 @@ namespace propane
         const BOOL result = VirtualFree(mem.address, 0, MEM_RELEASE);
         ASSERT(result, "Failed to release memory");
     }
+
+    void* host::openlib(const char* path)
+    {
+        return LoadLibraryA(path);
+    }
+    void host::closelib(void* handle)
+    {
+        FreeLibrary((HMODULE)handle);
+    }
+    void* host::loadsym(void* handle, const char* name)
+    {
+        return GetProcAddress((HMODULE)handle, name);
+    }
 }
 
 #endif

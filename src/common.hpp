@@ -90,7 +90,7 @@ namespace propane
             return hash(reinterpret_cast<const char*>(&val), sizeof(value_t));
         }
 
-        // String version
+        // CString version
         template<size_t len> inline size_t append(size_t hash, const char(&str)[len]) noexcept
         {
             return append(hash, str, (len - 1));
@@ -106,6 +106,16 @@ namespace propane
             return append(hash, str.data(), str.size());
         }
         inline size_t hash(string_view str) noexcept
+        {
+            return hash(str.data(), str.size());
+        }
+
+        // String version
+        inline size_t append(size_t hash, string str) noexcept
+        {
+            return append(hash, str.data(), str.size());
+        }
+        inline size_t hash(string str) noexcept
         {
             return hash(str.data(), str.size());
         }
@@ -189,16 +199,6 @@ namespace propane
     static constexpr bool check_size_range(uint64_t val) noexcept
     {
         return val <= uint64_t(~size_t(0));
-    }
-
-    // Tuple expansion into static fuction
-    template <typename function, typename tuple_type, size_t... indices> static inline auto expand_sequence(function func, const tuple_type& tup, std::index_sequence<indices...>)
-    {
-        return func(std::get<indices>(tup)...);
-    }
-    template <typename function, typename tuple_type> static inline auto expand(function func, const tuple_type& tup)
-    {
-        return expand_sequence(func, tup, std::make_index_sequence<std::tuple_size_v<tuple_type>>{});
     }
 
     // Bitcount
