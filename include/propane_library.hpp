@@ -88,6 +88,11 @@ namespace propane
         };
     }
 
+    // Temporary method handle. Contains information for runtime methods imported from external sources
+    // (dynamic libraries or source). All resources in this object need to outlive the library's lifespan
+    // (including the name string and the method handle).
+    // The signature provided in the binding needs to match the signature of the method. Signatures are
+    // not validated for dynamic library calls so take care to make sure the signatures match.
     class external_call
     {
     public:
@@ -147,6 +152,7 @@ namespace propane
         }
     };
 
+    // Library object that contains external method definitions
     class library : public handle<class library_data, sizeof(size_t) * 16>
     {
     public:
