@@ -337,6 +337,9 @@ namespace propane
         size_t max_callstack_depth;
     };
 
+    // Runtime object.
+    // Contains a list of libraries with external function calls which can be invoked at runtime.
+    // When executing an assembly, make sure the assembly was linked with the same version of the runtime.
     class runtime : public handle<class runtime_data, sizeof(size_t) * 40>
     {
     public:

@@ -152,7 +152,9 @@ namespace propane
         }
     };
 
-    // Library object that contains external method definitions
+    // Library object that contains external method definitions. If the list of external calls
+    // contains any null handles during execution, the library will attempt to load a
+    // dynamic library file at specified path.
     class library : public handle<class library_data, sizeof(size_t) * 16>
     {
     public:
