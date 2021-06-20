@@ -67,7 +67,7 @@ Assemblies can be fed into a translator to generate other programming languages 
 - Interpreter to execute bytecode directly in a runtime
 - Generator that converts assemblies into C code, ready to be compiled to any platform
 - Tools to generate Propane from and to text files via a prototype programming language
-- Call methods from a subset of the C standard library
+- Call methods from a subset of the C standard library directly or from dynamic libraries
 
 ## Potential future additions
 
@@ -75,7 +75,12 @@ Assemblies can be fed into a translator to generate other programming languages 
 - Alignment and padding
 - Compile time optimization
 - Multithreading
-- Dynamic libraries
+
+## Version history
+
+- 1.1
+
+Added initial support for loading importing dynamic libraries at runtime.
 
 ## Motivations
 
@@ -85,7 +90,7 @@ Propane has been conceived as a study project. Propane is intended to be used fo
 
 The Propane toolchain requires C++20 to build.
 
-The interpreter uses platform specific code to mark the memory containing the executable code read-only. On Windows, this is implemented using the memoryapi (VirtualAlloc and VirtualProtect). On non-Windows platforms, this is implemented using posix (posix_memalign and mprotect).
+The interpreter uses platform specific code to manage protected memory and load dynamic libraries. See the respective source files for implementation details ([Windows](src/host_win.cpp), [Posix](src/host_posix.cpp)).
 
 ## License
 
