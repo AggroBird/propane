@@ -26,10 +26,11 @@ namespace propane
     class library_data
     {
     public:
-        MOVABLE_CLASS_DEFAULT(library_data, string_view path = string_view()) :
-            path(path) {}
+        MOVABLE_CLASS_DEFAULT(library_data, string_view path, bool preload_symbols) :
+            path(path), preload_symbols(preload_symbols) {}
 
         string path;
+        bool preload_symbols;
         block<external_call_info> calls;
     };
 

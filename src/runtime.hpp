@@ -428,9 +428,20 @@ namespace propane
     class runtime_data
     {
     public:
+        class runtime_library
+        {
+        public:
+            runtime_library(string_view path, bool preload_symbols) :
+                handle(path),
+                preload_symbols(preload_symbols) {}
+
+            host_library handle;
+            bool preload_symbols;
+        };
+
         NOCOPY_CLASS_DEFAULT(runtime_data) = default;
 
-        database<name_idx, host_library> libraries;
+        database<name_idx, runtime_library> libraries;
         indexed_vector<index_t, external_call_info> calls;
         unordered_map<string_view, index_t> call_lookup;
 

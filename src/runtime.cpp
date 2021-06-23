@@ -55,7 +55,14 @@ namespace propane
             data.set_dirty();
 
             auto find = data.libraries.find(lib_data.path);
-            if (!find) find = data.libraries.emplace(lib_data.path, lib_data.path);
+            if (!find)
+            {
+                find = data.libraries.emplace(lib_data.path, lib_data.path, lib_data.preload_symbols);
+            }
+            else
+            {
+                find->preload_symbols |= lib_data.preload_symbols;
+            }
 
             data.calls.reserve(data.calls.size() + lib_data.calls.size());
             for (auto& call : lib_data.calls)

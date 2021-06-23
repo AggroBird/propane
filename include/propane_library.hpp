@@ -155,12 +155,13 @@ namespace propane
     // Library object that contains external method definitions. If the list of external calls
     // contains any null handles during execution, the library will attempt to load a
     // dynamic library file at specified path.
+    // Symbols are loaded lazily at runtime unless specified otherwise.
     class library : public handle<class library_data, sizeof(size_t) * 16>
     {
     public:
-        library(std::string_view path, std::span<const external_call> calls);
-        library(std::string_view path, std::initializer_list<external_call> calls) :
-            library(path, init_span(calls)) {}
+        library(std::string_view path, bool preload_symbols, std::span<const external_call> calls);
+        library(std::string_view path, bool preload_symbols, std::initializer_list<external_call> calls) :
+            library(path, preload_symbols, init_span(calls)) {}
         ~library();
 
     private:

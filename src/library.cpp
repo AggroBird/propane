@@ -7,7 +7,7 @@ namespace propane
     external_call::external_call(std::string_view name) :
         name(name) {}
 
-    library::library(string_view path, span<const external_call> calls) : handle(path)
+    library::library(string_view path, bool preload_symbols, span<const external_call> calls) : handle(path, preload_symbols)
     {
         auto& data = self();
 

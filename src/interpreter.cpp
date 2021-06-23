@@ -107,6 +107,25 @@ namespace propane
             }
             VALIDATE_STACK_ALLOCATION(stack_data != nullptr);
 
+            // Preload symbols
+            for (auto& call : runtime.calls)
+            {
+                if (!call.handle)
+                {
+                    auto& lib = *runtime.libraries[call.library];
+                    if (lib.preload_symbols)
+                    {
+                        if (!lib.handle.is_open())
+                        {
+                            const bool opened = lib.handle.open();
+                            ASSERT(opened, "Failed to load library");
+                        }
+                        call.handle = lib.handle.get_proc(call.name.data());
+                        ASSERT(call.handle, "Failed to find function");
+                    }
+                }
+            }
+
             // Push return type and stack frame
             push_stack_frame(main, get_signature(main.signature));
 
@@ -2261,21 +2280,21 @@ namespace propane
                 if (!call.handle)
                 {
                     auto& lib = *runtime.libraries[call.library];
-                    if (!lib.is_open())
+                    if (!lib.handle.is_open())
                     {
-                        const bool opened = lib.open();
+                        const bool opened = lib.handle.open();
                         ASSERT(opened, "Failed to load library");
                     }
-                    call.handle = lib.get_proc(call.name.data());
+                    call.handle = lib.handle.get_proc(call.name.data());
                     ASSERT(call.handle, "Failed to find function");
                 }
 
                 // Invoke external
                 call.forward(call.handle, stack_data + return_offset, stack_data + param_offset);
-                
+
                 // Set return value here since we return immediately
                 return_value_addr = return_value ? address_t(&return_type, stack_data + return_offset) : address_t();
-                
+
                 // Pop stackframe
                 stack_size = frame_offset;
             }
@@ -2346,7 +2365,7 @@ namespace propane
         auto& rt_data = self();
         const size_t runtime_hash = rt_data.rehash();
         ASSERT(asm_data.runtime_hash == runtime_hash, "Runtime hash value mismatch");
-        
+
         // Copy assembly binary into a protected memory area
         const auto asm_binary = linked_assembly.assembly_binary();
         host_memory host_mem(asm_binary.size());
