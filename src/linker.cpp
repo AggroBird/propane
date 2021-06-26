@@ -83,7 +83,8 @@ namespace propane
     class assembly_linker final : public asm_assembly_data
     {
     public:
-        assembly_linker(gen_intermediate_data&& data, const runtime& runtime) :
+        assembly_linker(gen_intermediate_data&& im_data, const runtime& runtime) :
+            data(std::move(im_data)),
             size_type(derive_type_index_v<size_t>),
             offset_type(derive_type_index_v<offset_t>),
             ptr_size(get_base_type_size(type_idx::vptr))
@@ -92,47 +93,35 @@ namespace propane
 
             // Setup runtime
             auto& rt_data = runtime.self();
-            runtime_hash = const_cast<runtime_data&>(rt_data).rehash();
-            if (!rt_data.calls.empty())
+            if (!rt_data.call_lookup.empty())
             {
-                vector<uint8_t> keybuf;
                 keybuf.reserve(32);
+
                 for (auto& it : data.methods)
                 {
                     if (it.is_defined()) continue;
-                
+
                     const string_view method_name = data.database[it.name].name;
                     auto find_external = rt_data.call_lookup.find(method_name);
                     VALIDATE_METHOD_DEFINITION(find_external != rt_data.call_lookup.end(), method_name);
-                    
+
                     // Create signature
-                    signature_idx sig_idx;
-                    const external_call_info& call = rt_data.calls[find_external->second];
-                    make_key<stackvar>(call.return_type, call.parameters, keybuf);
-                    auto find = data.signature_lookup.find(keybuf);
-                    if (find == data.signature_lookup.end())
-                    {
-                        sig_idx = signature_idx(data.signatures.size());
-                        gen_signature signature(sig_idx, call.return_type, call.parameters);
-                        signature.is_resolved = true;
-                        signature.parameters_size = call.parameters_size;
-                        data.signature_lookup.emplace(keybuf, sig_idx);
-                        data.signatures.push_back(std::move(signature));
-                    }
-                    else
-                    {
-                        sig_idx = find->second;
-                    }
-                    
+                    auto cidx = find_external->second;
+                    const external_call_info& call = rt_data.libraries[cidx.library]->calls[cidx.index];
+                    const signature_idx sig_idx = resolve_native_types(call);
+
                     // Create method
                     gen_method method(it.name, it.index);
                     method.signature = sig_idx;
-                    append_bytecode(method.bytecode, call.index);
+                    append_bytecode(method.bytecode, cidx);
                     method.flags |= (extended_flags::is_defined | type_flags::is_external);
                     it = std::move(method);
                 }
             }
-            
+
+            // Set hash
+            runtime_hash = rt_data.hash;
+
             // Move over objects
             for (auto& t : data.types) types.push_back(std::move(t));
             for (auto& m : data.methods) methods.push_back(std::move(m));
@@ -161,6 +150,85 @@ namespace propane
             find_main();
         }
 
+        vector<uint8_t> keybuf;
+        vector<stackvar> params;
+
+        signature_idx resolve_native_types(const external_call_info& call)
+        {
+            const type_idx return_type = resolve_native_type(call.return_type);
+            params.resize(call.parameters.size());
+            stackvar* dst = params.data();
+            for (auto& p : call.parameters)
+            {
+                *dst++ = stackvar(resolve_native_type(p), p.offset);
+            }
+
+            make_key<stackvar>(return_type, params, keybuf);
+            auto find = data.signature_lookup.find(keybuf);
+            if (find == data.signature_lookup.end())
+            {
+                // New signature
+                const signature_idx sig_idx = signature_idx(data.signatures.size());
+                gen_signature signature(sig_idx, return_type, std::move(params));
+                signature.is_resolved = true;
+                signature.parameters_size = call.parameters_size;
+                data.signature_lookup.emplace(keybuf, sig_idx);
+                data.signatures.push_back(std::move(signature));
+                return sig_idx;
+            }
+            else
+            {
+                return find->second;
+            }
+        }
+        type_idx resolve_native_type(const native_type_info& native_type)
+        {
+            type_idx result_idx;
+
+            if (auto find = data.database.find(native_type.type))
+            {
+                // Existing type
+                ASSERT(find->lookup == lookup_type::type, "Invalid type");
+
+                result_idx = find->type;
+
+                if (!is_base_type(find->type))
+                {
+                    auto& type = data.types[result_idx];
+
+                    ASSERT(type.total_size == 0 || type.total_size == native_type.size, "Native type size mismatch");
+
+                    // Natives are implicitly defined
+                    type.total_size = native_type.size;
+                    type.flags |= type_flags::is_external;
+                    type.flags |= extended_flags::is_defined;
+                }
+            }
+            else
+            {
+                // New type
+                ASSERT(false, "NYI");
+            }
+
+            // Resolve pointers
+            for (size_t i = 0; i < native_type.pointer; i++)
+            {
+                type_idx idx = data.types[result_idx].pointer_type;
+                if (idx == type_idx::invalid)
+                {
+                    // Create a new pointer for this type
+                    idx = type_idx(data.types.size());
+                    gen_type generate_type(name_idx::invalid, idx);
+                    generate_type.make_pointer(result_idx);
+                    generate_type.flags |= extended_flags::is_defined;
+                    data.types[result_idx].pointer_type = idx;
+                    data.types.push_back(std::move(generate_type));
+                }
+                result_idx = idx;
+            }
+
+            return result_idx;
+        }
 
         void resolve_type_recursive(asm_type& type)
         {
@@ -208,13 +276,19 @@ namespace propane
             else
             {
                 // User-defined types
-                type.total_size = 0;
-                for (auto& field : type.fields)
+                if (!type.fields.empty())
                 {
-                    auto& field_type = types[field.type];
-                    if (!field_type.is_resolved()) resolve_type_recursive(field_type);
-                    field.offset = type.is_union() ? 0 : type.total_size;
-                    type.total_size = type.is_union() ? std::max(type.total_size, field_type.total_size) : (type.total_size + field_type.total_size);
+                    const auto current_size = type.total_size;
+                    type.total_size = 0;
+                    for (auto& field : type.fields)
+                    {
+                        auto& field_type = types[field.type];
+                        if (!field_type.is_resolved()) resolve_type_recursive(field_type);
+                        field.offset = type.is_union() ? 0 : type.total_size;
+                        type.total_size = type.is_union() ? std::max(type.total_size, field_type.total_size) : (type.total_size + field_type.total_size);
+                    }
+                    // Ensure that size matches native declaration
+                    ASSERT(current_size == 0 || current_size == type.total_size, "Native type size mismatch");
                 }
                 VALIDATE_TYPE_SIZE(type.total_size > 0, get_name(type), make_meta(type.index));
                 type.flags |= extended_flags::is_resolved;
@@ -1059,6 +1133,8 @@ namespace propane
             return get_name(method.name);
         }
 
+
+        gen_intermediate_data data;
 
         const type_idx size_type;
         const type_idx offset_type;

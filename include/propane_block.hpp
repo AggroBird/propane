@@ -487,6 +487,8 @@ namespace propane
     public:
         using block<value_t>::block;
 
+        indexed_block(const block<value_t>& other) : block<value_t>(other) {}
+
         inline value_t& operator[](key_t idx) noexcept { return block<value_t>::operator[](size_t(idx)); }
         inline const value_t& operator[](key_t idx) const noexcept { return block<value_t>::operator[](size_t(idx)); }
 

@@ -11,11 +11,16 @@ namespace propane
     {
         auto& data = self();
 
-        size_t idx = 0;
         data.calls = block<external_call_info>(calls.size());
+        external_call_info* write = data.calls.data();
         for (auto& call : calls)
         {
             ASSERT(is_identifier(call.name), "Invalid name");
+
+            for (auto& type : call.parameters)
+            {
+                ASSERT(is_identifier(type.type), "Invalid name");
+            }
 
             external_call_info info(call.name);
             info.return_type = call.return_type;
@@ -23,7 +28,27 @@ namespace propane
             info.parameters_size = call.parameters_size;
             info.forward = call.forward;
             info.handle = call.handle;
-            data.calls[idx++] = std::move(info);
+            *write++ = std::move(info);
+        }
+
+        std::sort(data.calls.begin(), data.calls.end(), sort_named<external_call_info>{});
+
+        // Generate hash
+        toolchain_version version = toolchain_version::current();
+        data.hash = fnv::hash(&version, sizeof(toolchain_version));
+
+        for (auto& call : data.calls)
+        {
+            data.hash = fnv::append(data.hash, call.return_type.type);
+            data.hash = fnv::append(data.hash, call.return_type.size);
+            data.hash = fnv::append(data.hash, call.return_type.pointer);
+
+            for (const auto& it : call.parameters)
+            {
+                data.hash = fnv::append(data.hash, it.type);
+                data.hash = fnv::append(data.hash, it.size);
+                data.hash = fnv::append(data.hash, it.pointer);
+            }
         }
     }
     library::~library()

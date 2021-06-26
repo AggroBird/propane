@@ -135,6 +135,25 @@ namespace propane
     }
 
     // Derivatives
+    template<typename value_t> struct derive_type_index { static constexpr type_idx value = type_idx::invalid; };
+    template<> struct derive_type_index<i8> { static constexpr type_idx value = type_idx::i8; };
+    template<> struct derive_type_index<u8> { static constexpr type_idx value = type_idx::u8; };
+    template<> struct derive_type_index<i16> { static constexpr type_idx value = type_idx::i16; };
+    template<> struct derive_type_index<u16> { static constexpr type_idx value = type_idx::u16; };
+    template<> struct derive_type_index<i32> { static constexpr type_idx value = type_idx::i32; };
+    template<> struct derive_type_index<u32> { static constexpr type_idx value = type_idx::u32; };
+    template<> struct derive_type_index<i64> { static constexpr type_idx value = type_idx::i64; };
+    template<> struct derive_type_index<u64> { static constexpr type_idx value = type_idx::u64; };
+    template<> struct derive_type_index<f32> { static constexpr type_idx value = type_idx::f32; };
+    template<> struct derive_type_index<f64> { static constexpr type_idx value = type_idx::f64; };
+    template<> struct derive_type_index<vptr> { static constexpr type_idx value = type_idx::vptr; };
+    template<> struct derive_type_index<void> { static constexpr type_idx value = type_idx::voidtype; };
+    template<typename value_t> inline constexpr type_idx derive_type_index_v = derive_type_index<value_t>::value;
+
+    template<typename value_t> struct derive_base_size { static constexpr size_t value = sizeof(value_t); };
+    template<> struct derive_base_size<void> { static constexpr size_t value = 0; };
+    template<typename value_t> inline constexpr size_t derive_base_size_v = derive_base_size<value_t>::value;
+
     struct base_type_info
     {
         constexpr base_type_info(const char* name, type_idx type, size_t size) :
@@ -431,27 +450,30 @@ namespace propane
         class runtime_library
         {
         public:
-            runtime_library(string_view path, bool preload_symbols) :
-                handle(path),
-                preload_symbols(preload_symbols) {}
+            runtime_library(bool preload_symbols, const block<external_call_info>& calls) :
+                preload_symbols(preload_symbols),
+                calls(calls) {}
 
-            host_library handle;
             bool preload_symbols;
+            indexed_block<index_t, external_call_info> calls;
         };
 
         NOCOPY_CLASS_DEFAULT(runtime_data) = default;
 
+        struct call_index
+        {
+            call_index() = default;
+            call_index(name_idx library, index_t index) :
+                library(library),
+                index(index) {}
+
+            name_idx library;
+            index_t index;
+        };
+
         database<name_idx, runtime_library> libraries;
-        indexed_vector<index_t, external_call_info> calls;
-        unordered_map<string_view, index_t> call_lookup;
-
-        size_t rehash() noexcept;
-
-        void set_dirty();
-
-    private:
-        size_t hash_value = 0;
-        bool modified = true;
+        unordered_map<string_view, call_index> call_lookup;
+        size_t hash = 0;
     };
 }
 

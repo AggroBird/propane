@@ -7,8 +7,68 @@
 
 namespace propane
 {
-    namespace invoke_utility
+    struct native_type_info
     {
+        native_type_info() = default;
+        native_type_info(std::string_view type, size_t size, size_t pointer) :
+            type(type),
+            size(size),
+            pointer(pointer) {}
+
+        std::string_view type;
+        size_t size = 0;
+        size_t pointer = 0;
+    };
+
+    template<typename value_t> struct native_type_name
+    {
+        static std::string_view name()
+        {
+            static_assert(false, "Unsupported native type");
+            return "";
+        }
+    };
+
+    template<> struct native_type_name<int8_t> { static std::string_view name() { return "byte"; } };
+    template<> struct native_type_name<uint8_t> { static std::string_view name() { return "ubyte"; } };
+    template<> struct native_type_name<int16_t> { static std::string_view name() { return "short"; } };
+    template<> struct native_type_name<uint16_t> { static std::string_view name() { return "ushort"; } };
+    template<> struct native_type_name<int32_t> { static std::string_view name() { return "int"; } };
+    template<> struct native_type_name<uint32_t> { static std::string_view name() { return "uint"; } };
+    template<> struct native_type_name<int64_t> { static std::string_view name() { return "long"; } };
+    template<> struct native_type_name<uint64_t> { static std::string_view name() { return "ulong"; } };
+    template<> struct native_type_name<float> { static std::string_view name() { return "float"; } };
+    template<> struct native_type_name<double> { static std::string_view name() { return "double"; } };
+    template<> struct native_type_name<void> { static std::string_view name() { return "void"; } };
+
+    namespace native
+    {
+        // Get type size
+        template<typename value_t> struct type_size { static constexpr size_t value = sizeof(value_t); };
+        template<> struct type_size<void> { static constexpr size_t value = 0; };
+
+        // Get pointer info
+        template<typename value_t> struct pointer_info
+        {
+            typedef value_t base_type;
+            static constexpr size_t value = 0;
+        };
+        template<typename value_t> struct pointer_info<value_t*> : public pointer_info<value_t>
+        {
+            static constexpr size_t value = pointer_info<value_t>::value + 1;
+        };
+
+        // Parameter info
+        struct parameter : native_type_info
+        {
+            parameter() = default;
+            parameter(std::string_view type, size_t size, size_t pointer, size_t offset) :
+                native_type_info(type, size, pointer),
+                offset(offset) {}
+
+            size_t offset = 0;
+        };
+
         template<typename value_t, bool pointer> struct decay_base
         {
             typedef std::decay_t<value_t> type;
@@ -25,7 +85,7 @@ namespace propane
         template<> class method_signature_param<>
         {
         public:
-            static inline void generate(stackvar* result, size_t& offset) noexcept
+            static inline void generate(parameter* result, size_t& offset) noexcept
             {
 
             }
@@ -37,12 +97,15 @@ namespace propane
         template<typename value_t, typename... param_t> class method_signature_param<value_t, param_t...> : public method_signature_param<param_t...>
         {
         public:
-            static inline void generate(stackvar* result, size_t& offset) noexcept
+            static inline void generate(parameter* result, size_t& offset) noexcept
             {
-                constexpr type_idx val = derive_type_index_v<decay_base_t<value_t>>;
-                static_assert(val != type_idx::invalid, "Unsupported base type provided");
-                *result++ = stackvar(val, offset);
-                offset += derive_base_size_v<decay_base_t<value_t>>;
+                typedef decay_base_t<value_t> param_type;
+                typedef pointer_info<param_type>::base_type base_type;
+                std::string_view type = native_type_name<base_type>::name();
+                constexpr size_t pointer = pointer_info< param_type>::value;
+                constexpr size_t size = pointer == 0 ? type_size<base_type>::value : sizeof(void*);
+                *result++ = parameter(type, size, pointer, offset);
+                offset += size;
                 method_signature_param<param_t...>::generate(result, offset);
             }
             template<size_t idx, typename... tuple_args> static inline void read_value(std::tuple<tuple_args...>& tup, const void*& data) noexcept
@@ -108,28 +171,31 @@ namespace propane
                 bind()
                 {
                     parameters_size = 0;
-                    invoke_utility::method_signature_param<param_t...>::generate(parameters, parameters_size);
+                    native::method_signature_param<param_t...>::generate(parameters, parameters_size);
                 }
 
                 static void forward_call(void* handle, void* ret_val, const void* param) noexcept
                 {
                     const auto method_ptr = reinterpret_cast<retval_t(*)(param_t...)>(handle);
-                    invoke_utility::method_invoke<retval_t, param_t...>::invoke(ret_val, param, method_ptr);
+                    native::method_invoke<retval_t, param_t...>::invoke(ret_val, param, method_ptr);
                 }
 
                 // Array size cannot be 0
-                stackvar parameters[sizeof...(param_t) == 0 ? 1 : sizeof...(param_t)];
+                native::parameter parameters[sizeof...(param_t) == 0 ? 1 : sizeof...(param_t)];
                 size_t parameters_size;
             };
 
-            constexpr type_idx ret_type = derive_type_index_v<invoke_utility::decay_base_t<retval_t>>;
-            static_assert(ret_type != type_idx::invalid, "Unsupported return type provided");
+            static const bind instance;
 
-            static bind instance;
+            typedef native::decay_base_t<retval_t> return_type;
+            typedef native::pointer_info<return_type>::base_type base_type;
+            std::string_view type = native_type_name<base_type>::name();
+            constexpr size_t pointer = native::pointer_info<return_type>::value;
+            constexpr size_t size = pointer == 0 ? native::type_size<return_type>::value : sizeof(void*);
 
             call.forward = bind::forward_call;
-            call.return_type = ret_type;
-            call.parameters = std::span<const stackvar>(instance.parameters, sizeof...(param_t));
+            call.return_type = native_type_info(type, size, pointer);
+            call.parameters = std::span<const native::parameter>(instance.parameters, sizeof...(param_t));
             call.parameters_size = instance.parameters_size;
             call.handle = method;
         }
@@ -138,8 +204,8 @@ namespace propane
 
         std::string_view name;
         forward_method forward = nullptr;
-        type_idx return_type = type_idx::invalid;
-        std::span<const stackvar> parameters;
+        native_type_info return_type;
+        std::span<const native::parameter> parameters;
         size_t parameters_size = 0;
         void* handle = nullptr;
 

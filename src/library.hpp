@@ -6,6 +6,14 @@
 
 namespace propane
 {
+    template<typename value_t> struct sort_named
+    {
+        constexpr bool operator()(const value_t& lhs, const value_t& rhs) const noexcept
+        {
+            return lhs.name < rhs.name;
+        }
+    };
+
     class external_call_info
     {
     public:
@@ -13,25 +21,25 @@ namespace propane
             name(name) {}
 
         string name;
-        type_idx return_type = type_idx::invalid;
-        std::span<const stackvar> parameters;
+        native_type_info return_type;
+        std::span<const native::parameter> parameters;
         size_t parameters_size = 0;
 
         external_call::forward_method forward = nullptr;
         void* handle = nullptr;
-        index_t index = 0;
-        name_idx library = name_idx::invalid;
     };
 
     class library_data
     {
     public:
         MOVABLE_CLASS_DEFAULT(library_data, string_view path, bool preload_symbols) :
-            path(path), preload_symbols(preload_symbols) {}
+            path(path),
+            preload_symbols(preload_symbols) {}
 
         string path;
         bool preload_symbols;
         block<external_call_info> calls;
+        size_t hash = 0;
     };
 
     class host_library final
@@ -54,7 +62,7 @@ namespace propane
         void* get_proc(const char* name);
 
     private:
-        string_view path;
+        string path;
         void* handle;
     };
 }

@@ -97,6 +97,11 @@ namespace propane
             return propane::is_arithmetic(index);
         }
 
+        inline bool is_external() const noexcept
+        {
+            return flags & type_flags::is_external;
+        }
+
         inline bool is_pointer() const noexcept
         {
             return flags & type_flags::is_pointer_type;

@@ -78,10 +78,9 @@ namespace propane
     class interpreter final
     {
     public:
-        NOCOPY_CLASS_DEFAULT(interpreter, assembly_data& asm_data, method& main, runtime_data& runtime, runtime_parameters parameters) :
+        NOCOPY_CLASS_DEFAULT(interpreter, assembly_data& asm_data, method& main, const runtime_data& runtime, runtime_parameters parameters) :
             parameters(parameters),
             data(asm_data),
-            runtime(runtime),
             types(asm_data.types.data()),
             methods(asm_data.methods.data()),
             signatures(asm_data.signatures.data()),
@@ -107,14 +106,27 @@ namespace propane
             }
             VALIDATE_STACK_ALLOCATION(stack_data != nullptr);
 
-            // Preload symbols
-            for (auto& call : runtime.calls)
+            // Initialize externals
+            for (size_t i = 0; i < runtime.libraries.size(); i++)
             {
-                if (!call.handle)
+                auto it = runtime.libraries[name_idx(i)];
+
+                runtime_library lib(it.name);
+
+                lib.calls = indexed_block<index_t, runtime_library::call>(it->calls.size());
+                auto src = it->calls.data();
+                for (auto& it : lib.calls)
                 {
-                    auto& lib = *runtime.libraries[call.library];
-                    if (lib.preload_symbols)
+                    it = runtime_library::call(*src++);
+                }
+
+                // Preload symbols
+                if (it->preload_symbols)
+                {
+                    for (auto& call : lib.calls)
                     {
+                        if (call.handle) continue;
+
                         if (!lib.handle.is_open())
                         {
                             const bool opened = lib.handle.open();
@@ -124,6 +136,8 @@ namespace propane
                         ASSERT(call.handle, "Failed to find function");
                     }
                 }
+
+                libraries.push_back(std::move(lib));
             }
 
             // Push return type and stack frame
@@ -2015,7 +2029,6 @@ namespace propane
 
         // Data
         const assembly_data& data;
-        runtime_data& runtime;
         // Lookup
         const type* const types;
         const method* const methods;
@@ -2029,6 +2042,31 @@ namespace propane
         const string_table<name_idx>& database;
         string generated_name_buffers[2];
         size_t generated_name_index = 0;
+        // Externals
+        class runtime_library
+        {
+        public:
+            struct call
+            {
+                call() = default;
+                call(const external_call_info& cinf) :
+                    name(cinf.name),
+                    forward(cinf.forward),
+                    handle(cinf.handle) {}
+
+                string_view name;
+                external_call::forward_method forward = nullptr;
+                void* handle = nullptr;
+            };
+
+            runtime_library() = default;
+            runtime_library(string_view path) :
+                handle(path) {}
+
+            host_library handle;
+            indexed_block<index_t, call> calls;
+        };
+        indexed_vector<name_idx, runtime_library> libraries;
 
         inline const type& get_type(type_idx type) const noexcept
         {
@@ -2271,15 +2309,16 @@ namespace propane
             }
             else
             {
-                ASSERT(method.bytecode.size() == sizeof(index_t), "Invalid external index");
-                const index_t external_idx = *reinterpret_cast<const index_t*>(method.bytecode.data());
+                ASSERT(method.bytecode.size() == sizeof(runtime_data::call_index), "Invalid external index");
+                const runtime_data::call_index cidx = *reinterpret_cast<const runtime_data::call_index*>(method.bytecode.data());
 
                 // Ensure method handle
-                ASSERT(runtime.calls.is_valid_index(external_idx), "Invalid external index");
-                auto& call = runtime.calls[external_idx];
+                ASSERT(libraries.is_valid_index(cidx.library), "Invalid library index");
+                auto& lib = libraries[cidx.library];
+                ASSERT(lib.calls.is_valid_index(cidx.index), "Invalid call index");
+                auto& call = lib.calls[cidx.index];
                 if (!call.handle)
                 {
-                    auto& lib = *runtime.libraries[call.library];
                     if (!lib.handle.is_open())
                     {
                         const bool opened = lib.handle.open();
@@ -2352,7 +2391,7 @@ namespace propane
     };
 
 
-    int32_t runtime::execute(const assembly& linked_assembly, runtime_parameters parameters)
+    int32_t runtime::execute(const assembly& linked_assembly, runtime_parameters parameters) const
     {
         VALIDATE_ASSEMBLY(linked_assembly.is_valid());
         VALIDATE_COMPATIBILITY(linked_assembly.is_compatible());
@@ -2362,9 +2401,8 @@ namespace propane
         VALIDATE_ENTRYPOINT(asm_data.methods.is_valid_index(asm_data.main));
 
         // Setup runtime
-        auto& rt_data = self();
-        const size_t runtime_hash = rt_data.rehash();
-        ASSERT(asm_data.runtime_hash == runtime_hash, "Runtime hash value mismatch");
+        const auto& rt_data = self();
+        ASSERT(asm_data.runtime_hash == rt_data.hash, "Runtime hash value mismatch");
 
         // Copy assembly binary into a protected memory area
         const auto asm_binary = linked_assembly.assembly_binary();

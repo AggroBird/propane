@@ -19,17 +19,12 @@ static_assert(sizeof(char) == 1, "Size of char is expected to be 1");
 
 namespace propane
 {
-    template<typename value_t> struct sort_named
-    {
-        constexpr bool operator()(const value_t& lhs, const value_t& rhs) const noexcept
-        {
-            return lhs.name < rhs.name;
-        }
-    };
-
     runtime::runtime(span<const library> libs)
     {
         auto& data = self();
+
+        toolchain_version version = toolchain_version::current();
+        data.hash = fnv::hash(&version, sizeof(toolchain_version));
 
         for (auto& lib : libs)
         {
@@ -48,68 +43,24 @@ namespace propane
     runtime& runtime::operator+=(const library& lib)
     {
         auto& lib_data = lib.self();
-        auto& data = self();
 
         if (!lib_data.calls.empty())
         {
-            data.set_dirty();
+            auto& data = self();
 
             auto find = data.libraries.find(lib_data.path);
-            if (!find)
-            {
-                find = data.libraries.emplace(lib_data.path, lib_data.path, lib_data.preload_symbols);
-            }
-            else
-            {
-                find->preload_symbols |= lib_data.preload_symbols;
-            }
+            ASSERT(!find, "Duplicate library");
+            find = data.libraries.emplace(lib_data.path, lib_data.preload_symbols, lib_data.calls);
 
-            data.calls.reserve(data.calls.size() + lib_data.calls.size());
-            for (auto& call : lib_data.calls)
+            data.hash = fnv::append(data.hash, lib_data.hash);
+
+            index_t idx = 0;
+            for (auto& call : find->calls)
             {
-                external_call_info copy = call;
-                copy.library = find.key;
-                data.calls.push_back(std::move(copy));
+                data.call_lookup.emplace(call.name, runtime_data::call_index(find.key, idx++));
             }
         }
 
         return *this;
-    }
-
-    size_t runtime_data::rehash() noexcept
-    {
-        if (modified)
-        {
-            modified = false;
-
-            toolchain_version version = toolchain_version::current();
-            hash_value = fnv::hash(&version, sizeof(version));
-
-            std::sort(calls.begin(), calls.end(), sort_named<external_call_info>{});
-
-            index_t idx = 0;
-            call_lookup.clear();
-            for (auto& call : calls)
-            {
-                hash_value = fnv::append(hash_value, call.name);
-                hash_value = fnv::append(hash_value, call.return_type);
-                for (const auto& it : call.parameters) hash_value = fnv::append(hash_value, it.type);
-
-                call.index = idx++;
-                call_lookup.emplace(call.name, call.index);
-            }
-        }
-        return hash_value;
-    }
-
-    void runtime_data::set_dirty()
-    {
-        modified = true;
-        hash_value = 0;
-    }
-
-    size_t runtime::hash() const noexcept
-    {
-        return const_cast<runtime_data&>(self()).rehash();
     }
 }

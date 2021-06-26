@@ -41,25 +41,6 @@ namespace propane
         invalid = invalid_index,
     };
 
-    template<typename value_t> struct derive_type_index { static constexpr type_idx value = type_idx::invalid; };
-    template<> struct derive_type_index<int8_t> { static constexpr type_idx value = type_idx::i8; };
-    template<> struct derive_type_index<uint8_t> { static constexpr type_idx value = type_idx::u8; };
-    template<> struct derive_type_index<int16_t> { static constexpr type_idx value = type_idx::i16; };
-    template<> struct derive_type_index<uint16_t> { static constexpr type_idx value = type_idx::u16; };
-    template<> struct derive_type_index<int32_t> { static constexpr type_idx value = type_idx::i32; };
-    template<> struct derive_type_index<uint32_t> { static constexpr type_idx value = type_idx::u32; };
-    template<> struct derive_type_index<int64_t> { static constexpr type_idx value = type_idx::i64; };
-    template<> struct derive_type_index<uint64_t> { static constexpr type_idx value = type_idx::u64; };
-    template<> struct derive_type_index<float> { static constexpr type_idx value = type_idx::f32; };
-    template<> struct derive_type_index<double> { static constexpr type_idx value = type_idx::f64; };
-    template<> struct derive_type_index<void*> { static constexpr type_idx value = type_idx::vptr; };
-    template<> struct derive_type_index<void> { static constexpr type_idx value = type_idx::voidtype; };
-    template<typename value_t> inline constexpr type_idx derive_type_index_v = derive_type_index<value_t>::value;
-
-    template<typename value_t> struct derive_base_size { static constexpr size_t value = sizeof(value_t); };
-    template<> struct derive_base_size<void> { static constexpr size_t value = 0; };
-    template<typename value_t> inline constexpr size_t derive_base_size_v = derive_base_size<value_t>::value;
-
     constexpr bool is_integral(type_idx type) noexcept
     {
         return type < type_idx::f32;
