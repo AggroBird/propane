@@ -102,10 +102,10 @@ namespace propane
                 typedef decay_base_t<value_t> param_type;
                 typedef pointer_info<param_type>::base_type base_type;
                 std::string_view type = native_type_name<base_type>::name();
+                constexpr size_t size = type_size<base_type>::value;
                 constexpr size_t pointer = pointer_info< param_type>::value;
-                constexpr size_t size = pointer == 0 ? type_size<base_type>::value : sizeof(void*);
                 *result++ = parameter(type, size, pointer, offset);
-                offset += size;
+                offset += (pointer == 0) ? size : sizeof(void*);
                 method_signature_param<param_t...>::generate(result, offset);
             }
             template<size_t idx, typename... tuple_args> static inline void read_value(std::tuple<tuple_args...>& tup, const void*& data) noexcept
@@ -190,8 +190,8 @@ namespace propane
             typedef native::decay_base_t<retval_t> return_type;
             typedef native::pointer_info<return_type>::base_type base_type;
             std::string_view type = native_type_name<base_type>::name();
+            constexpr size_t size = native::type_size<return_type>::value;
             constexpr size_t pointer = native::pointer_info<return_type>::value;
-            constexpr size_t size = pointer == 0 ? native::type_size<return_type>::value : sizeof(void*);
 
             call.forward = bind::forward_call;
             call.return_type = native_type_info(type, size, pointer);
