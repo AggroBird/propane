@@ -577,7 +577,7 @@ namespace propane
             auto rhs_addr = read_address(true);
 
             // ((offset_t)(lhs) - (offset_t)(rhs)) / sizeof(underlying type)
-            write_return_value(offset_type.index);
+            return_type = write_return_value(offset_type.index);
             instruction.write_str("(");
             write_cast(offset_type.index);
             instruction.write_str(lhs_addr.addr);
@@ -628,7 +628,7 @@ namespace propane
         }
         void cmp(opcode op)
         {
-            write_return_value(type_idx::i32);
+            return_type = write_return_value(type_idx::i32);
             do_cmp(op);
         }
 
@@ -675,11 +675,13 @@ namespace propane
             const auto& method = get_method(call_idx);
             const auto& signature = get_signature(method.signature);
 
-            write_return_value(signature.return_type);
+            const type_idx ret_type = write_return_value(signature.return_type);
 
             instruction.write_strs("$", database[method.name]);
 
             write_param(signature);
+
+            return_type = ret_type;
         }
         void callv()
         {
@@ -687,7 +689,7 @@ namespace propane
 
             const auto& signature = get_signature(method_ptr.type_ptr->generated.signature.index);
 
-            write_return_value(signature.return_type);
+            const type_idx ret_type = write_return_value(signature.return_type);
 
             if (method_ptr.addr.starts_with('*'))
             {
@@ -699,6 +701,8 @@ namespace propane
             }
 
             write_param(signature);
+
+            return_type = ret_type;
         }
         void write_param(const signature& signature)
         {
@@ -995,7 +999,7 @@ namespace propane
         unordered_map<size_t, index_t> label_indices;
         size_t label_idx = 0;
         size_t ret_idx = 0;
-        type_idx return_type = type_idx::invalid;
+        type_idx return_type = type_idx::voidtype;
         stack_frame_t sf;
 
         // String buffers
@@ -1190,7 +1194,7 @@ namespace propane
                     {
                         ASSERT(has_return_value(), "Return value address has not been set");
 
-                        ASSERT(return_type != type_idx::invalid, "Return value address has not been set");
+                        ASSERT(return_type != type_idx::voidtype, "Return value address has not been set");
 
                         buf.write_strs("$", get_number_str(size_t(ret_idx)), retval_postfix);
 
@@ -1473,16 +1477,13 @@ namespace propane
             dst.write_str(";");
         }
 
-        void write_return_value(type_idx type)
+        type_idx write_return_value(type_idx type)
         {
             if (type == type_idx::voidtype)
             {
                 ret_idx = 0;
-                return_type = type_idx::invalid;
-                return;
+                return type;
             }
-
-            return_type = type;
 
             for (size_t i = 0; i < return_vars.size(); i++)
             {
@@ -1490,7 +1491,7 @@ namespace propane
                 {
                     ret_idx = i;
                     instruction.write_strs("$", get_number_str(ret_idx), retval_postfix, " = ");
-                    return;
+                    return type;
                 }
             }
 
@@ -1498,10 +1499,12 @@ namespace propane
             declare_stackvar(instruction, retval_postfix, ret_idx, type);
             instruction.write_str(" = ");
             return_vars.push_back(type);
+
+            return type;
         }
         bool has_return_value()
         {
-            return return_type != type_idx::invalid;
+            return return_type != type_idx::voidtype;
         }
 
         void write_cast(string_writer& dst, type_idx dst_type)
