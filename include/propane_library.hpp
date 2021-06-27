@@ -103,7 +103,7 @@ namespace propane
                 typedef pointer_info<param_type>::base_type base_type;
                 std::string_view type = native_type_name<base_type>::name();
                 constexpr size_t size = type_size<base_type>::value;
-                constexpr size_t pointer = pointer_info< param_type>::value;
+                constexpr size_t pointer = pointer_info<param_type>::value;
                 *result++ = parameter(type, size, pointer, offset);
                 offset += (pointer == 0) ? size : sizeof(void*);
                 method_signature_param<param_t...>::generate(result, offset);
@@ -190,7 +190,7 @@ namespace propane
             typedef native::decay_base_t<retval_t> return_type;
             typedef native::pointer_info<return_type>::base_type base_type;
             std::string_view type = native_type_name<base_type>::name();
-            constexpr size_t size = native::type_size<return_type>::value;
+            constexpr size_t size = native::type_size<base_type>::value;
             constexpr size_t pointer = native::pointer_info<return_type>::value;
 
             call.forward = bind::forward_call;
