@@ -207,7 +207,13 @@ namespace propane
             else
             {
                 // New type
-                ASSERT(false, "NYI");
+                result_idx = type_idx(data.types.size());
+                const name_idx name = data.database.emplace(native_type.type, result_idx).key;
+                gen_type type(name, result_idx);
+                type.total_size = native_type.size;
+                type.flags |= type_flags::is_external;
+                type.flags |= extended_flags::is_defined;
+                data.types.push_back(std::move(type));
             }
 
             // Resolve pointers
