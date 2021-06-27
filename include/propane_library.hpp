@@ -22,24 +22,24 @@ namespace propane
 
     template<typename value_t> struct native_type_name
     {
-        static std::string_view name()
+        static std::string_view value()
         {
             static_assert(false, "Unsupported native type");
             return "";
         }
     };
 
-    template<> struct native_type_name<int8_t> { static std::string_view name() { return "byte"; } };
-    template<> struct native_type_name<uint8_t> { static std::string_view name() { return "ubyte"; } };
-    template<> struct native_type_name<int16_t> { static std::string_view name() { return "short"; } };
-    template<> struct native_type_name<uint16_t> { static std::string_view name() { return "ushort"; } };
-    template<> struct native_type_name<int32_t> { static std::string_view name() { return "int"; } };
-    template<> struct native_type_name<uint32_t> { static std::string_view name() { return "uint"; } };
-    template<> struct native_type_name<int64_t> { static std::string_view name() { return "long"; } };
-    template<> struct native_type_name<uint64_t> { static std::string_view name() { return "ulong"; } };
-    template<> struct native_type_name<float> { static std::string_view name() { return "float"; } };
-    template<> struct native_type_name<double> { static std::string_view name() { return "double"; } };
-    template<> struct native_type_name<void> { static std::string_view name() { return "void"; } };
+    template<> struct native_type_name<int8_t> { static std::string_view value() { return "byte"; } };
+    template<> struct native_type_name<uint8_t> { static std::string_view value() { return "ubyte"; } };
+    template<> struct native_type_name<int16_t> { static std::string_view value() { return "short"; } };
+    template<> struct native_type_name<uint16_t> { static std::string_view value() { return "ushort"; } };
+    template<> struct native_type_name<int32_t> { static std::string_view value() { return "int"; } };
+    template<> struct native_type_name<uint32_t> { static std::string_view value() { return "uint"; } };
+    template<> struct native_type_name<int64_t> { static std::string_view value() { return "long"; } };
+    template<> struct native_type_name<uint64_t> { static std::string_view value() { return "ulong"; } };
+    template<> struct native_type_name<float> { static std::string_view value() { return "float"; } };
+    template<> struct native_type_name<double> { static std::string_view value() { return "double"; } };
+    template<> struct native_type_name<void> { static std::string_view value() { return "void"; } };
 
     namespace native
     {
@@ -101,7 +101,7 @@ namespace propane
             {
                 typedef decay_base_t<value_t> param_type;
                 typedef pointer_info<param_type>::base_type base_type;
-                std::string_view type = native_type_name<base_type>::name();
+                std::string_view type = native_type_name<base_type>::value();
                 constexpr size_t size = type_size<base_type>::value;
                 constexpr size_t pointer = pointer_info<param_type>::value;
                 *result++ = parameter(type, size, pointer, offset);
@@ -189,7 +189,7 @@ namespace propane
 
             typedef native::decay_base_t<retval_t> return_type;
             typedef native::pointer_info<return_type>::base_type base_type;
-            std::string_view type = native_type_name<base_type>::name();
+            std::string_view type = native_type_name<base_type>::value();
             constexpr size_t size = native::type_size<base_type>::value;
             constexpr size_t pointer = native::pointer_info<return_type>::value;
 
