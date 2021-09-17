@@ -84,7 +84,7 @@ end
 
 Global are defined as unique data that can be accessed from any method. Globals exist at application startup and have a predetermined value. Globals that do not get initialized with a value default to zero. Uninitialized global data will default to zero.
 
-Constants are similar to globals in scope, but must their value must be immutable. Despite being immuatble, it is valid to take the address of a constant and use constants in arithmetic expressions. Modifying the value of a constant directly or indirectly through pointer access will result in undefined behaviour. Unlike globals, constants are not guaranteed to exist in memory at a specified location, as compilers might optimize or inline constant values depending on their usage.
+Constants are similar to globals in scope, but their value must be immutable. Despite being immutable, it is valid to take the address of a constant and use constants in arithmetic expressions. Modifying the value of a constant directly or indirectly through pointer access will result in undefined behaviour. Unlike globals, constants are not guaranteed to exist in memory at a specified location, as compilers might optimize or inline constant values depending on their usage.
 
 Global signature types can be initialized with a method address or a null pointer and changed at runtime, while constant signature types must always be initialized with a valid method address.
 
