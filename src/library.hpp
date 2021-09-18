@@ -39,6 +39,7 @@ namespace propane
         string path;
         bool preload_symbols;
         block<external_call_info> calls;
+        block<native_type_info> types;
         size_t hash = 0;
     };
 

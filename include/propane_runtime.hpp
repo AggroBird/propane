@@ -341,7 +341,7 @@ namespace propane
     // Contains a list of libraries with external function calls which can be invoked at runtime.
     // When executing an assembly, make sure the assembly was linked with the same version of the runtime.
     // This also includes the order in which the libraries were added to the runtime.
-    class runtime : public handle<class runtime_data, sizeof(size_t) * 40>
+    class runtime : public handle<class runtime_data, sizeof(size_t) * 44>
     {
     public:
         runtime(std::span<const class library> libs = std::span<const class library>());

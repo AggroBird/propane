@@ -48,16 +48,29 @@ namespace propane
         {
             auto& data = self();
 
-            auto find = data.libraries.find(lib_data.path);
-            ASSERT(!find, "Duplicate library");
-            find = data.libraries.emplace(lib_data.path, lib_data.preload_symbols, lib_data.calls);
+            auto find_lib = data.libraries.find(lib_data.path);
+            ASSERT(!find_lib, "Duplicate library");
+            find_lib = data.libraries.emplace(lib_data.path, lib_data.preload_symbols, lib_data.calls);
 
             data.hash = fnv::append(data.hash, lib_data.hash);
 
             index_t idx = 0;
-            for (auto& call : find->calls)
+            for (auto& call : find_lib->calls)
             {
-                data.call_lookup.emplace(call.name, runtime_data::call_index(find.key, idx++));
+                data.call_lookup.emplace(call.name, runtime_data::call_index(find_lib.key, idx++));
+            }
+
+            for (auto& type : lib_data.types)
+            {
+                auto find_type = data.type_lookup.find(type.type);
+                if (find_type == data.type_lookup.end())
+                {
+                    data.type_lookup.emplace(type.type, type);
+                }
+                else
+                {
+                    ASSERT(find_type->second.size == type.size, "Native type size mismatch");
+                }
             }
         }
 

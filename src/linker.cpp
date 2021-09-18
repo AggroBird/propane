@@ -119,6 +119,22 @@ namespace propane
                 }
             }
 
+            // Resolve any missing types
+            vector<string_view> unresolved_external_types;
+            for (auto& it : data.types)
+            {
+                if (it.is_defined()) continue;
+
+                unresolved_external_types.push_back(data.database[it.name].name);
+            }
+            for (auto& it : unresolved_external_types)
+            {
+                auto find_external = rt_data.type_lookup.find(it);
+                VALIDATE_TYPE_DEFINITION(find_external != rt_data.type_lookup.end(), it);
+
+                resolve_native_type(find_external->second);
+            }
+
             // Set hash
             runtime_hash = rt_data.hash;
 

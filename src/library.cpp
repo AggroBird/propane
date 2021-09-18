@@ -12,7 +12,8 @@ namespace propane
         auto& data = self();
 
         data.calls = block<external_call_info>(calls.size());
-        external_call_info* write = data.calls.data();
+        external_call_info* write_call = data.calls.data();
+        unordered_map<string_view, native_type_info> declared_types;
         for (auto& call : calls)
         {
             ASSERT(is_identifier(call.name), "Invalid name");
@@ -20,7 +21,11 @@ namespace propane
             for (auto& type : call.parameters)
             {
                 ASSERT(is_identifier(type.type), "Invalid name");
+
+                declared_types.emplace(type.type, type);
             }
+
+            declared_types.emplace(call.return_type.type, call.return_type);
 
             external_call_info info(call.name);
             info.return_type = call.return_type;
@@ -28,8 +33,16 @@ namespace propane
             info.parameters_size = call.parameters_size;
             info.forward = call.forward;
             info.handle = call.handle;
-            *write++ = std::move(info);
+            *write_call++ = std::move(info);
         }
+
+        data.types = block<native_type_info>(declared_types.size());
+        native_type_info* write_type = data.types.data();
+        for (auto& it : declared_types)
+        {
+            *write_type++ = it.second;
+        }
+
 
         std::sort(data.calls.begin(), data.calls.end(), sort_named<external_call_info>{});
 

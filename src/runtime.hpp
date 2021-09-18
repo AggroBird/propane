@@ -473,6 +473,7 @@ namespace propane
 
         database<name_idx, runtime_library> libraries;
         unordered_map<string_view, call_index> call_lookup;
+        unordered_map<string_view, native_type_info> type_lookup;
         size_t hash = 0;
     };
 }
