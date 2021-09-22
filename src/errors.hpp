@@ -90,6 +90,7 @@ enum class ERRC : uint32_t
     RTM_STACK_ALLOCATION_FAILURE = 0x5003,
     RTM_STACK_OVERFLOW = 0x5004,
     RTM_CALLSTACK_LIMIT_REACHED = 0x5005,
+    RTM_RUNTIME_HASH_MISMATCH = 0x5006,
 };
 
 inline uint32_t errc_to_uint(ERRC errc) noexcept

@@ -19,6 +19,8 @@
     "Runtime stack overflow (%/%)", stack_size, stack_capacity)
 #define VALIDATE_CALLSTACK_LIMIT(expr, max_depth) VALIDATE(ERRC::RTM_CALLSTACK_LIMIT_REACHED, expr, \
     "Maximum callstack depth of % exceeded", max_depth)
+#define VALIDATE_RUNTIME_HASH(expr) VALIDATE(ERRC::RTM_RUNTIME_HASH_MISMATCH, expr, \
+    "Runtime hash value mismatch")
 
 namespace propane
 {
@@ -2402,7 +2404,7 @@ namespace propane
 
         // Setup runtime
         const auto& rt_data = self();
-        ASSERT(asm_data.runtime_hash == rt_data.hash, "Runtime hash value mismatch");
+        VALIDATE_RUNTIME_HASH(asm_data.runtime_hash == rt_data.hash);
 
         // Copy assembly binary into a protected memory area
         const auto asm_binary = linked_assembly.assembly_binary();
