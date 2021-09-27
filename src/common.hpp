@@ -45,6 +45,24 @@ type(__VA_ARGS__)
 
 namespace propane
 {
+    // These are commonly used in switch tabes
+    // because they are all (almost) equal length
+    typedef int8_t i8;
+    typedef uint8_t u8;
+    typedef int16_t i16;
+    typedef uint16_t u16;
+    typedef int32_t i32;
+    typedef uint32_t u32;
+    typedef int64_t i64;
+    typedef uint64_t u64;
+    typedef float f32;
+    typedef double f64;
+    typedef void* vptr;
+
+    // Bytecode pointers
+    using pointer_t = uint8_t*;
+    using const_pointer_t = const uint8_t*;
+
     // Fnv hash
     namespace fnv
     {
