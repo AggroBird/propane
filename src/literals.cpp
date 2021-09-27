@@ -25,6 +25,11 @@ namespace propane
                 beg++;
                 return true;
             }
+            else if (beg[0] == '+')
+            {
+                beg++;
+                return false;
+            }
         }
         return false;
     }
