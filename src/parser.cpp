@@ -850,7 +850,7 @@ namespace propane
                 if (found)
                 {
                     // Parse number
-                    auto num = parse_integer<value_t>(c, end);
+                    auto num = parse_int_literal_cast<value_t>(c, end);
                     LITERAL_PARSE_FAILURE(num.is_valid(), string_view(c, end - c));
                     UNEXPECTED_CHARACTER(*c == close, *c);
                     c += 1;
@@ -1047,7 +1047,7 @@ namespace propane
             const char* end = str.data() + str.size();
 
             const bool negate = parse_negate(beg, end);
-            const int32_t base = parse_integer_base(beg, end);
+            const int32_t base = parse_base(beg, end);
 
             // Check for float (.)
             bool is_float = false;

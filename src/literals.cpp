@@ -34,7 +34,7 @@ namespace propane
         return false;
     }
 
-    int32_t parse_integer_base(const char*& beg, const char* end)
+    int32_t parse_base(const char*& beg, const char* end)
     {
         int32_t base = 10;
         const auto offset = end - beg;
@@ -171,13 +171,13 @@ namespace propane
         return result;
     }
 
-    parse_result<literal_t> parse_literal(const char*& beg, const char* end)
+    parse_result<literal_t> parse_int_literal(const char*& beg, const char* end)
     {
         // Get negate
         const bool negate = parse_negate(beg, end);
 
         // Get base
-        const int32_t base = parse_integer_base(beg, end);
+        const int32_t base = parse_base(beg, end);
 
         parse_result<literal_t> result;
         if (parse_result<uint64_t> as_ulong = parse_ulong(beg, end, base))

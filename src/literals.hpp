@@ -64,7 +64,7 @@ namespace propane
     // '-'
     bool parse_negate(const char*& beg, const char* end);
     // '0x' or '0b'
-    int32_t parse_integer_base(const char*& beg, const char* end);
+    int32_t parse_base(const char*& beg, const char* end);
 
     // Parse integer type from a suffix if provided (e.g. i32, u64, etc.)
     type_idx parse_integer_suffix(const char*& beg, const char* end);
@@ -79,7 +79,7 @@ namespace propane
     inline parse_result<uint64_t> parse_ulong(const char*& beg, const char* end)
     {
         // Get base
-        const int32_t base = parse_integer_base(beg, end);
+        const int32_t base = parse_base(beg, end);
 
         // Parse integer
         return parse_ulong(beg, end, base);
@@ -91,24 +91,24 @@ namespace propane
         return parse_ulong(beg, end);
     }
 
-    // Parse the largest number readable (ulong), and then apply integer type (see above) and negate if provided
+    // Parse the largest integer readable (ulong), and then determine integer type (see above) and negate if provided
     // Return value is an union with all possible data types
-    parse_result<literal_t> parse_literal(const char*& beg, const char* end);
-    inline parse_result<literal_t> parse_literal(string_view str)
+    parse_result<literal_t> parse_int_literal(const char*& beg, const char* end);
+    inline parse_result<literal_t> parse_int_literal(string_view str)
     {
         const char* beg = str.data();
         const char* end = beg + str.size();
-        return parse_literal(beg, end);
+        return parse_int_literal(beg, end);
     }
 
     // Parse the largest number readable (ulong), and then apply integer type (see above) and negate if provided
-    // Cast the result to the template type
-    template<typename value_t> parse_result<value_t> parse_integer(const char*& beg, const char* end)
+    // Cast the result to the specified type
+    template<typename value_t> parse_result<value_t> parse_int_literal_cast(const char*& beg, const char* end)
     {
         static_assert(std::is_integral_v<value_t> || std::is_enum_v<value_t>, "Type has to be integer");
 
         parse_result<value_t> result;
-        if (auto literal = parse_literal(beg, end))
+        if (auto literal = parse_int_literal(beg, end))
         {
             switch (literal.type)
             {
@@ -127,11 +127,11 @@ namespace propane
         }
         return result;
     }
-    template<typename value_t> parse_result<value_t> parse_integer(string_view str)
+    template<typename value_t> parse_result<value_t> parse_int_literal_cast(string_view str)
     {
         const char* beg = str.data();
         const char* end = beg + str.size();
-        return parse_integer<value_t>(beg, end);
+        return parse_int_literal_cast<value_t>(beg, end);
     }
 }
 
