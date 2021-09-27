@@ -3,6 +3,23 @@
 
 namespace propane
 {
+    inline constexpr bool is_bit(char c) noexcept
+    {
+        return c == '0' || c == '1';
+    }
+    inline constexpr bool is_uppercase_hex(char c) noexcept
+    {
+        return c >= 'A' && c <= 'F';
+    }
+    inline constexpr bool is_lowercase_hex(char c) noexcept
+    {
+        return c >= 'a' && c <= 'f';
+    }
+    inline constexpr bool is_digit(char c) noexcept
+    {
+        return c >= '0' && c <= '9';
+    }
+
     template<size_t len> inline bool cmp_str(const char*& beg, const char* end, const char(&str)[len])
     {
         const auto offset = end - beg;
@@ -96,9 +113,9 @@ namespace propane
         for (const char* ptr = beg; ptr < end; ptr++)
         {
             const char c = *ptr;
-            if (base == 16 && ((c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))) continue;
-            if (base >= 10 && (c >= '0' && c <= '9')) continue;
-            if (base == 2 && (c == '0' || c == '1')) continue;
+            if (base == 16 && (is_lowercase_hex(c) || is_uppercase_hex(c))) continue;
+            if (base >= 10 && is_digit(c)) continue;
+            if (base == 2 && is_bit(c)) continue;
             end = ptr;
             break;
         }
@@ -115,9 +132,9 @@ namespace propane
             for (size_t i = 0; i < len; i++, ptr--)
             {
                 const char c = *ptr;
-                if (c >= '0' && c <= '9') value += (uint64_t(c) - uint64_t('0')) * mul;
-                else if (c >= 'a' && c <= 'f') value += ((uint64_t(c) - uint64_t('a')) + 10) * mul;
-                else if (c >= 'A' && c <= 'F') value += ((uint64_t(c) - uint64_t('A')) + 10) * mul;
+                if (is_digit(c)) value += (uint64_t(c) - uint64_t('0')) * mul;
+                else if (is_lowercase_hex(c)) value += ((uint64_t(c) - uint64_t('a')) + 10) * mul;
+                else if (is_uppercase_hex(c)) value += ((uint64_t(c) - uint64_t('A')) + 10) * mul;
                 mul *= 16;
             }
         }
@@ -171,14 +188,8 @@ namespace propane
         return result;
     }
 
-    parse_result<literal_t> parse_int_literal(const char*& beg, const char* end)
+    parse_result<literal_t> parse_int_literal(const char*& beg, const char* end, bool negate, int32_t base)
     {
-        // Get negate
-        const bool negate = parse_negate(beg, end);
-
-        // Get base
-        const int32_t base = parse_base(beg, end);
-
         parse_result<literal_t> result;
         if (parse_result<uint64_t> as_ulong = parse_ulong(beg, end, base))
         {
@@ -199,5 +210,11 @@ namespace propane
             }
         }
         return result;
+    }
+    parse_result<literal_t> parse_int_literal(const char*& beg, const char* end)
+    {
+        const bool negate = parse_negate(beg, end);
+        const int32_t base = parse_base(beg, end);
+        return parse_int_literal(beg, end, negate, base);
     }
 }
