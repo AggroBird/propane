@@ -1046,81 +1046,24 @@ namespace propane
             const char* beg = str.data();
             const char* end = str.data() + str.size();
 
-            const bool negate = parse_negate(beg, end);
-            const int32_t base = parse_base(beg, end);
+            const auto result = parse_literal(beg, end);
+            LITERAL_PARSE_FAILURE(result.is_valid(), str);
+            UNEXPECTED_CHARACTER(beg == end, *beg);
 
-            // Check for float (.)
-            bool is_float = false;
-            for (const char* c = beg; c < end; c++)
+            switch (result.type)
             {
-                UNEXPECTED_CHARACTER(*c != '-', '-');
-                if (*c == '.')
-                {
-                    UNEXPECTED_CHARACTER(!is_float && base == 10, '.');
-                    is_float = true;
-                }
+                case type_idx::i8:  return constant(result.value.as_i8);
+                case type_idx::u8:  return constant(result.value.as_u8);
+                case type_idx::i16: return constant(result.value.as_i16);
+                case type_idx::u16: return constant(result.value.as_u16);
+                case type_idx::i32: return constant(result.value.as_i32);
+                case type_idx::u32: return constant(result.value.as_u32);
+                case type_idx::i64: return constant(result.value.as_i64);
+                case type_idx::u64: return constant(result.value.as_u64);
+                case type_idx::f32: return constant(result.value.as_f32);
+                case type_idx::f64: return constant(result.value.as_f64);
+                default: ASSERT(false, "Invalid constant type"); return constant(0);
             }
-
-            // Check for float (f-suffix)
-            const char last = *(end - 1);
-            if (base == 10 && (last == 'f' || last == 'F'))
-            {
-                is_float = true;
-            }
-
-            if (is_float)
-            {
-                type_idx btype = type_idx::f64;
-                char* result_end = (char*)end;
-                double f = strtod(beg, &result_end);
-                if (result_end < end)
-                {
-                    beg = result_end;
-
-                    const auto offset = end - beg;
-                    if (offset == 1 && (beg[0] == 'f' || beg[0] == 'F'))
-                    {
-                        btype = type_idx::f32;
-                    }
-                    else
-                    {
-                        LITERAL_PARSE_FAILURE(false, str);
-                    }
-                }
-
-                switch (btype)
-                {
-                    case type_idx::f32: { return constant(negate ? -f32(f) : f32(f)); break; }
-                    case type_idx::f64: { return constant(negate ? -f64(f) : f64(f)); break; }
-                    default: ASSERT(false, "Unhandled case");
-                }
-            }
-            else
-            {
-                // First, parse the biggest number we can support
-                auto as_ulong = parse_ulong(beg, end, base);
-                LITERAL_PARSE_FAILURE(as_ulong.is_valid(), string_view(beg, end - beg));
-
-                // Then, find the smallest number that fits
-                type_idx btype = determine_integer_type(as_ulong.value, beg, end);
-                UNEXPECTED_CHARACTER(beg == end, *beg);
-
-                // Finally, cast to that type
-                uint64_t i = as_ulong.value;
-                switch (btype)
-                {
-                    case type_idx::i8: { return constant(negate_num(i8(i), negate)); break; }
-                    case type_idx::u8: { return constant(negate_num(u8(i), negate)); break; }
-                    case type_idx::i16: { return constant(negate_num(i16(i), negate)); break; }
-                    case type_idx::u16: { return constant(negate_num(u16(i), negate)); break; }
-                    case type_idx::i32: { return constant(negate_num(i32(i), negate)); break; }
-                    case type_idx::u32: { return constant(negate_num(u32(i), negate)); break; }
-                    case type_idx::i64: { return constant(negate_num(i64(i), negate)); break; }
-                    case type_idx::u64: { return constant(negate_num(u64(i), negate)); break; }
-                    default: ASSERT(false, "Invalid constant type");
-                }
-            }
-            return constant(0);
         }
     };
 

@@ -199,14 +199,14 @@ namespace propane
             uint64_t i = as_ulong.value;
             switch (btype)
             {
-                case type_idx::i8: return parse_result<literal_t>(btype, negate_num(i8(i), negate));
-                case type_idx::u8: return parse_result<literal_t>(btype, negate_num(u8(i), negate));
-                case type_idx::i16: return parse_result<literal_t>(btype, negate_num(i16(i), negate));
-                case type_idx::u16: return parse_result<literal_t>(btype, negate_num(u16(i), negate));
-                case type_idx::i32: return parse_result<literal_t>(btype, negate_num(i32(i), negate));
-                case type_idx::u32: return parse_result<literal_t>(btype, negate_num(u32(i), negate));
-                case type_idx::i64: return parse_result<literal_t>(btype, negate_num(i64(i), negate));
-                case type_idx::u64: return parse_result<literal_t>(btype, negate_num(u64(i), negate));
+                case type_idx::i8: result = parse_result<literal_t>(btype, negate_num(i8(i), negate)); break;
+                case type_idx::u8: result = parse_result<literal_t>(btype, negate_num(u8(i), negate)); break;
+                case type_idx::i16: result = parse_result<literal_t>(btype, negate_num(i16(i), negate)); break;
+                case type_idx::u16: result = parse_result<literal_t>(btype, negate_num(u16(i), negate)); break;
+                case type_idx::i32: result = parse_result<literal_t>(btype, negate_num(i32(i), negate)); break;
+                case type_idx::u32: result = parse_result<literal_t>(btype, negate_num(u32(i), negate)); break;
+                case type_idx::i64: result = parse_result<literal_t>(btype, negate_num(i64(i), negate)); break;
+                case type_idx::u64: result = parse_result<literal_t>(btype, negate_num(u64(i), negate)); break;
             }
         }
         return result;
@@ -215,6 +215,71 @@ namespace propane
     {
         const bool negate = parse_negate(beg, end);
         const int32_t base = parse_base(beg, end);
+        return parse_int_literal(beg, end, negate, base);
+    }
+
+    parse_result<literal_t> parse_literal(const char*& beg, const char* end)
+    {
+        parse_result<literal_t> result;
+
+        const bool negate = parse_negate(beg, end);
+        const int32_t base = parse_base(beg, end);
+
+        if (beg >= end) return result;
+
+        if (base == 10)
+        {
+            bool is_float = false;
+            bool is_exp = false;
+            for (const char* ptr = beg; ptr < end; ptr++)
+            {
+                const char c = *ptr;
+                if (c == '.')
+                {
+                    // Only 1 period
+                    if (is_float) return result;
+                    is_float = true;
+                }
+                else if (c == 'e' || c == 'E')
+                {
+                    // Exponent already set
+                    if (is_exp) return result;
+                    is_exp = is_float = true;
+                }
+            }
+
+            if (is_float)
+            {
+                // Only actual numbers
+                if (!is_digit(*beg)) return result;
+
+                char* next = nullptr;
+                const double d = strtod(beg, &next);
+                if (!isfinite(d)) return result;
+                if (next == beg || next == nullptr) return result;
+
+                beg = next;
+
+                type_idx btype = type_idx::f64;
+
+                // Parse suffix
+                if (beg < end)
+                {
+                    if (cmp_str(beg, end, "f32")) btype = type_idx::f32;
+                    else if (cmp_str(beg, end, "f64")) btype = type_idx::f64;
+                }
+
+                switch (btype)
+                {
+                    case type_idx::f32: result = parse_result<literal_t>(type_idx::f32, float(negate ? -d : d)); break;
+                    case type_idx::f64: result = parse_result<literal_t>(type_idx::f64, negate ? -d : d); break;
+                }
+
+                return result;
+            }
+        }
+
+        // Return regular number
         return parse_int_literal(beg, end, negate, base);
     }
 }

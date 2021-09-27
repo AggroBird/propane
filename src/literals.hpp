@@ -42,7 +42,7 @@ namespace propane
             value(value) {}
 
         type_idx type = type_idx::invalid;
-        value_t value = value_t(0);
+        value_t value = value_t(0ull);
 
         inline bool is_valid() const
         {
@@ -56,9 +56,7 @@ namespace propane
 
     template<typename value_t> constexpr value_t negate_num(value_t val, bool negate)
     {
-        using signed_type = std::make_signed_t<value_t>;
-        const signed_type negative = -static_cast<signed_type>(val);
-        return negate ? static_cast<value_t>(negative) : val;
+        return negate ? static_cast<value_t>(-static_cast<std::make_signed_t<value_t>>(val)) : val;
     }
 
     // '-'
@@ -99,6 +97,15 @@ namespace propane
         const char* beg = str.data();
         const char* end = beg + str.size();
         return parse_int_literal(beg, end);
+    }
+
+    // Parse any literal (including floating point)
+    parse_result<literal_t> parse_literal(const char*& beg, const char* end);
+    inline parse_result<literal_t> parse_literal(string_view str)
+    {
+        const char* beg = str.data();
+        const char* end = beg + str.size();
+        return parse_literal(beg, end);
     }
 
     // Parse the largest number readable (ulong), and then apply integer type (see above) and negate if provided
