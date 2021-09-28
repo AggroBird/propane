@@ -3,7 +3,7 @@
 
 namespace propane
 {
-    subcode operations::set(type_idx lhs, type_idx rhs)
+    subcode translate::set(type_idx lhs, type_idx rhs)
     {
         const index_t lookup = ((index_t)lhs << 4) | ((index_t)rhs);
         switch (lookup)
@@ -58,7 +58,7 @@ namespace propane
         return subcode::invalid;
     }
 
-    subcode operations::conv(type_idx lhs, type_idx rhs)
+    subcode translate::conv(type_idx lhs, type_idx rhs)
     {
         const index_t lookup = ((index_t)lhs << 4) | ((index_t)rhs);
         switch (lookup)
@@ -168,7 +168,7 @@ namespace propane
         return subcode::invalid;
     }
 
-    subcode operations::ari(opcode op, type_idx lhs, type_idx rhs)
+    subcode translate::ari(opcode op, type_idx lhs, type_idx rhs)
     {
         op = opcode(op - opcode::ari_not);
         const index_t lookup = ((index_t)lhs << 8) | ((index_t)rhs << 4) | ((index_t)op);
@@ -548,7 +548,7 @@ namespace propane
         return subcode::invalid;
     }
 
-    subcode operations::cmp(opcode op, type_idx lhs, type_idx rhs)
+    subcode translate::cmp(opcode op, type_idx lhs, type_idx rhs)
     {
         op = opcode(op - opcode::cmp);
         const index_t lookup = ((index_t)lhs << 8) | ((index_t)rhs << 4) | ((index_t)op);
@@ -1223,7 +1223,7 @@ namespace propane
         return subcode::invalid;
     }
 
-    subcode operations::ptr(opcode op, type_idx lhs, type_idx rhs)
+    subcode translate::ptr(opcode op, type_idx lhs, type_idx rhs)
     {
         op = opcode(op - opcode::padd);
         const index_t lookup = ((index_t)op << 4) | ((index_t)rhs);
@@ -1249,6 +1249,7 @@ namespace propane
 
         return subcode::invalid;
     }
+
 
     void operations::conv(pointer_t lhs_addr, type_idx lhs_type, const_pointer_t rhs_addr, type_idx rhs_type)
     {

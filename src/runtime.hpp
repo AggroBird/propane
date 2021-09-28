@@ -5,6 +5,7 @@
 #include "propane_intermediate.hpp"
 #include "propane_assembly.hpp"
 
+#include "opcodes.hpp"
 #include "serializable.hpp"
 #include "database.hpp"
 #include "host.hpp"
@@ -12,72 +13,6 @@
 
 namespace propane
 {
-    // Opcodes
-    enum class opcode : uint8_t
-    {
-        noop,
-
-        set,
-        conv,
-
-        ari_not,
-        ari_neg,
-        ari_mul,
-        ari_div,
-        ari_mod,
-        ari_add,
-        ari_sub,
-        ari_lsh,
-        ari_rsh,
-        ari_and,
-        ari_xor,
-        ari_or,
-
-        padd,
-        psub,
-        pdif,
-
-        cmp,
-        ceq,
-        cne,
-        cgt,
-        cge,
-        clt,
-        cle,
-        cze,
-        cnz,
-
-        br,
-        beq,
-        bne,
-        bgt,
-        bge,
-        blt,
-        ble,
-        bze,
-        bnz,
-
-        sw,
-
-        call,
-        callv,
-        ret,
-        retv,
-
-        dump,
-    };
-
-    enum class subcode : uint8_t { invalid = 0xFF };
-
-    constexpr opcode operator+(opcode lhs, opcode rhs) noexcept
-    {
-        return opcode(uint32_t(lhs) + uint32_t(rhs));
-    }
-    constexpr opcode operator-(opcode lhs, opcode rhs) noexcept
-    {
-        return opcode(uint32_t(lhs) - uint32_t(rhs));
-    }
-
     // Global indices
     enum class global_flags : index_t
     {
@@ -306,6 +241,18 @@ namespace propane
         const_pointer_t addr;
     };
 
+    template<typename src_t> src_t read(const_address_t addr) noexcept
+    {
+        static_assert(std::is_trivial<src_t>::value, "Type must be trivial");
+        const src_t src = *reinterpret_cast<const src_t*>(addr.addr);
+        return src;
+    }
+    template<typename dst_t> dst_t& write(address_t addr) noexcept
+    {
+        static_assert(std::is_trivial_v<dst_t>, "Type must be trivial");
+        dst_t& dst = *reinterpret_cast<dst_t*>(addr.addr);
+        return dst;
+    }
 
     struct address_data_t
     {
@@ -391,33 +338,6 @@ namespace propane
     SERIALIZABLE(generated_type, pointer);
     SERIALIZABLE(string_offset, offset, length);
     SERIALIZABLE(metadata, index, line_number);
-
-
-    // Read/write
-    template<typename src_t> src_t read(const_address_t addr) noexcept
-    {
-        static_assert(std::is_trivial<src_t>::value, "Type must be trivial");
-        const src_t src = *reinterpret_cast<const src_t*>(addr.addr);
-        return src;
-    }
-    template<typename src_t> src_t read(const void* ptr) noexcept
-    {
-        static_assert(std::is_trivial<src_t>::value, "Type must be trivial");
-        const src_t src = *reinterpret_cast<const src_t*>(ptr);
-        return src;
-    }
-    template<typename dst_t> dst_t& write(address_t addr) noexcept
-    {
-        static_assert(std::is_trivial_v<dst_t>, "Type must be trivial");
-        dst_t& dst = *reinterpret_cast<dst_t*>(addr.addr);
-        return dst;
-    }
-    template<typename dst_t> dst_t& write(void* ptr) noexcept
-    {
-        static_assert(std::is_trivial_v<dst_t>, "Type must be trivial");
-        dst_t& dst = *reinterpret_cast<dst_t*>(ptr);
-        return dst;
-    }
 
     // Compare
     template<typename value_t> constexpr int32_t compare(value_t lhs, value_t rhs)

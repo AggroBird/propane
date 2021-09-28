@@ -214,6 +214,7 @@ namespace propane
         return strip_filepath(path, strlen(path));
     }
 
+    // Ensure value within range of size_t (size_t is smaller in 32 bit)
     static constexpr bool check_size_range(uint64_t val) noexcept
     {
         return val <= uint64_t(~size_t(0));
@@ -235,6 +236,20 @@ namespace propane
     constexpr size_t ceil_page_size(size_t len, size_t page_size) noexcept
     {
         return ((len + (page_size - 1)) / page_size) * page_size;
+    }
+
+    // Read/write bytes
+    template<typename src_t> src_t read(const_pointer_t ptr) noexcept
+    {
+        static_assert(std::is_trivial_v<src_t>, "Type must be trivial");
+        const src_t src = *reinterpret_cast<const src_t*>(ptr);
+        return src;
+    }
+    template<typename dst_t> dst_t& write(pointer_t ptr) noexcept
+    {
+        static_assert(std::is_trivial_v<dst_t>, "Type must be trivial");
+        dst_t& dst = *reinterpret_cast<dst_t*>(ptr);
+        return dst;
     }
 }
 

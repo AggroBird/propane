@@ -900,7 +900,7 @@ namespace propane
                 VALIDATE_IMPLICIT_CONVERSION(false, lhs_type.index, rhs_type.index);
             }
 
-            const subcode sub = operations::set(lhs, rhs);
+            const subcode sub = translate::set(lhs, rhs);
             VALIDATE_IMPLICIT_CONVERSION(sub != subcode::invalid, lhs_type.index, rhs_type.index);
             return sub;
         }
@@ -915,7 +915,7 @@ namespace propane
             // Ensure arithmetic (pointers are treated as size type)
             VALIDATE_EXPLICIT_CONVERSION(is_arithmetic(lhs) && is_arithmetic(rhs) && lhs_type.index != rhs_type.index, lhs_type.index, rhs_type.index);
 
-            const subcode sub = operations::conv(lhs, rhs);
+            const subcode sub = translate::conv(lhs, rhs);
             VALIDATE_EXPLICIT_CONVERSION(sub != subcode::invalid, lhs_type.index, rhs_type.index);
             return sub;
         }
@@ -927,7 +927,7 @@ namespace propane
             // Ensure arithmetic
             VALIDATE_ARITHMETIC_EXPRESSION(lhs_type.is_arithmetic() && rhs_type.is_arithmetic(), lhs_type.index, rhs_type.index);
 
-            const subcode sub = operations::ari(op, lhs, rhs);
+            const subcode sub = translate::ari(op, lhs, rhs);
             VALIDATE_ARITHMETIC_EXPRESSION(sub != subcode::invalid, lhs_type.index, rhs_type.index);
             return sub;
         }
@@ -949,7 +949,7 @@ namespace propane
                 VALIDATE_COMPARISON_EXPRESSION(lhs_type.is_arithmetic() && rhs_type.is_arithmetic(), lhs_type.index, rhs_type.index);
             }
 
-            const subcode sub = operations::cmp(op, lhs, rhs);
+            const subcode sub = translate::cmp(op, lhs, rhs);
             VALIDATE_COMPARISON_EXPRESSION(sub != subcode::invalid, lhs_type.index, rhs_type.index);
             return sub;
         }
@@ -961,7 +961,7 @@ namespace propane
             // Lhs must be a pointer, lhs cannot be a void pointer and rhs must be integral
             VALIDATE_POINTER_EXPRESSION(lhs_type.is_pointer() && lhs_type.index != type_idx::vptr && rhs_type.is_integral(), lhs_type.index, rhs_type.index);
 
-            const subcode sub = operations::ptr(op, lhs, rhs);
+            const subcode sub = translate::ptr(op, lhs, rhs);
             VALIDATE_POINTER_EXPRESSION(sub != subcode::invalid, lhs_type.index, rhs_type.index);
             return sub;
         }
