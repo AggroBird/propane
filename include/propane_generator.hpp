@@ -35,6 +35,15 @@ namespace propane
             offset_idx field;
             offset_t offset;
         } payload;
+
+        inline bool operator==(const address& other) const noexcept
+        {
+            return header == other.header && payload.u64 == other.payload.u64;
+        }
+        inline bool operator!=(const address& other) const noexcept
+        {
+            return header != other.header || payload.u64 != other.payload.u64;
+        }
     };
 
     struct constant : public address

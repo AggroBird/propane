@@ -195,6 +195,15 @@ namespace propane
             value |= (index_t(index) & index_max);
         }
 
+        inline bool operator==(const address_header& other) const noexcept
+        {
+            return value == other.value;
+        }
+        inline bool operator!=(const address_header& other) const noexcept
+        {
+            return value != other.value;
+        }
+
     private:
         index_t value;
     };
