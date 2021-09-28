@@ -203,6 +203,36 @@ namespace propane
         generator_impl& gen;
 
 
+        inline type_idx get_type(address addr) const
+        {
+            const index_t idx = addr.header.index();
+            switch (addr.header.type())
+            {
+                case address_type::stackvar:
+                {
+                    ASSERT(is_valid_index(stackvars, idx), "Index out of range");
+                    return stackvars[idx].type;
+                }
+                case address_type::parameter:
+                {
+                    const auto& sig = gen.signatures[signature];
+                    ASSERT(is_valid_index(sig.parameters, idx), "Index out of range");
+                    return sig.parameters[idx].type;
+                }
+                case address_type::global:
+                {
+                    ASSERT(gen.globals.info.is_valid_index(global_idx(idx)), "Index out of range");
+                    return gen.globals.info[global_idx(idx)].type;
+                }
+                case address_type::constant:
+                {
+                    ASSERT(gen.constants.info.is_valid_index(global_idx(idx)), "Index out of range");
+                    return gen.constants.info[global_idx(idx)].type;
+                }
+            }
+            return type_idx::invalid;
+        }
+
         void resolve_labels()
         {
             // Fetch all labels that have been referenced by a branch
@@ -415,6 +445,17 @@ namespace propane
         {
             if (validate_address(lhs) && validate_operand(rhs))
             {
+                // Technically, null counts as a void* which has to be converted to other pointer types,
+                // But this generator is not super strict about that
+                if (op == opcode::set && rhs == constant(nullptr))
+                {
+                    const type_idx lhs_idx = get_type(lhs);
+                    if (lhs_idx != type_idx::vptr && gen.types[lhs_idx].is_pointer())
+                    {
+                        op = opcode::conv;
+                    }
+                }
+
                 append_bytecode(op);
                 write_subcode_zero();
                 write_address(lhs);

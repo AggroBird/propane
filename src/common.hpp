@@ -251,6 +251,11 @@ namespace propane
         dst_t& dst = *reinterpret_cast<dst_t*>(ptr);
         return dst;
     }
+
+    template<typename key_t, typename value_t> inline bool is_valid_index(const vector<value_t>& vec, key_t idx) noexcept
+    {
+        return size_t(idx) < vec.size();
+    }
 }
 
 #endif
