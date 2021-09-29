@@ -57,13 +57,13 @@ namespace propane
                 if (is_base_type(t.index)) continue;
                 if (t.is_generated()) continue;
 
-                file_writer.write_strs(t.is_union() ? "union " : "struct ", resolve_type_name(t));
+                file_writer.write(t.is_union() ? "union " : "struct ", resolve_type_name(t));
                 file_writer.write_newline();
                 for (auto& f : t.fields)
                 {
-                    file_writer.write_strs("\t", resolve_type_name(f.type), " ", database[f.name], "\n");
+                    file_writer.write("\t", resolve_type_name(f.type), " ", database[f.name], "\n");
                 }
-                file_writer.write_strs("end\n\n");
+                file_writer.write("end\n\n");
             }
         }
         void write_globals(bool constants)
@@ -71,15 +71,15 @@ namespace propane
             const auto& table = constants ? data.constants : data.globals;
             if (table.info.empty()) return;
 
-            file_writer.write_strs(constants ? "constant" : "global", "\n");
+            file_writer.write(constants ? "constant" : "global", "\n");
             for (auto& g : table.info)
             {
-                file_writer.write_strs("\t", resolve_type_name(g.type), " ", database[g.name]);
+                file_writer.write("\t", resolve_type_name(g.type), " ", database[g.name]);
                 const_pointer_t addr = table.data.data() + g.offset;
                 write_constant(addr, g.type, true);
                 file_writer.write_newline();
             }
-            file_writer.write_str("end\n\n");
+            file_writer.write("end\n\n");
         }
         void write_methods()
         {
@@ -88,17 +88,17 @@ namespace propane
                 if (m.is_external()) continue;
 
                 const auto& signature = data.signatures[m.signature];
-                file_writer.write_strs("method ", database[m.name]);
-                if (signature.has_return_value()) file_writer.write_strs(" returns ", resolve_type_name(signature.return_type));
+                file_writer.write("method ", database[m.name]);
+                if (signature.has_return_value()) file_writer.write(" returns ", resolve_type_name(signature.return_type));
                 if (!signature.parameters.empty())
                 {
-                    file_writer.write_strs(" parameters\n");
+                    file_writer.write(" parameters\n");
                     for (size_t i = 0; i < signature.parameters.size(); i++)
                     {
                         const auto& p = signature.parameters[i];
-                        file_writer.write_strs("\t\t", get_number_str(i), ": ", resolve_type_name(p.type), "\n");
+                        file_writer.write("\t\t", get_number_str(i), ": ", resolve_type_name(p.type), "\n");
                     }
-                    file_writer.write_str("\tend\n\n");
+                    file_writer.write("\tend\n\n");
                 }
                 else
                 {
@@ -107,13 +107,13 @@ namespace propane
 
                 if (!m.stackvars.empty())
                 {
-                    file_writer.write_str("\tstack\n");
+                    file_writer.write("\tstack\n");
                     for (size_t i = 0; i < m.stackvars.size(); i++)
                     {
                         const auto& sv = m.stackvars[i];
-                        file_writer.write_strs("\t\t", get_number_str(i), ": ", resolve_type_name(sv.type), "\n");
+                        file_writer.write("\t\t", get_number_str(i), ": ", resolve_type_name(sv.type), "\n");
                     }
-                    file_writer.write_str("\tend\n\n");
+                    file_writer.write("\tend\n\n");
                 }
 
                 // Evaluate bytecode
@@ -131,7 +131,7 @@ namespace propane
                 sf = stack_frame_t(bc.data(), bc.data() + bc.size(), bc.data(), 0, 0, 0, 0, 0, nullptr);
                 evaluate();
 
-                file_writer.write_strs("end\n\n");
+                file_writer.write("end\n\n");
             }
         }
 
@@ -143,7 +143,7 @@ namespace propane
                 const size_t offset = size_t(sf.iptr - sf.ibeg);
                 while (!label_queue.empty() && offset >= label_queue.back())
                 {
-                    file_writer.write_strs("label_", get_number_str(label_idx), ":\n");
+                    file_writer.write("label_", get_number_str(label_idx), ":\n");
                     label_idx++;
                     label_queue.pop_back();
                 }
@@ -154,7 +154,7 @@ namespace propane
                 }
 
                 const opcode op = read_bytecode<opcode>(sf.iptr);
-                file_writer.write_strs("\t", opcode_str(op));
+                file_writer.write("\t", opcode_str(op));
                 switch (op)
                 {
                     case opcode::noop: break;
@@ -256,7 +256,7 @@ namespace propane
                     case opcode::call:
                     {
                         const method_idx idx = read_bytecode<method_idx>(sf.iptr);
-                        file_writer.write_strs(" ", database[data.methods[idx].name]);
+                        file_writer.write(" ", database[data.methods[idx].name]);
                         const size_t arg_count = size_t(read_bytecode<uint8_t>(sf.iptr));
                         for (size_t i = 0; i < arg_count; i++)
                         {
@@ -304,9 +304,9 @@ namespace propane
 
             switch (addr.header.prefix())
             {
-                case address_prefix::indirection: file_writer.write_str("*"); break;
-                case address_prefix::address_of: file_writer.write_str("&"); break;
-                case address_prefix::size_of: file_writer.write_str("!"); break;
+                case address_prefix::indirection: file_writer.write("*"); break;
+                case address_prefix::address_of: file_writer.write("&"); break;
+                case address_prefix::size_of: file_writer.write("!"); break;
             }
 
             const index_t index = addr.header.index();
@@ -316,18 +316,18 @@ namespace propane
                 {
                     if (index == address_header::index_max)
                     {
-                        file_writer.write_str("{^}");
+                        file_writer.write("{^}");
                     }
                     else
                     {
-                        file_writer.write_strs("{", get_number_str(index), "}");
+                        file_writer.write("{", get_number_str(index), "}");
                     }
                 }
                 break;
 
                 case address_type::parameter:
                 {
-                    file_writer.write_strs("(", get_number_str(index), ")");
+                    file_writer.write("(", get_number_str(index), ")");
                 }
                 break;
 
@@ -339,7 +339,7 @@ namespace propane
                     const auto& table = is_constant ? data.constants : data.globals;
                     global &= global_flags::constant_mask;
 
-                    file_writer.write_str(database[table.info[global].name]);
+                    file_writer.write(database[table.info[global].name]);
                 }
                 break;
 
@@ -360,21 +360,21 @@ namespace propane
             {
                 case address_modifier::direct_field:
                 {
-                    file_writer.write_str(".");
+                    file_writer.write(".");
                     write_offset(addr.field);
                 }
                 break;
 
                 case address_modifier::indirect_field:
                 {
-                    file_writer.write_str("->");
+                    file_writer.write("->");
                     write_offset(addr.field);
                 }
                 break;
 
                 case address_modifier::subscript:
                 {
-                    file_writer.write_strs("[", std::to_string(addr.offset), "]");
+                    file_writer.write("[", std::to_string(addr.offset), "]");
                 }
                 break;
             }
@@ -387,7 +387,7 @@ namespace propane
             auto find = label_indices.find(jump);
             if (find != label_indices.end())
             {
-                file_writer.write_strs(" label_", get_number_str(find->second));
+                file_writer.write(" label_", get_number_str(find->second));
             }
         }
 
@@ -395,34 +395,34 @@ namespace propane
         {
             switch (type)
             {
-                case type_idx::i8: file_writer.write_strs(std::to_string(*reinterpret_cast<const i8*>(ptr)), "i8"); break;
-                case type_idx::u8: file_writer.write_strs(std::to_string(*reinterpret_cast<const u8*>(ptr)), "u8"); break;
-                case type_idx::i16: file_writer.write_strs(std::to_string(*reinterpret_cast<const i16*>(ptr)), "i16"); break;
-                case type_idx::u16: file_writer.write_strs(std::to_string(*reinterpret_cast<const u16*>(ptr)), "u16"); break;
-                case type_idx::i32: file_writer.write_strs(std::to_string(*reinterpret_cast<const i32*>(ptr)), "i32"); break;
-                case type_idx::u32: file_writer.write_strs(std::to_string(*reinterpret_cast<const u32*>(ptr)), "u32"); break;
-                case type_idx::i64: file_writer.write_strs(std::to_string(*reinterpret_cast<const i64*>(ptr)), "i64"); break;
-                case type_idx::u64: file_writer.write_strs(std::to_string(*reinterpret_cast<const u64*>(ptr)), "u64"); break;
-                case type_idx::f32: file_writer.write_strs(std::to_string(*reinterpret_cast<const f32*>(ptr)), "f"); break;
-                case type_idx::f64: file_writer.write_str(std::to_string(*reinterpret_cast<const f64*>(ptr))); break;
-                case type_idx::vptr: file_writer.write_str(null_keyword); break;
+                case type_idx::i8: file_writer.write(std::to_string(*reinterpret_cast<const i8*>(ptr)), "i8"); break;
+                case type_idx::u8: file_writer.write(std::to_string(*reinterpret_cast<const u8*>(ptr)), "u8"); break;
+                case type_idx::i16: file_writer.write(std::to_string(*reinterpret_cast<const i16*>(ptr)), "i16"); break;
+                case type_idx::u16: file_writer.write(std::to_string(*reinterpret_cast<const u16*>(ptr)), "u16"); break;
+                case type_idx::i32: file_writer.write(std::to_string(*reinterpret_cast<const i32*>(ptr)), "i32"); break;
+                case type_idx::u32: file_writer.write(std::to_string(*reinterpret_cast<const u32*>(ptr)), "u32"); break;
+                case type_idx::i64: file_writer.write(std::to_string(*reinterpret_cast<const i64*>(ptr)), "i64"); break;
+                case type_idx::u64: file_writer.write(std::to_string(*reinterpret_cast<const u64*>(ptr)), "u64"); break;
+                case type_idx::f32: file_writer.write(std::to_string(*reinterpret_cast<const f32*>(ptr)), "f"); break;
+                case type_idx::f64: file_writer.write(std::to_string(*reinterpret_cast<const f64*>(ptr))); break;
+                case type_idx::vptr: file_writer.write(null_keyword); break;
                 default: ASSERT(false, "Unknown constant type");
             }
         }
         void write_hex(size_t value)
         {
-            file_writer.write_str("0x");
+            file_writer.write("0x");
             constexpr size_t nibble_count = sizeof(size_t) * 2;
             for (size_t i = 0; i < nibble_count; i++)
             {
                 const size_t nibble = (value >> ((nibble_count - 1) * 4)) & size_t(0xF);
                 if (nibble < 10)
                 {
-                    file_writer.write_str('0' + char(nibble));
+                    file_writer.write('0' + char(nibble));
                 }
                 else
                 {
-                    file_writer.write_str('A' + char(nibble - 10));
+                    file_writer.write('A' + char(nibble - 10));
                 }
                 value <<= 4;
             }
@@ -448,14 +448,14 @@ namespace propane
                 const size_t method_handle = *reinterpret_cast<const size_t*&>(ptr)++;
                 if (method_handle == 0)
                 {
-                    file_writer.write_str(null_keyword);
+                    file_writer.write(null_keyword);
                 }
                 else
                 {
                     const method_idx call_idx = method_idx(method_handle ^ data.runtime_hash);
                     ASSERT(data.methods.is_valid_index(call_idx), "Invalid method index");
 
-                    file_writer.write_str(database[data.methods[call_idx].name]);
+                    file_writer.write(database[data.methods[call_idx].name]);
                 }
             }
             else if (t.is_array())
@@ -478,11 +478,11 @@ namespace propane
         void write_offset(offset_idx idx)
         {
             const auto& offset = data.offsets[idx];
-            file_writer.write_str(resolve_type_name(offset.name.object_type));
+            file_writer.write(resolve_type_name(offset.name.object_type));
             for (size_t i = 0; i < offset.name.field_names.size(); i++)
             {
-                file_writer.write_str(i == 0 ? ':' : '.');
-                file_writer.write_str(database[offset.name.field_names[i]]);
+                file_writer.write(i == 0 ? ':' : '.');
+                file_writer.write(database[offset.name.field_names[i]]);
             }
         }
 

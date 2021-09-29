@@ -376,44 +376,6 @@ namespace propane
         }
     };
 
-    class string_writer final : public string
-    {
-    public:
-        template<size_t len> inline void write_str(const char(&str)[len])
-        {
-            append(str, len - 1);
-        }
-        inline void write_str(string_view str)
-        {
-            append(str.data(), str.size());
-        }
-        inline void write_strs()
-        {
-
-        }
-        template<typename value_t, typename... args_t> inline void write_strs(const value_t& val, const args_t&... arg)
-        {
-            write_str(val);
-            write_strs(arg...);
-        }
-        inline void write_str(const char c)
-        {
-            push_back(c);
-        }
-        inline void write_space()
-        {
-            write_str(' ');
-        }
-        inline void write_tab()
-        {
-            write_str('\t');
-        }
-        inline void write_newline()
-        {
-            write_str('\n');
-        }
-    };
-
     namespace operations
     {
         void ari(string_writer& dst, uint32_t op, string_view lhs_addr, type_idx lhs_type, string_view rhs_addr, type_idx rhs_type);

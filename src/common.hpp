@@ -256,6 +256,60 @@ namespace propane
     {
         return size_t(idx) < vec.size();
     }
+
+    // String writer
+    class string_writer_base : public string
+    {
+    public:
+        inline void write(const char* c, size_t len)
+        {
+            insert(end(), c, c + len);
+        }
+        template<size_t len> inline void write(const char(&str)[len])
+        {
+            write(str, len - 1);
+        }
+        inline void write(string_view str)
+        {
+            insert(end(), str.begin(), str.end());
+        }
+        inline void write(const char c)
+        {
+            push_back(c);
+        }
+
+        inline void write_space()
+        {
+            write(' ');
+        }
+        inline void write_tab()
+        {
+            write('\t');
+        }
+        inline void write_newline()
+        {
+            write('\n');
+        }
+    };
+    class string_writer : public string_writer_base
+    {
+    public:
+        inline void write()
+        {
+
+        }
+        template<typename value_t, typename... args_t> inline void write(const value_t& val, const args_t&... arg)
+        {
+            string_writer_base::write(val);
+            write(arg...);
+        }
+
+        template<typename value_t> inline string_writer& operator<<(const value_t& val)
+        {
+            string_writer_base::write(val);
+            return *this;
+        }
+    };
 }
 
 #endif

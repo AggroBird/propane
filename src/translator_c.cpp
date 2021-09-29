@@ -141,30 +141,30 @@ namespace propane
 
             resolve_method(data.methods[data.main]);
 
-            file_writer.write_str("#include \"propane.h\"");
+            file_writer.write("#include \"propane.h\"");
 
             if (!type_definitions.empty())
             {
-                file_writer.write_str(type_definitions);
+                file_writer.write(type_definitions);
             }
             if (!method_declarations.empty())
             {
-                file_writer.write_str("\n");
-                file_writer.write_str(method_declarations);
+                file_writer.write("\n");
+                file_writer.write(method_declarations);
             }
             if (!constants.empty())
             {
-                file_writer.write_str("\n");
-                file_writer.write_str(constants);
+                file_writer.write("\n");
+                file_writer.write(constants);
             }
             if (!globals.empty())
             {
-                file_writer.write_str("\n");
-                file_writer.write_str(globals);
+                file_writer.write("\n");
+                file_writer.write(globals);
             }
             if (!method_definitions.empty())
             {
-                file_writer.write_str(method_definitions);
+                file_writer.write(method_definitions);
             }
 
             write(file_writer.data(), std::streamsize(file_writer.size()));
@@ -194,10 +194,10 @@ namespace propane
                 if (type.is_array() || !type.is_generated())
                 {
                     type_fields.clear();
-                    type_fields.write_str("\n\n");
+                    type_fields.write("\n\n");
 
-                    type_fields.write_str(meta.declaration);
-                    type_fields.write_str("\n{\n");
+                    type_fields.write(meta.declaration);
+                    type_fields.write("\n{\n");
                     if (type.is_array())
                     {
                         declare_array_field(type_fields, type.generated.array.underlying_type, type.generated.array.array_size);
@@ -206,14 +206,14 @@ namespace propane
                     {
                         for (size_t i = 0; i < type.fields.size(); i++)
                         {
-                            if (i != 0) type_fields.write_str("\n");
+                            if (i != 0) type_fields.write("\n");
                             const auto& f = type.fields[i];
                             declare_field(type_fields, database[f.name], f.type);
                         }
                     }
-                    type_fields.write_str("\n};");
+                    type_fields.write("\n};");
 
-                    type_definitions.write_str(type_fields);
+                    type_definitions.write(type_fields);
                 }
             }
 
@@ -243,9 +243,9 @@ namespace propane
                 return_vars.clear();
 
                 // Definition
-                method_frame.write_str("\n\n");
+                method_frame.write("\n\n");
                 generate_method_declaration(method_frame, m, signature);
-                method_frame.write_str("\n{\n");
+                method_frame.write("\n{\n");
 
                 if (!m.bytecode.empty())
                 {
@@ -269,8 +269,8 @@ namespace propane
                     evaluate();
                 }
 
-                method_frame.write_str(method_body);
-                method_frame.write_str("}");
+                method_frame.write(method_body);
+                method_frame.write("}");
 
                 if (!meta.calls_made.empty() || !meta.referenced_globals.empty())
                 {
@@ -320,11 +320,11 @@ namespace propane
                         resolve_global(g);
                     }
 
-                    method_definitions.write_str(tmp);
+                    method_definitions.write(tmp);
                 }
                 else
                 {
-                    method_definitions.write_str(method_frame);
+                    method_definitions.write(method_frame);
                 }
             }
 
@@ -363,35 +363,35 @@ namespace propane
                 const size_t method_handle = *reinterpret_cast<const size_t*>(table.data.data() + global_info.offset);
                 method_idx call_method_idx = method_idx(method_handle - 1);
 
-                dst_buf.write_str(global_type_meta.declaration.substr(0, global_type_meta.ptr_offset));
-                if (is_constant) dst_buf.write_strs("const ");
-                dst_buf.write_strs("$", name_info);
-                dst_buf.write_str(global_type_meta.declaration.substr(global_type_meta.ptr_offset));
+                dst_buf.write(global_type_meta.declaration.substr(0, global_type_meta.ptr_offset));
+                if (is_constant) dst_buf.write("const ");
+                dst_buf.write("$", name_info);
+                dst_buf.write(global_type_meta.declaration.substr(global_type_meta.ptr_offset));
             }
             else if (global_type.is_pointer())
             {
-                dst_buf.write_strs(global_type_meta.declaration);
-                if (is_constant) dst_buf.write_str(" const");
-                dst_buf.write_strs(" $", name_info);
+                dst_buf.write(global_type_meta.declaration);
+                if (is_constant) dst_buf.write(" const");
+                dst_buf.write(" $", name_info);
             }
             else
             {
-                if (is_constant) dst_buf.write_strs("const ");
-                dst_buf.write_strs(global_type_meta.declaration, " $", name_info);
+                if (is_constant) dst_buf.write("const ");
+                dst_buf.write(global_type_meta.declaration, " $", name_info);
             }
 
-            dst_buf.write_str(" = ");
+            dst_buf.write(" = ");
             if (global_type.is_pointer())
             {
                 // If its a pointer type, we need to cast to dst to silence 'levels of indirection' warning
-                dst_buf.write_str("(");
-                dst_buf.write_strs(global_type_meta.declaration);
-                if (is_constant) dst_buf.write_str(" const");
-                dst_buf.write_str(")");
+                dst_buf.write("(");
+                dst_buf.write(global_type_meta.declaration);
+                if (is_constant) dst_buf.write(" const");
+                dst_buf.write(")");
             }
             const_pointer_t addr = table.data.data() + global_info.offset;
             write_constant(dst_buf, addr, global_type.index, true);
-            dst_buf.write_str(";");
+            dst_buf.write(";");
 
             return meta;
         }
@@ -414,7 +414,7 @@ namespace propane
                 const size_t offset = size_t(sf.iptr - sf.ibeg);
                 while (!label_queue.empty() && offset >= label_queue.back())
                 {
-                    method_body.write_strs("$", get_number_str(label_idx), label_postfix, ":;\n");
+                    method_body.write("$", get_number_str(label_idx), label_postfix, ":;\n");
                     label_idx++;
                     label_queue.pop_back();
                 }
@@ -428,7 +428,7 @@ namespace propane
 
                 has_returned = false;
 
-                method_body.write_str(get_indent_str(1));
+                method_body.write(get_indent_str(1));
                 instruction.clear();
 
                 const opcode op = read_bytecode<opcode>(sf.iptr);
@@ -489,15 +489,15 @@ namespace propane
                     default: ASSERT(false, "Malformed opcode: %", uint32_t(op));
                 }
 
-                method_body.write_str(instruction);
-                method_body.write_str(";\n");
+                method_body.write(instruction);
+                method_body.write(";\n");
             }
         }
 
 
         void noop()
         {
-            instruction.write_str("((void)0)");
+            instruction.write("((void)0)");
         }
 
         void set()
@@ -510,9 +510,9 @@ namespace propane
         }
         void set(subcode sub, string_address_t lhs_addr, string_address_t rhs_addr)
         {
-            instruction.write_strs(lhs_addr.addr, " = ");
+            instruction.write(lhs_addr.addr, " = ");
             if (lhs_addr.type_ptr != rhs_addr.type_ptr) write_cast(lhs_addr.type_ptr->index);
-            instruction.write_str(rhs_addr.addr);
+            instruction.write(rhs_addr.addr);
         }
         void conv()
         {
@@ -524,9 +524,9 @@ namespace propane
         }
         void conv(subcode sub, string_address_t lhs_addr, string_address_t rhs_addr)
         {
-            instruction.write_strs(lhs_addr.addr, " = ");
+            instruction.write(lhs_addr.addr, " = ");
             if (lhs_addr.type_ptr != rhs_addr.type_ptr) write_cast(lhs_addr.type_ptr->index);
-            instruction.write_str(rhs_addr.addr);
+            instruction.write(rhs_addr.addr);
         }
 
         void ari(opcode op)
@@ -540,26 +540,26 @@ namespace propane
 
             if (unary)
             {
-                instruction.write_strs(lhs_addr.addr, operator_str[op_idx], lhs_addr.addr);
+                instruction.write(lhs_addr.addr, operator_str[op_idx], lhs_addr.addr);
             }
             else if (op == opcode::ari_mod && is_floating_point(lhs_addr.type_ptr->index))
             {
                 const string_view mod_name = lhs_addr.type_ptr->index == type_idx::f32 ? "fmodf" : "fmod";
-                instruction.write_strs(lhs_addr.addr, " = ", mod_name, "(", lhs_addr.addr, ", ");
+                instruction.write(lhs_addr.addr, " = ", mod_name, "(", lhs_addr.addr, ", ");
                 if (lhs_addr.type_ptr != rhs_addr.type_ptr)
                 {
                     write_cast(instruction, lhs_addr.type_ptr->index);
                 }
-                instruction.write_strs(rhs_addr.addr, ")");
+                instruction.write(rhs_addr.addr, ")");
             }
             else
             {
-                instruction.write_strs(lhs_addr.addr, operator_str[op_idx]);
+                instruction.write(lhs_addr.addr, operator_str[op_idx]);
                 if (lhs_addr.type_ptr != rhs_addr.type_ptr)
                 {
                     write_cast(instruction, lhs_addr.type_ptr->index);
                 }
-                instruction.write_strs(rhs_addr.addr);
+                instruction.write(rhs_addr.addr);
             }
         }
 
@@ -569,7 +569,7 @@ namespace propane
             auto lhs_addr = read_address(true);
             auto rhs_addr = read_address(true);
 
-            instruction.write_strs(lhs_addr.addr, op == opcode::padd ? " += " : " -= ", rhs_addr.addr);
+            instruction.write(lhs_addr.addr, op == opcode::padd ? " += " : " -= ", rhs_addr.addr);
         }
         void pdif()
         {
@@ -578,15 +578,15 @@ namespace propane
 
             // ((offset_t)(lhs) - (offset_t)(rhs)) / sizeof(underlying type)
             return_type = write_return_value(offset_type.index);
-            instruction.write_str("(");
+            instruction.write("(");
             write_cast(offset_type.index);
-            instruction.write_str(lhs_addr.addr);
-            instruction.write_str(" - ");
+            instruction.write(lhs_addr.addr);
+            instruction.write(" - ");
             write_cast(offset_type.index);
-            instruction.write_str(rhs_addr.addr);
-            instruction.write_str(") / ");
+            instruction.write(rhs_addr.addr);
+            instruction.write(") / ");
             write_cast(offset_type.index);
-            instruction.write_strs("sizeof(", type_metas[lhs_addr.type_ptr->generated.pointer.underlying_type].declaration, ")");
+            instruction.write("sizeof(", type_metas[lhs_addr.type_ptr->generated.pointer.underlying_type].declaration, ")");
         }
 
         void do_cmp(opcode op)
@@ -600,7 +600,7 @@ namespace propane
 
             if (cmpzero)
             {
-                instruction.write_strs(lhs_addr.addr, comparison_str[op_idx]);
+                instruction.write(lhs_addr.addr, comparison_str[op_idx]);
             }
             else
             {
@@ -609,20 +609,20 @@ namespace propane
                 if (op == opcode::cmp)
                 {
                     if (lhs_addr.type_ptr->index != cmp_type) write_cast(instruction, cmp_type);
-                    instruction.write_strs(lhs_addr.addr, " < ");
+                    instruction.write(lhs_addr.addr, " < ");
                     if (rhs_addr.type_ptr->index != cmp_type) write_cast(instruction, cmp_type);
-                    instruction.write_strs(rhs_addr.addr, " ? -1 : ");
+                    instruction.write(rhs_addr.addr, " ? -1 : ");
                     if (lhs_addr.type_ptr->index != cmp_type) write_cast(instruction, cmp_type);
-                    instruction.write_strs(lhs_addr.addr, " > ");
+                    instruction.write(lhs_addr.addr, " > ");
                     if (rhs_addr.type_ptr->index != cmp_type) write_cast(instruction, cmp_type);
-                    instruction.write_strs(rhs_addr.addr, " ? 1 : 0");
+                    instruction.write(rhs_addr.addr, " ? 1 : 0");
                 }
                 else
                 {
                     if (lhs_addr.type_ptr->index != cmp_type) write_cast(instruction, cmp_type);
-                    instruction.write_strs(lhs_addr.addr, comparison_str[op_idx]);
+                    instruction.write(lhs_addr.addr, comparison_str[op_idx]);
                     if (rhs_addr.type_ptr->index != cmp_type) write_cast(instruction, cmp_type);
-                    instruction.write_strs(rhs_addr.addr);
+                    instruction.write(rhs_addr.addr);
                 }
             }
         }
@@ -637,16 +637,16 @@ namespace propane
             const size_t branch_location = read_bytecode<size_t>(sf.iptr);
             auto label_index = label_indices.find(branch_location);
 
-            instruction.write_strs("goto $", get_number_str(size_t(label_index->second)), label_postfix);
+            instruction.write("goto $", get_number_str(size_t(label_index->second)), label_postfix);
         }
         void br(opcode op)
         {
             const size_t branch_location = read_bytecode<size_t>(sf.iptr);
             auto label_index = label_indices.find(branch_location);
 
-            instruction.write_str("if (");
+            instruction.write("if (");
             do_cmp(op - (opcode::br - opcode::cmp));
-            instruction.write_strs(") goto $", get_number_str(size_t(label_index->second)), label_postfix);
+            instruction.write(") goto $", get_number_str(size_t(label_index->second)), label_postfix);
         }
 
         void sw()
@@ -658,13 +658,13 @@ namespace propane
             const size_t* labels = reinterpret_cast<const size_t*>(sf.iptr);
             sf.iptr += sizeof(size_t) * label_count;
 
-            instruction.write_strs("switch (", idx_addr.addr, ")\n\t{\n");
+            instruction.write("switch (", idx_addr.addr, ")\n\t{\n");
             for (uint32_t i = 0; i < label_count; i++)
             {
                 auto label_index = label_indices.find(labels[i]);
-                instruction.write_strs(get_indent_str(2), "case ", get_number_str(i), ": goto $", get_number_str(size_t(label_index->second)), label_postfix, ";\n");
+                instruction.write(get_indent_str(2), "case ", get_number_str(i), ": goto $", get_number_str(size_t(label_index->second)), label_postfix, ";\n");
             }
-            instruction.write_str("\t}");
+            instruction.write("\t}");
         }
 
         void call()
@@ -677,7 +677,7 @@ namespace propane
 
             const type_idx ret_type = write_return_value(signature.return_type);
 
-            instruction.write_strs("$", database[method.name]);
+            instruction.write("$", database[method.name]);
 
             write_param(signature);
 
@@ -693,11 +693,11 @@ namespace propane
 
             if (method_ptr.addr.starts_with('*'))
             {
-                instruction.write_strs("(", method_ptr.addr, ")");
+                instruction.write("(", method_ptr.addr, ")");
             }
             else
             {
-                instruction.write_str(method_ptr.addr);
+                instruction.write(method_ptr.addr);
             }
 
             write_param(signature);
@@ -708,31 +708,31 @@ namespace propane
         {
             const size_t arg_count = size_t(read_bytecode<uint8_t>(sf.iptr));
 
-            instruction.write_str('(');
+            instruction.write('(');
             for (size_t i = 0; i < signature.parameters.size(); i++)
             {
                 auto sub = read_subcode();
-                if (i > 0) instruction.write_str(", ");
-                instruction.write_str(read_address(true).addr);
+                if (i > 0) instruction.write(", ");
+                instruction.write(read_address(true).addr);
             }
-            instruction.write_str(')');
+            instruction.write(')');
         }
 
         void ret()
         {
-            instruction.write_str("return");
+            instruction.write("return");
         }
         void retv()
         {
             auto sub = read_subcode();
             auto ret_value = read_address(true);
 
-            instruction.write_str("return ");
+            instruction.write("return ");
             if (current_signature->return_type != ret_value.type_ptr->index)
             {
                 write_cast(current_signature->return_type);
             }
-            instruction.write_str(ret_value.addr);
+            instruction.write(ret_value.addr);
         }
 
         void dump()
@@ -740,7 +740,7 @@ namespace propane
             auto src_addr = read_address(true);
             auto& operand = get_next_buffer();
             operand.push_back('(');
-            operand.append(src_addr.addr);
+            operand.write(src_addr.addr);
             operand.push_back(')');
 
             auto& fmt = get_next_buffer();
@@ -748,7 +748,7 @@ namespace propane
 
             dump_recursive(*src_addr.type_ptr, fmt, arg, operand);
 
-            instruction.write_strs("printf(\"", fmt, "\\n\"", arg, ")");
+            instruction.write("printf(\"", fmt, "\\n\"", arg, ")");
         }
         vector<string_writer> dump_name_generators;
         string_writer name_buf;
@@ -757,42 +757,42 @@ namespace propane
             name_buf.clear();
             if (type.name != name_idx::invalid)
             {
-                name_buf.append(database[type.name]);
+                name_buf.write(database[type.name]);
             }
             else
             {
                 data.generate_name(type.index, name_buf);
             }
-            fmt.write_str(name_buf);
+            fmt.write(name_buf);
 
             if (type.index < type_idx::f64)
             {
                 switch (type.index)
                 {
-                    case type_idx::i8: fmt.write_str("(%hhi)"); break;
-                    case type_idx::u8: fmt.write_str("(%hhu)"); break;
-                    case type_idx::i16: fmt.write_str("(%hi)"); break;
-                    case type_idx::u16: fmt.write_str("(%hu)"); break;
-                    case type_idx::i32: fmt.write_str("(%i)"); break;
-                    case type_idx::u32: fmt.write_str("(%u)"); break;
-                    case type_idx::i64: fmt.write_str("(%lli)"); break;
-                    case type_idx::u64: fmt.write_str("(%llu)"); break;
+                    case type_idx::i8: fmt.write("(%hhi)"); break;
+                    case type_idx::u8: fmt.write("(%hhu)"); break;
+                    case type_idx::i16: fmt.write("(%hi)"); break;
+                    case type_idx::u16: fmt.write("(%hu)"); break;
+                    case type_idx::i32: fmt.write("(%i)"); break;
+                    case type_idx::u32: fmt.write("(%u)"); break;
+                    case type_idx::i64: fmt.write("(%lli)"); break;
+                    case type_idx::u64: fmt.write("(%llu)"); break;
                     case type_idx::f32:
-                    case type_idx::f64: fmt.write_str("(%g)"); break;
+                    case type_idx::f64: fmt.write("(%g)"); break;
                 }
 
-                arg.write_str(", ");
-                arg.write_str(addr);
+                arg.write(", ");
+                arg.write(addr);
             }
             else
             {
                 if (type.is_pointer() || type.is_signature())
                 {
-                    fmt.write_str("(%p)");
+                    fmt.write("(%p)");
 
-                    arg.write_str(", ");
-                    arg.write_str("(void*)");
-                    arg.write_str(addr);
+                    arg.write(", ");
+                    arg.write("(void*)");
+                    arg.write(addr);
                 }
                 else if (type.is_array())
                 {
@@ -801,43 +801,43 @@ namespace propane
                     // disabled for now until a better solution is found.
                     // (This could potentially be implemented using a forloop)
 #if 0
-                    fmt.write_str("{");
+                    fmt.write("{");
                     const auto& underlying_type = get_type(type.generated.array.underlying_type);
                     for (size_t i = 0; i < type.generated.array.array_size; i++)
                     {
-                        fmt.write_str(i == 0 ? " " : ", ");
+                        fmt.write(i == 0 ? " " : ", ");
 
                         const size_t s = addr.size();
-                        addr.write_str(".$val[");
-                        addr.write_str(get_number_str(i));
-                        addr.write_str("]");
+                        addr.write(".$val[");
+                        addr.write(get_number_str(i));
+                        addr.write("]");
                         dump_recursive(underlying_type, fmt, arg, addr);
                         addr.resize(s);
                     }
-                    fmt.write_str(" }");
+                    fmt.write(" }");
 #endif
                 }
                 else if (!type.fields.empty())
                 {
-                    fmt.write_str("{");
+                    fmt.write("{");
                     for (size_t i = 0; i < type.fields.size(); i++)
                     {
                         auto& field = type.fields[i];
-                        fmt.write_str(i == 0 ? " " : ", ");
-                        fmt.write_str(database[field.name]);
-                        fmt.write_str(" = ");
+                        fmt.write(i == 0 ? " " : ", ");
+                        fmt.write(database[field.name]);
+                        fmt.write(" = ");
 
                         const size_t s = addr.size();
-                        addr.write_str(".");
-                        addr.write_strs("$", database[field.name]);
+                        addr.write(".");
+                        addr.write("$", database[field.name]);
                         dump_recursive(get_type(field.type), fmt, arg, addr);
                         addr.resize(s);
                     }
-                    fmt.write_str(" }");
+                    fmt.write(" }");
                 }
                 else
                 {
-                    fmt.write_str("(?)");
+                    fmt.write("(?)");
                 }
             }
         }
@@ -1073,34 +1073,34 @@ namespace propane
         {
             switch (type)
             {
-                case type_idx::i8: buf.write_str(std::to_string(*reinterpret_cast<const i8*>(ptr))); break;
-                case type_idx::u8: buf.write_str(std::to_string(*reinterpret_cast<const u8*>(ptr))); break;
-                case type_idx::i16: buf.write_str(std::to_string(*reinterpret_cast<const i16*>(ptr))); break;
-                case type_idx::u16: buf.write_str(std::to_string(*reinterpret_cast<const u16*>(ptr))); break;
-                case type_idx::i32: buf.write_str(std::to_string(*reinterpret_cast<const i32*>(ptr))); break;
-                case type_idx::u32: buf.write_str(std::to_string(*reinterpret_cast<const u32*>(ptr))); break;
-                case type_idx::i64: buf.write_str(std::to_string(*reinterpret_cast<const i64*>(ptr))); break;
-                case type_idx::u64: buf.write_str(std::to_string(*reinterpret_cast<const u64*>(ptr))); break;
-                case type_idx::f32: buf.write_strs(std::to_string(*reinterpret_cast<const f32*>(ptr)), "f"); break;
-                case type_idx::f64: buf.write_str(std::to_string(*reinterpret_cast<const f64*>(ptr))); break;
+                case type_idx::i8: buf.write(std::to_string(*reinterpret_cast<const i8*>(ptr))); break;
+                case type_idx::u8: buf.write(std::to_string(*reinterpret_cast<const u8*>(ptr))); break;
+                case type_idx::i16: buf.write(std::to_string(*reinterpret_cast<const i16*>(ptr))); break;
+                case type_idx::u16: buf.write(std::to_string(*reinterpret_cast<const u16*>(ptr))); break;
+                case type_idx::i32: buf.write(std::to_string(*reinterpret_cast<const i32*>(ptr))); break;
+                case type_idx::u32: buf.write(std::to_string(*reinterpret_cast<const u32*>(ptr))); break;
+                case type_idx::i64: buf.write(std::to_string(*reinterpret_cast<const i64*>(ptr))); break;
+                case type_idx::u64: buf.write(std::to_string(*reinterpret_cast<const u64*>(ptr))); break;
+                case type_idx::f32: buf.write(std::to_string(*reinterpret_cast<const f32*>(ptr)), "f"); break;
+                case type_idx::f64: buf.write(std::to_string(*reinterpret_cast<const f64*>(ptr))); break;
                 case type_idx::vptr: write_hex(buf, *reinterpret_cast<const size_t*>(ptr)); break;
                 default: ASSERT(false, "Unknown constant type");
             }
         }
         void write_hex(string_writer& buf, size_t value)
         {
-            buf.write_str("0x");
+            buf.write("0x");
             constexpr size_t nibble_count = sizeof(size_t) * 2;
             for (size_t i = 0; i < nibble_count; i++)
             {
                 const size_t nibble = (value >> ((nibble_count - 1) * 4)) & size_t(0xF);
                 if (nibble < 10)
                 {
-                    buf.write_str('0' + char(nibble));
+                    buf.write('0' + char(nibble));
                 }
                 else
                 {
-                    buf.write_str('A' + char(nibble - 10));
+                    buf.write('A' + char(nibble - 10));
                 }
                 value <<= 4;
             }
@@ -1124,7 +1124,7 @@ namespace propane
                 size_t method_handle = *reinterpret_cast<const size_t*&>(ptr)++;
                 if (method_handle == 0)
                 {
-                    buf.write_strs("0");
+                    buf.write("0");
                 }
                 else
                 {
@@ -1135,28 +1135,28 @@ namespace propane
                     declare_method(call_method);
                     resolve_method(call_method);
 
-                    buf.write_strs("$", database[call_method.name]);
+                    buf.write("$", database[call_method.name]);
                 }
             }
             else if (t.is_array())
             {
-                if (top_level) buf.write_str("{ ");
+                if (top_level) buf.write("{ ");
                 for (size_t i = 0; i < t.generated.array.array_size; i++)
                 {
-                    if (i != 0) buf.write_str(", ");
+                    if (i != 0) buf.write(", ");
                     write_constant(buf, ptr, t.generated.array.underlying_type, false);
                 }
-                if (top_level) buf.write_str(" }");
+                if (top_level) buf.write(" }");
             }
             else
             {
-                if (top_level) buf.write_str("{ ");
+                if (top_level) buf.write("{ ");
                 for (size_t i = 0; i < t.fields.size(); i++)
                 {
-                    if (i != 0) buf.write_str(", ");
+                    if (i != 0) buf.write(", ");
                     write_constant(buf, ptr, t.fields[i].type, false);
                 }
-                if (top_level) buf.write_str(" }");
+                if (top_level) buf.write(" }");
             }
         }
 
@@ -1179,9 +1179,9 @@ namespace propane
 
             switch (addr.header.prefix())
             {
-                case address_prefix::indirection: buf.write_str("*"); break;
-                case address_prefix::address_of: buf.write_str("&"); break;
-                case address_prefix::size_of: buf.write_str("sizeof("); break;
+                case address_prefix::indirection: buf.write("*"); break;
+                case address_prefix::address_of: buf.write("&"); break;
+                case address_prefix::size_of: buf.write("sizeof("); break;
             }
 
             const index_t index = addr.header.index();
@@ -1196,7 +1196,7 @@ namespace propane
 
                         ASSERT(return_type != type_idx::voidtype, "Return value address has not been set");
 
-                        buf.write_strs("$", get_number_str(size_t(ret_idx)), retval_postfix);
+                        buf.write("$", get_number_str(size_t(ret_idx)), retval_postfix);
 
                         result.type_ptr = &get_type(return_type);
                     }
@@ -1206,7 +1206,7 @@ namespace propane
 
                         const auto& stack_var = minf.stackvars[index];
 
-                        buf.write_strs("$", get_number_str(size_t(index)), stack_postfix);
+                        buf.write("$", get_number_str(size_t(index)), stack_postfix);
 
                         result.type_ptr = &get_type(stack_var.type);
                         sv_type = stack_var.type;
@@ -1218,7 +1218,7 @@ namespace propane
                 {
                     ASSERT(index < csig.parameters.size(), "Parameter index out of range");
 
-                    buf.write_strs("$", get_number_str(size_t(index)), param_postfix);
+                    buf.write("$", get_number_str(size_t(index)), param_postfix);
 
                     const auto& param = csig.parameters[index];
                     result.type_ptr = &get_type(param.type);
@@ -1235,7 +1235,7 @@ namespace propane
                     const auto& table = is_constant ? data.constants : data.globals;
                     global &= global_flags::constant_mask;
 
-                    buf.write_strs("$", database[table.info[global].name]);
+                    buf.write("$", database[table.info[global].name]);
 
                     const auto& global_info = table.info[global];
                     result.type_ptr = &get_type(global_info.type);
@@ -1272,8 +1272,8 @@ namespace propane
 
                     for (auto& it : field.name.field_names)
                     {
-                        buf.write_str(".");
-                        buf.write_strs("$", database[it]);
+                        buf.write(".");
+                        buf.write("$", database[it]);
                     }
 
                     result.type_ptr = &get_type(field.type);
@@ -1292,8 +1292,8 @@ namespace propane
                     bool first = true;
                     for (auto& it : field.name.field_names)
                     {
-                        buf.write_str(first ? "->" : ".");
-                        buf.write_strs("$", database[it]);
+                        buf.write(first ? "->" : ".");
+                        buf.write("$", database[it]);
                         first = false;
                     }
 
@@ -1312,16 +1312,16 @@ namespace propane
                     }
                     else if (type.is_array())
                     {
-                        buf.write_str(".$val");
+                        buf.write(".$val");
                         result.type_ptr = &get_type(type.generated.array.underlying_type);
                     }
                     else
                     {
                         ASSERT(false, "Offset is not valid here");
                     }
-                    buf.write_str("[");
-                    buf.write_str(std::to_string(offset));
-                    buf.write_str("]");
+                    buf.write("[");
+                    buf.write(std::to_string(offset));
+                    buf.write("]");
                 }
                 break;
             }
@@ -1351,7 +1351,7 @@ namespace propane
                         string tmp = buf;
                         buf.clear();
                         write_cast(buf, dst_type);
-                        buf.append(tmp);
+                        buf.write(tmp);
                     }
                 }
                 break;
@@ -1360,7 +1360,7 @@ namespace propane
                 {
                     result.type_ptr = &size_type;
 
-                    buf.write_str(')');
+                    buf.write(')');
                 }
                 break;
             }
@@ -1377,7 +1377,7 @@ namespace propane
                     else
                     {
                         declare_stackvar(method_body, stack_postfix, size_t(index), sv_type);
-                        method_body.write_strs(";\n", get_indent_str(1));
+                        method_body.write(";\n", get_indent_str(1));
                     }
 
                     stack_vars_used[size_t(index)] = true;
@@ -1398,7 +1398,7 @@ namespace propane
                 const auto& signature = get_signature(method.signature);
                 resolve_signature(signature);
                 generate_method_declaration(method_declarations, method, signature);
-                method_declarations.write_str(";");
+                method_declarations.write(";");
                 method_metas[method.index].fwd_declared = true;
             }
         }
@@ -1408,25 +1408,25 @@ namespace propane
             const auto& return_meta = type_metas[signature.return_type];
             if (return_meta.ptr_offset != 0)
             {
-                dst.write_str(return_meta.declaration.substr(0, return_meta.ptr_offset));
+                dst.write(return_meta.declaration.substr(0, return_meta.ptr_offset));
             }
             else
             {
-                dst.write_strs(return_meta.declaration, " ");
+                dst.write(return_meta.declaration, " ");
             }
 
-            dst.write_strs("$", database[method.name], "(");
+            dst.write("$", database[method.name], "(");
             for (size_t i = 0; i < signature.parameters.size(); i++)
             {
-                if (i > 0) dst.write_str(", ");
+                if (i > 0) dst.write(", ");
                 const type_idx param_type = signature.parameters[i].type;
                 declare_stackvar(dst, param_postfix, i, param_type);
             }
-            dst.write_str(')');
+            dst.write(')');
 
             if (return_meta.ptr_offset != 0)
             {
-                dst.write_str(return_meta.declaration.substr(return_meta.ptr_offset));
+                dst.write(return_meta.declaration.substr(return_meta.ptr_offset));
             }
         }
 
@@ -1435,46 +1435,46 @@ namespace propane
             const auto& meta = resolve_type(type);
             if (meta.ptr_offset != 0)
             {
-                dst.write_str(meta.declaration.substr(0, meta.ptr_offset));
-                dst.write_strs("$", get_number_str(idx), postfix);
-                dst.write_str(meta.declaration.substr(meta.ptr_offset));
+                dst.write(meta.declaration.substr(0, meta.ptr_offset));
+                dst.write("$", get_number_str(idx), postfix);
+                dst.write(meta.declaration.substr(meta.ptr_offset));
             }
             else
             {
-                dst.write_strs(meta.declaration, " $", get_number_str(idx), postfix);
+                dst.write(meta.declaration, " $", get_number_str(idx), postfix);
             }
         }
         void declare_field(string_writer& dst, string_view name, type_idx type)
         {
-            dst.write_str(get_indent_str(1));
+            dst.write(get_indent_str(1));
             const auto& meta = resolve_type(type);
             if (meta.ptr_offset != 0)
             {
-                dst.write_str(meta.declaration.substr(0, meta.ptr_offset));
-                dst.write_strs("$", name);
-                dst.write_str(meta.declaration.substr(meta.ptr_offset));
+                dst.write(meta.declaration.substr(0, meta.ptr_offset));
+                dst.write("$", name);
+                dst.write(meta.declaration.substr(meta.ptr_offset));
             }
             else
             {
-                dst.write_strs(meta.declaration, " $", name);
+                dst.write(meta.declaration, " $", name);
             }
-            dst.write_str(";");
+            dst.write(";");
         }
         void declare_array_field(string_writer& dst, type_idx type, size_t array_size)
         {
-            dst.write_str(get_indent_str(1));
+            dst.write(get_indent_str(1));
             const auto& meta = resolve_type(type);
             if (meta.ptr_offset != 0)
             {
-                dst.write_str(meta.declaration.substr(0, meta.ptr_offset));
-                dst.write_strs("$val", "[", std::to_string(array_size), "]");
-                dst.write_str(meta.declaration.substr(meta.ptr_offset));
+                dst.write(meta.declaration.substr(0, meta.ptr_offset));
+                dst.write("$val", "[", std::to_string(array_size), "]");
+                dst.write(meta.declaration.substr(meta.ptr_offset));
             }
             else
             {
-                dst.write_strs(meta.declaration, " $val", "[", std::to_string(array_size), "]");
+                dst.write(meta.declaration, " $val", "[", std::to_string(array_size), "]");
             }
-            dst.write_str(";");
+            dst.write(";");
         }
 
         type_idx write_return_value(type_idx type)
@@ -1490,14 +1490,14 @@ namespace propane
                 if (return_vars[i] == type)
                 {
                     ret_idx = i;
-                    instruction.write_strs("$", get_number_str(ret_idx), retval_postfix, " = ");
+                    instruction.write("$", get_number_str(ret_idx), retval_postfix, " = ");
                     return type;
                 }
             }
 
             ret_idx = return_vars.size();
             declare_stackvar(instruction, retval_postfix, ret_idx, type);
-            instruction.write_str(" = ");
+            instruction.write(" = ");
             return_vars.push_back(type);
 
             return type;
@@ -1509,7 +1509,7 @@ namespace propane
 
         void write_cast(string_writer& dst, type_idx dst_type)
         {
-            dst.write_strs("(", resolve_name_recursive(dst_type).declaration, ")");
+            dst.write("(", resolve_name_recursive(dst_type).declaration, ")");
         }
         void write_cast(type_idx dst_type)
         {
