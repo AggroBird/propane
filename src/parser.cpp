@@ -84,7 +84,6 @@ namespace propane
                 file_text = block<char>(size_t(file_size) + 1);
                 file_text[file_size] = '\n';
                 file.read((char*)file_text.data(), file_size);
-                file.close();
             }
 
             const char* beg = file_text.data();
