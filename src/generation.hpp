@@ -375,12 +375,6 @@ namespace propane
             return file_meta(metatable[meta.index].name, meta.line_number);
         }
     };
-
-    namespace operations
-    {
-        void ari(string_writer& dst, uint32_t op, string_view lhs_addr, type_idx lhs_type, string_view rhs_addr, type_idx rhs_type);
-        void cmp(string_writer& dst, uint32_t op, string_view lhs_addr, type_idx lhs_type, string_view rhs_addr, type_idx rhs_type);
-    }
 }
 
 #endif
