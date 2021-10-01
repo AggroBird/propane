@@ -27,7 +27,7 @@ namespace propane
     }
     inline bool is_identifier(char c, bool first = true) noexcept
     {
-        if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_')
+        if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '$')
         {
             return true;
         }
