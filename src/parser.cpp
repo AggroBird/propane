@@ -72,15 +72,19 @@ namespace propane
         parser_impl(const char* file_path) :
             generator(strip_filepath(file_path))
         {
-            string file_text;
+            block<char> file_text;
 
             // Read file (and close thereafter)
             {
                 ifstream file(file_path);
                 VALIDATE_FILE_OPEN(file.is_open(), file_path);
-                stringstream str_stream;
-                str_stream << file.rdbuf() << '\n';
-                file_text = str_stream.str();
+                file.seekg(0, file.end);
+                const std::streamsize file_size = file.tellg();
+                file.seekg(0, file.beg);
+                file_text = block<char>(size_t(file_size) + 1);
+                file_text[file_size] = '\n';
+                file.read((char*)file_text.data(), file_size);
+                file.close();
             }
 
             const char* beg = file_text.data();
