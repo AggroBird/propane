@@ -25,7 +25,7 @@ namespace propane
     {
         return !str.empty() && is_address(str[0]);
     }
-    inline bool is_identifier(char c, bool first = true) noexcept
+    inline bool is_identifier(char c, bool first) noexcept
     {
         if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '$')
         {
@@ -39,7 +39,7 @@ namespace propane
     }
     inline bool is_identifier(string_view str) noexcept
     {
-        if (!str.empty() && is_identifier(str[0]) && str != null_keyword)
+        if (!str.empty() && is_identifier(str[0], true) && str != null_keyword)
         {
             for (size_t i = 1; i < str.size(); i++)
             {

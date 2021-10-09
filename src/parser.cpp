@@ -940,13 +940,13 @@ namespace propane
                     break;
                 }
 
-                if (is_identifier(*c))
+                if (is_identifier(*c, true))
                 {
                     const char* beg = c;
                     string_view name;
-                    for (c = beg; c <= end; c++)
+                    for (c = beg + 1; c <= end; c++)
                     {
-                        if (!is_identifier(*c) || c == end)
+                        if (!is_identifier(*c, false) || c == end)
                         {
                             UNEXPECTED_CHARACTER(c > beg, *c);
                             name = string_view(beg, c - beg);
