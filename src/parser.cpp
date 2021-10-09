@@ -76,7 +76,7 @@ namespace propane
 
             // Read file (and close thereafter)
             {
-                ifstream file(file_path);
+                ifstream file(file_path, std::ios::binary);
                 VALIDATE_FILE_OPEN(file.is_open(), file_path);
                 file.seekg(0, file.end);
                 const std::streamsize file_size = file.tellg();
