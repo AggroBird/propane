@@ -11,10 +11,12 @@
     "Method parameter count exceeds maximum (%/%)", num, method_parameter_max)
 #define VALIDATE_INIT_COUNT(num) VALIDATE(ERRC::GNR_INITIALIZER_OVERFLOW, size_t(num) <= global_initializer_max, \
     "Constant initializer count exceeds maximum (%/%)", num, global_initializer_max)
-#define VALIDATE_INDEX(idx, max) VALIDATE(ERRC::GNR_INDEX_OUT_OF_RANGE, size_t(idx) < size_t(max), \
+#define VALIDATE_INDEX_RANGE(idx, max) VALIDATE(ERRC::GNR_INDEX_OUT_OF_RANGE, size_t(idx) < size_t(max), \
     "% out of range (%/%)", get_index_type_name(idx), size_t(idx), max)
 #define VALIDATE_ARRAY_LENGTH(len) VALIDATE(ERRC::GNR_ARRAY_LENGTH_ZERO, (len) != 0, \
     "Array length cannot be zero")
+#define VALIDATE_INDEX_VALUE(idx) VALIDATE(ERRC::GNR_INVALID_INDEX, size_t(idx) != size_t(invalid_index), \
+    "Invalid index provided")
 #define VALIDATE_IDENTIFIER_TYPE(expr, lhs_type, rhs_type, name) VALIDATE(ERRC::GNR_IDENTIFIER_TYPE_MISMATCH, expr, \
     "Declaration of % '%' collides with previous % declaration", lhs_type, name, rhs_type)
 #define VALIDATE_NONVOID(type) VALIDATE(ERRC::GNR_INVALID_VOID_TYPE, (type) != propane::type_idx::voidtype, \
@@ -44,6 +46,7 @@
 #define VALIDATE_HAS_RETURNED(expr, method_name, method_meta) VALIDATE(ERRC::GNR_MISSING_RET_VAL, expr, \
     "Method is expecting a return value (see declaration for '%' at %)", method_name, method_meta)
 
+#define VALIDATE_INDEX(id, max) { VALIDATE_INDEX_VALUE(id); VALIDATE_INDEX_RANGE(id, max); }
 #define VALIDATE_TYPE(id, max) { VALIDATE_INDEX(id, max); VALIDATE_NONVOID(id); }
 #define VALIDATE_TYPES(set, max) { for(const auto& id : set) { VALIDATE_INDEX(id, max); VALIDATE_NONVOID(id); } }
 #define VALIDATE_INDICES(set, max) { for(const auto& id : set) { VALIDATE_INDEX(id, max); } }
