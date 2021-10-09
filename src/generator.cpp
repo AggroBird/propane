@@ -448,17 +448,6 @@ namespace propane
         {
             if (validate_address(lhs) && validate_operand(rhs))
             {
-                // Technically, null counts as a void* which has to be converted to other pointer types,
-                // But this generator is not super strict about that
-                if (op == opcode::set && rhs == constant(nullptr))
-                {
-                    const type_idx lhs_idx = get_type(lhs);
-                    if (lhs_idx != type_idx::vptr && gen.types[lhs_idx].is_pointer())
-                    {
-                        op = opcode::conv;
-                    }
-                }
-
                 append_bytecode(op);
                 write_subcode_zero();
                 write_address(lhs);
