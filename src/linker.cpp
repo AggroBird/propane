@@ -1054,17 +1054,25 @@ namespace propane
                 if (init_count > 0)
                 {
                     const type_idx init_type = type_idx(*rhs_addr++);
+                    if (init_type == type_idx::voidtype)
+                    {
+                        // Currently, globals are not valid initializers for constants
+                        const name_idx identifier = read_bytecode<name_idx>(rhs_addr);
+                        ASSERT(false, "Invalid constant initialization");
+                    }
+                    else
+                    {
+                        // Implicit conv from encoded constant
+                        type_idx rhs_type = init_type;
+                        if (types[lhs_type].is_pointer()) lhs_type = size_type;
+                        if (types[rhs_type].is_pointer()) rhs_type = size_type;
 
-                    // Implicit conv from constant data
-                    type_idx rhs_type = init_type;
-                    if (types[lhs_type].is_pointer()) lhs_type = size_type;
-                    if (types[rhs_type].is_pointer()) rhs_type = size_type;
+                        ASSERT(types[rhs_type].is_arithmetic(), "Invalid constant initialization");
 
-                    ASSERT(types[rhs_type].is_arithmetic(), "Invalid constant initialization");
+                        operations::conv(lhs_addr, lhs_type, rhs_addr, rhs_type);
 
-                    operations::conv(lhs_addr, lhs_type, rhs_addr, rhs_type);
-
-                    rhs_addr += types[init_type].total_size;
+                        rhs_addr += types[init_type].total_size;
+                    }
                     init_count--;
                 }
                 lhs_addr += lhs_size;

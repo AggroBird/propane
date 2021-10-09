@@ -107,13 +107,13 @@ namespace propane
                 const type_idx init_type = type_idx(it.header.index());
                 if (init_type == type_idx::voidtype)
                 {
-                    // Nullpointer
+                    // Constant identifier
                     append_bytecode(table.data, uint8_t(init_type));
                     append_bytecode(table.data, it.payload.global);
                 }
                 else
                 {
-                    // Constant
+                    // Encoded constant
                     append_bytecode(table.data, uint8_t(init_type));
                     append_constant(table.data, it);
                 }
