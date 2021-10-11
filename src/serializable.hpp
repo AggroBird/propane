@@ -403,8 +403,8 @@ template<> struct propane::serialization::serializer<src_t> \
     } \
     inline static void read(const dst_t& data, src_t& value) \
     { \
-        	const void* ptr = &data; \
-        	propane::serialization::serialize_recursive<_SER_MAKE_PARAMS(src_t, __VA_ARGS__)>::read(ptr, _SER_MAKE_FORWARD(value, __VA_ARGS__)); \
+            const void* ptr = &data; \
+            propane::serialization::serialize_recursive<_SER_MAKE_PARAMS(src_t, __VA_ARGS__)>::read(ptr, _SER_MAKE_FORWARD(value, __VA_ARGS__)); \
     } \
 }
 
