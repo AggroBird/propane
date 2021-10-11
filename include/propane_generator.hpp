@@ -212,6 +212,10 @@ namespace propane
             {
                 push(init_span(types));
             }
+            inline void push(type_idx type)
+            {
+                push(init_span(type));
+            }
 
             std::span<const stackvar> stack() const;
 

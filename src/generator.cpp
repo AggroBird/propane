@@ -724,7 +724,7 @@ namespace propane
             writer.stackvars.push_back(stackvar(it));
         }
     }
-    std::span<const stackvar> generator::method_writer::stack() const
+    span<const stackvar> generator::method_writer::stack() const
     {
         return self().stackvars;
     }
