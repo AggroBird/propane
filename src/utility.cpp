@@ -112,3 +112,23 @@ std::ostream& operator<<(std::ostream& stream, const propane::toolchain_version&
     }
     return stream;
 }
+
+std::ostream& operator<<(std::ostream& stream, const propane::parse_result<propane::literal_t>& id)
+{
+    switch (id.type)
+    {
+        case propane::type_idx::i8: stream << int32_t(id.value.as_i8); break;
+        case propane::type_idx::u8: stream << int32_t(id.value.as_u8); break;
+        case propane::type_idx::i16: stream << id.value.as_i16; break;
+        case propane::type_idx::u16: stream << id.value.as_u16; break;
+        case propane::type_idx::i32: stream << id.value.as_i32; break;
+        case propane::type_idx::u32: stream << id.value.as_u32; break;
+        case propane::type_idx::i64: stream << id.value.as_i64; break;
+        case propane::type_idx::u64: stream << id.value.as_u64; break;
+        case propane::type_idx::f32: stream << id.value.as_f32; break;
+        case propane::type_idx::f64: stream << id.value.as_f64; break;
+        case propane::type_idx::vptr: stream << id.value.as_vptr; break;
+        default: stream << "???"; break;
+    }
+    return stream;
+}

@@ -2,7 +2,7 @@
 #define _HEADER_UTILITY
 
 #include "propane_common.hpp"
-#include "runtime.hpp"
+#include "literals.hpp"
 
 namespace propane
 {
@@ -65,6 +65,7 @@ std::ostream& operator<<(std::ostream& stream, const propane::lookup_type& type)
 std::ostream& operator<<(std::ostream& stream, const propane::file_meta& meta);
 std::ostream& operator<<(std::ostream& stream, const propane::opcode& op);
 std::ostream& operator<<(std::ostream& stream, const propane::toolchain_version& op);
+std::ostream& operator<<(std::ostream& stream, const propane::parse_result<propane::literal_t>& id);
 
 template<typename index_type> inline string_view get_index_type_name(index_type) { return "Index"; }
 inline string_view get_index_type_name(propane::type_idx) { return "Type index"; }
