@@ -348,261 +348,270 @@ namespace propane
             }
 
             // Recompile
-            if (!method.is_external() && !method.bytecode.empty())
+            if (!method.is_external())
             {
                 current_method = &method;
                 current_signature = &signatures[method.signature];
                 return_value = type_idx::voidtype;
 
-                labels = method.labels;
-                label_idx = 0;
-
-                const pointer_t ibeg = method.bytecode.data();
-                const pointer_t iend = ibeg + method.bytecode.size();
-                iptr = ibeg;
-                iidx = 0;
-                bool has_returned = false;
-                while (true)
+                if (!method.bytecode.empty())
                 {
-                    ASSERT(iptr >= ibeg && iptr <= iend, "Instruction pointer out of range");
+                    labels = method.labels;
+                    label_idx = 0;
 
-                    const size_t offset = size_t(iptr - ibeg);
-                    while (label_idx < labels.size() && offset >= labels[label_idx])
+                    const pointer_t ibeg = method.bytecode.data();
+                    const pointer_t iend = ibeg + method.bytecode.size();
+                    iptr = ibeg;
+                    iidx = 0;
+                    bool has_returned = false;
+                    while (true)
                     {
-                        // Ensure labels are at the correct location
-                        ASSERT(offset == labels[label_idx], "Invalid label offset");
-                        label_idx++;
-                        return_value = type_idx::voidtype;
-                    }
+                        ASSERT(iptr >= ibeg && iptr <= iend, "Instruction pointer out of range");
 
-                    if (iptr == iend)
-                    {
-                        if (!has_returned)
+                        const size_t offset = size_t(iptr - ibeg);
+                        while (label_idx < labels.size() && offset >= labels[label_idx])
                         {
-                            // Make sure that the method returns a value if expected
-                            ASSERT(!current_signature->has_return_value(), "Function expects a return value");
-
-                            // If method bytecode ends without a return, append one
-                            append_bytecode(current_method->bytecode, opcode::ret);
+                            // Ensure labels are at the correct location
+                            ASSERT(offset == labels[label_idx], "Invalid label offset");
+                            label_idx++;
+                            return_value = type_idx::voidtype;
                         }
 
-                        break;
-                    }
+                        if (iptr == iend)
+                        {
+                            if (!has_returned)
+                            {
+                                // Make sure that the method returns a value if expected
+                                ASSERT(!current_signature->has_return_value(), "Function expects a return value");
 
-                    has_returned = false;
+                                // If method bytecode ends without a return, append one
+                                append_bytecode(current_method->bytecode, opcode::ret);
+                            }
 
-                    iidx++;
-
-                    op = read_bytecode<opcode>(iptr);
-                    switch (op)
-                    {
-                        case opcode::noop:
                             break;
-
-                        case opcode::set:
-                        {
-                            subcode& sub = read_subcode();
-                            const type_idx lhs = resolve_address();
-                            const type_idx rhs = resolve_operand(lhs);
-                            sub = resolve_set(lhs, rhs);
                         }
-                        break;
 
-                        case opcode::conv:
-                        {
-                            subcode& sub = read_subcode();
-                            const type_idx lhs = resolve_address();
-                            const type_idx rhs = resolve_operand(lhs);
-                            sub = resolve_conv(lhs, rhs);
-                        }
-                        break;
+                        has_returned = false;
 
-                        case opcode::ari_not:
-                        case opcode::ari_neg:
-                        {
-                            subcode& sub = read_subcode();
-                            const type_idx lhs = resolve_address();
-                            sub = resolve_ari(op, lhs, lhs);
-                        }
-                        break;
+                        iidx++;
 
-                        case opcode::ari_mul:
-                        case opcode::ari_div:
-                        case opcode::ari_mod:
-                        case opcode::ari_add:
-                        case opcode::ari_sub:
-                        case opcode::ari_lsh:
-                        case opcode::ari_rsh:
-                        case opcode::ari_and:
-                        case opcode::ari_xor:
-                        case opcode::ari_or:
+                        op = read_bytecode<opcode>(iptr);
+                        switch (op)
                         {
-                            subcode& sub = read_subcode();
-                            const type_idx lhs = resolve_address();
-                            const type_idx rhs = resolve_operand(lhs);
-                            sub = resolve_ari(op, lhs, rhs);
-                        }
-                        break;
+                            case opcode::noop:
+                                break;
 
-                        case opcode::padd:
-                        case opcode::psub:
-                        {
-                            subcode& sub = read_subcode();
-                            const type_idx lhs = resolve_address();
-                            const type_idx rhs = resolve_operand(lhs);
-                            sub = resolve_ptr(op, lhs, rhs);
-                        }
-                        break;
-
-                        case opcode::pdif:
-                        {
-                            const type_idx lhs = resolve_address();
-                            const type_idx rhs = resolve_operand(lhs);
-                            resolve_pdif(lhs, rhs);
-                            // Pointer dif return value
-                            return_value = offset_type;
-                        }
-                        break;
-
-                        case opcode::cmp:
-                        case opcode::ceq:
-                        case opcode::cne:
-                        case opcode::cgt:
-                        case opcode::cge:
-                        case opcode::clt:
-                        case opcode::cle:
-                        {
-                            subcode& sub = read_subcode();
-                            const type_idx lhs = resolve_address();
-                            const type_idx rhs = resolve_operand(lhs);
-                            sub = resolve_cmp(op, lhs, rhs);
-                            // Comparison return value
-                            return_value = type_idx::i32;
-                        }
-                        break;
-
-                        case opcode::cze:
-                        case opcode::cnz:
-                        {
-                            subcode& sub = read_subcode();
-                            const type_idx lhs = resolve_operand();
-                            sub = resolve_cmp(op, lhs, lhs);
-                            // Comparison return value
-                            return_value = type_idx::i32;
-                        }
-                        break;
-
-                        case opcode::br:
-                        {
-                            const size_t jump = read_bytecode<size_t>(iptr);
-                            // Reset return value after branch
-                            return_value = type_idx::voidtype;
-                        }
-                        break;
-
-                        case opcode::beq:
-                        case opcode::bne:
-                        case opcode::bgt:
-                        case opcode::bge:
-                        case opcode::blt:
-                        case opcode::ble:
-                        {
-                            const size_t jump = read_bytecode<size_t>(iptr);
-                            subcode& sub = read_subcode();
-                            const type_idx lhs = resolve_address();
-                            const type_idx rhs = resolve_operand(lhs);
-                            sub = resolve_cmp(op - (opcode::br - opcode::cmp), lhs, rhs);
-                            // Reset return value after branch
-                            return_value = type_idx::voidtype;
-                        }
-                        break;
-
-                        case opcode::bze:
-                        case opcode::bnz:
-                        {
-                            const size_t jump = read_bytecode<size_t>(iptr);
-                            subcode& sub = read_subcode();
-                            const type_idx lhs = resolve_operand();
-                            sub = resolve_cmp(op - (opcode::br - opcode::cmp), lhs, lhs);
-                            // Reset return value after branch
-                            return_value = type_idx::voidtype;
-                        }
-                        break;
-
-                        case opcode::sw:
-                        {
-                            const type_idx type = resolve_operand();
-                            VALIDATE_SWITCH_TYPE(is_integral(type), type);
-                            const uint32_t label_count = read_bytecode<uint32_t>(iptr);
-                            iptr += sizeof(size_t) * label_count;
-                            // Reset return value after branch
-                            return_value = type_idx::voidtype;
-                        }
-                        break;
-
-                        case opcode::call:
-                        {
-                            // Translate method index
-                            index_t& idx = read_bytecode_ref<index_t>(iptr);
-                            idx = (index_t)method.calls[idx];
-                            const size_t arg_count = size_t(read_bytecode<uint8_t>(iptr));
-                            const auto& call_method = methods[method_idx(idx)];
-                            VALIDATE_METHOD_DEFINITION(call_method.is_defined(), get_name(call_method));
-                            const auto& signature = signatures[call_method.signature];
-                            VALIDATE_ARGUMENT_COUNT(arg_count == signature.parameters.size(), arg_count, signature.parameters.size());
-                            for (size_t i = 0; i < arg_count; i++)
+                            case opcode::set:
                             {
                                 subcode& sub = read_subcode();
-                                const type_idx arg_type = resolve_operand(signature.parameters[i].type);
-                                sub = resolve_set(signature.parameters[i].type, arg_type);
+                                const type_idx lhs = resolve_address();
+                                const type_idx rhs = resolve_operand(lhs);
+                                sub = resolve_set(lhs, rhs);
                             }
-                            // Set return value to method return type
-                            return_value = signature.return_type;
-                        }
-                        break;
-
-                        case opcode::callv:
-                        {
-                            const type_idx type = resolve_operand();
-                            VALIDATE_SIGNATURE_TYPE_INVOCATION(types[type].is_signature(), type);
-                            const size_t arg_count = size_t(read_bytecode<uint8_t>(iptr));
-                            const auto& signature = signatures[types[type].generated.signature.index];
-                            VALIDATE_ARGUMENT_COUNT(arg_count == signature.parameters.size(), arg_count, signature.parameters.size());
-                            for (size_t i = 0; i < arg_count; i++)
-                            {
-                                subcode& sub = read_subcode();
-                                const type_idx arg_type = resolve_operand(signature.parameters[i].type);
-                                sub = resolve_set(signature.parameters[i].type, arg_type);
-                            }
-                            // Set return value to method return type
-                            return_value = signature.return_type;
-                        }
-                        break;
-
-                        case opcode::ret:
-                        {
-                            ASSERT(!current_signature->has_return_value(), "Function expects a return value");
-                            has_returned = true;
-                        }
-                        break;
-
-                        case opcode::retv:
-                        {
-                            ASSERT(current_signature->has_return_value(), "Function does not return a value");
-                            has_returned = true;
-
-                            subcode& sub = read_subcode();
-                            const type_idx rhs = resolve_operand(current_signature->return_type);
-                            sub = resolve_set(current_signature->return_type, rhs);
-                        }
-                        break;
-
-                        case opcode::dump:
-                            resolve_operand();
                             break;
 
-                        default: ASSERT(false, "Malformed opcode");
+                            case opcode::conv:
+                            {
+                                subcode& sub = read_subcode();
+                                const type_idx lhs = resolve_address();
+                                const type_idx rhs = resolve_operand(lhs);
+                                sub = resolve_conv(lhs, rhs);
+                            }
+                            break;
+
+                            case opcode::ari_not:
+                            case opcode::ari_neg:
+                            {
+                                subcode& sub = read_subcode();
+                                const type_idx lhs = resolve_address();
+                                sub = resolve_ari(op, lhs, lhs);
+                            }
+                            break;
+
+                            case opcode::ari_mul:
+                            case opcode::ari_div:
+                            case opcode::ari_mod:
+                            case opcode::ari_add:
+                            case opcode::ari_sub:
+                            case opcode::ari_lsh:
+                            case opcode::ari_rsh:
+                            case opcode::ari_and:
+                            case opcode::ari_xor:
+                            case opcode::ari_or:
+                            {
+                                subcode& sub = read_subcode();
+                                const type_idx lhs = resolve_address();
+                                const type_idx rhs = resolve_operand(lhs);
+                                sub = resolve_ari(op, lhs, rhs);
+                            }
+                            break;
+
+                            case opcode::padd:
+                            case opcode::psub:
+                            {
+                                subcode& sub = read_subcode();
+                                const type_idx lhs = resolve_address();
+                                const type_idx rhs = resolve_operand(lhs);
+                                sub = resolve_ptr(op, lhs, rhs);
+                            }
+                            break;
+
+                            case opcode::pdif:
+                            {
+                                const type_idx lhs = resolve_address();
+                                const type_idx rhs = resolve_operand(lhs);
+                                resolve_pdif(lhs, rhs);
+                                // Pointer dif return value
+                                return_value = offset_type;
+                            }
+                            break;
+
+                            case opcode::cmp:
+                            case opcode::ceq:
+                            case opcode::cne:
+                            case opcode::cgt:
+                            case opcode::cge:
+                            case opcode::clt:
+                            case opcode::cle:
+                            {
+                                subcode& sub = read_subcode();
+                                const type_idx lhs = resolve_address();
+                                const type_idx rhs = resolve_operand(lhs);
+                                sub = resolve_cmp(op, lhs, rhs);
+                                // Comparison return value
+                                return_value = type_idx::i32;
+                            }
+                            break;
+
+                            case opcode::cze:
+                            case opcode::cnz:
+                            {
+                                subcode& sub = read_subcode();
+                                const type_idx lhs = resolve_operand();
+                                sub = resolve_cmp(op, lhs, lhs);
+                                // Comparison return value
+                                return_value = type_idx::i32;
+                            }
+                            break;
+
+                            case opcode::br:
+                            {
+                                const size_t jump = read_bytecode<size_t>(iptr);
+                                // Reset return value after branch
+                                return_value = type_idx::voidtype;
+                            }
+                            break;
+
+                            case opcode::beq:
+                            case opcode::bne:
+                            case opcode::bgt:
+                            case opcode::bge:
+                            case opcode::blt:
+                            case opcode::ble:
+                            {
+                                const size_t jump = read_bytecode<size_t>(iptr);
+                                subcode& sub = read_subcode();
+                                const type_idx lhs = resolve_address();
+                                const type_idx rhs = resolve_operand(lhs);
+                                sub = resolve_cmp(op - (opcode::br - opcode::cmp), lhs, rhs);
+                                // Reset return value after branch
+                                return_value = type_idx::voidtype;
+                            }
+                            break;
+
+                            case opcode::bze:
+                            case opcode::bnz:
+                            {
+                                const size_t jump = read_bytecode<size_t>(iptr);
+                                subcode& sub = read_subcode();
+                                const type_idx lhs = resolve_operand();
+                                sub = resolve_cmp(op - (opcode::br - opcode::cmp), lhs, lhs);
+                                // Reset return value after branch
+                                return_value = type_idx::voidtype;
+                            }
+                            break;
+
+                            case opcode::sw:
+                            {
+                                const type_idx type = resolve_operand();
+                                VALIDATE_SWITCH_TYPE(is_integral(type), type);
+                                const uint32_t label_count = read_bytecode<uint32_t>(iptr);
+                                iptr += sizeof(size_t) * label_count;
+                                // Reset return value after branch
+                                return_value = type_idx::voidtype;
+                            }
+                            break;
+
+                            case opcode::call:
+                            {
+                                // Translate method index
+                                index_t& idx = read_bytecode_ref<index_t>(iptr);
+                                idx = (index_t)method.calls[idx];
+                                const size_t arg_count = size_t(read_bytecode<uint8_t>(iptr));
+                                const auto& call_method = methods[method_idx(idx)];
+                                VALIDATE_METHOD_DEFINITION(call_method.is_defined(), get_name(call_method));
+                                const auto& signature = signatures[call_method.signature];
+                                VALIDATE_ARGUMENT_COUNT(arg_count == signature.parameters.size(), arg_count, signature.parameters.size());
+                                for (size_t i = 0; i < arg_count; i++)
+                                {
+                                    subcode& sub = read_subcode();
+                                    const type_idx arg_type = resolve_operand(signature.parameters[i].type);
+                                    sub = resolve_set(signature.parameters[i].type, arg_type);
+                                }
+                                // Set return value to method return type
+                                return_value = signature.return_type;
+                            }
+                            break;
+
+                            case opcode::callv:
+                            {
+                                const type_idx type = resolve_operand();
+                                VALIDATE_SIGNATURE_TYPE_INVOCATION(types[type].is_signature(), type);
+                                const size_t arg_count = size_t(read_bytecode<uint8_t>(iptr));
+                                const auto& signature = signatures[types[type].generated.signature.index];
+                                VALIDATE_ARGUMENT_COUNT(arg_count == signature.parameters.size(), arg_count, signature.parameters.size());
+                                for (size_t i = 0; i < arg_count; i++)
+                                {
+                                    subcode& sub = read_subcode();
+                                    const type_idx arg_type = resolve_operand(signature.parameters[i].type);
+                                    sub = resolve_set(signature.parameters[i].type, arg_type);
+                                }
+                                // Set return value to method return type
+                                return_value = signature.return_type;
+                            }
+                            break;
+
+                            case opcode::ret:
+                            {
+                                ASSERT(!current_signature->has_return_value(), "Function expects a return value");
+                                has_returned = true;
+                            }
+                            break;
+
+                            case opcode::retv:
+                            {
+                                ASSERT(current_signature->has_return_value(), "Function does not return a value");
+                                has_returned = true;
+
+                                subcode& sub = read_subcode();
+                                const type_idx rhs = resolve_operand(current_signature->return_type);
+                                sub = resolve_set(current_signature->return_type, rhs);
+                            }
+                            break;
+
+                            case opcode::dump:
+                                resolve_operand();
+                                break;
+
+                            default: ASSERT(false, "Malformed opcode");
+                        }
                     }
+                }
+                else
+                {
+                    ASSERT(!current_signature->has_return_value(), "Function expects a return value");
+
+                    append_bytecode(current_method->bytecode, opcode::ret);
                 }
             }
 
@@ -644,7 +653,7 @@ namespace propane
             {
                 case address_type::stackvar:
                 {
-                    if (index == address_header::index_max)
+                    if (index == address_header_constants::index_max)
                     {
                         VALIDATE_RETURN_ADDRESS(return_value != type_idx::voidtype);
 
