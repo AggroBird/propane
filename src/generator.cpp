@@ -550,7 +550,7 @@ namespace propane
         }
         void write_ret()
         {
-            const bool expected = gen.signatures[signature].has_return_value();
+            const bool expected = !gen.signatures[signature].has_return_value();
             VALIDATE_RET_VAL(expected, gen.database[name].name, gen.make_meta(index));
 
             append_bytecode(opcode::ret);
