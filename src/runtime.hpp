@@ -16,8 +16,8 @@ namespace propane
     // Global indices
     enum class global_flags : index_t
     {
-        constant_flag = index_t(1) << (address_header::index_bit_count - 1),
-        constant_mask = (address_header::index_max >> 1),
+        constant_flag = index_t(1) << (address_header_constants::index_bit_count - 1),
+        constant_mask = (address_header_constants::index_max >> 1),
     };
     constexpr global_idx operator|(global_idx lhs, global_flags rhs) noexcept
     {

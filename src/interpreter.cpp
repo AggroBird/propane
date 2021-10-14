@@ -2127,7 +2127,7 @@ namespace propane
             {
                 case address_type::stackvar:
                 {
-                    if (index == address_header::index_max)
+                    if (index == address_header_constants::index_max)
                     {
                         result = return_value_addr;
                     }

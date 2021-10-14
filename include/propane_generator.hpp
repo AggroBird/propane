@@ -146,7 +146,7 @@ namespace propane
     struct retval : public modifyable_address
     {
         retval() :
-            modifyable_address(address_header::index_max, address_type::stackvar) {}
+            modifyable_address(address_header_constants::index_max, address_type::stackvar) {}
     };
 
     struct global : public modifyable_address

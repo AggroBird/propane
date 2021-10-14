@@ -130,69 +130,70 @@ namespace propane
         subscript,
     };
 
-    struct address_header
+    namespace address_header_constants
     {
         static constexpr index_t flag_mask = 0b11;
-        static constexpr index_t flag_bit_count = 6;
-        static constexpr index_t index_bit_count = 24;
+        static constexpr index_t index_bit_count = 26;
         static constexpr index_t type_offset = 30;
         static constexpr index_t prefix_offset = 28;
         static constexpr index_t modifier_offset = 26;
+        static constexpr index_t index_max = ~index_t(0) >> (32 - address_header_constants::index_bit_count);
+    }
 
-        enum : index_t { index_max = ~index_t(0) >> (32 - index_bit_count) };
-
+    struct address_header
+    {
         address_header() noexcept = default;
         address_header(index_t init) noexcept :
             value(init) {}
         address_header(address_type type, address_prefix prefix, address_modifier modifier, index_t index) noexcept
         {
-            value = (index_t(index) & index_max);
-            value |= ((index_t(type) & flag_mask) << type_offset);
-            value |= ((index_t(prefix) & flag_mask) << prefix_offset);
-            value |= ((index_t(modifier) & flag_mask) << modifier_offset);
+            value = (index_t(index) & address_header_constants::index_max);
+            value |= ((index_t(type) & address_header_constants::flag_mask) << address_header_constants::type_offset);
+            value |= ((index_t(prefix) & address_header_constants::flag_mask) << address_header_constants::prefix_offset);
+            value |= ((index_t(modifier) & address_header_constants::flag_mask) << address_header_constants::modifier_offset);
         }
         address_header(type_idx constant_type) noexcept
         {
-            value = index_t(constant_type) & index_max;
-            value |= ((index_t(address_type::constant) & index_t(3)) << type_offset);
+            value = index_t(constant_type) & address_header_constants::index_max;
+            value |= ((index_t(address_type::constant) & address_header_constants::flag_mask) << address_header_constants::type_offset);
         }
 
         inline const address_type type() const noexcept
         {
-            return address_type((value >> type_offset) & index_t(3));
+            return address_type((value >> address_header_constants::type_offset) & address_header_constants::flag_mask);
         }
         inline const address_prefix prefix() const noexcept
         {
-            return address_prefix((value >> prefix_offset) & index_t(3));
+            return address_prefix((value >> address_header_constants::prefix_offset) & address_header_constants::flag_mask);
         }
         inline const address_modifier modifier() const noexcept
         {
-            return address_modifier((value >> modifier_offset) & index_t(3));
+            return address_modifier((value >> address_header_constants::modifier_offset) & address_header_constants::flag_mask);
         }
         inline index_t index() const noexcept
         {
-            return index_t(value & index_max);
+            return index_t(value & address_header_constants::index_max);
         }
 
         inline void set_type(address_type type) noexcept
         {
-            value &= ~(flag_mask << type_offset);
-            value |= ((index_t(type) & flag_mask) << type_offset);
+            value &= ~(address_header_constants::flag_mask << address_header_constants::type_offset);
+            value |= ((index_t(type) & address_header_constants::flag_mask) << address_header_constants::type_offset);
         }
         inline void set_prefix(address_prefix prefix) noexcept
         {
-            value &= ~(flag_mask << prefix_offset);
-            value |= ((index_t(prefix) & flag_mask) << prefix_offset);
+            value &= ~(address_header_constants::flag_mask << address_header_constants::prefix_offset);
+            value |= ((index_t(prefix) & address_header_constants::flag_mask) << address_header_constants::prefix_offset);
         }
         inline void set_modifier(address_modifier modifier) noexcept
         {
-            value &= ~(flag_mask << modifier_offset);
-            value |= ((index_t(modifier) & flag_mask) << modifier_offset);
+            value &= ~(address_header_constants::flag_mask << address_header_constants::modifier_offset);
+            value |= ((index_t(modifier) & address_header_constants::flag_mask) << address_header_constants::modifier_offset);
         }
         inline void set_index(index_t index) noexcept
         {
-            value &= ~index_max;
-            value |= (index_t(index) & index_max);
+            value &= ~address_header_constants::index_max;
+            value |= (index_t(index) & address_header_constants::index_max);
         }
 
         inline bool operator==(const address_header& other) const noexcept

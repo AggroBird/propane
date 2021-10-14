@@ -282,7 +282,7 @@ namespace propane
             {
                 case address_type::stackvar:
                 {
-                    if (addr.header.index() != address_header::index_max)
+                    if (addr.header.index() != address_header_constants::index_max)
                     {
                         VALIDATE_STACK_INDEX(addr.header.index(), stackvars.size());
                     }
@@ -336,9 +336,9 @@ namespace propane
             {
                 case address_type::stackvar:
                 {
-                    if (addr.header.index() == address_header::index_max)
+                    if (addr.header.index() == address_header_constants::index_max)
                     {
-                        data.header.set_index(address_header::index_max);
+                        data.header.set_index(address_header_constants::index_max);
                     }
                 }
                 break;
