@@ -28,7 +28,7 @@
     "Failed to parse literal: '%'", expression)
 #define VALIDATE_ARRAY_SIZE(num) VALIDATE(ERRC::PRS_ARRAY_SIZE_OVERFLOW, propane::check_size_range(num), \
     "Array size exceeds supported maximum value")
-#define VALIDATE_STACK_INDEX(num) VALIDATE(ERRC::PRS_STACK_IDX_OVERFLOW, uint64_t(num) < uint64_t(address_header::index_max), \
+#define VALIDATE_STACK_INDEX(num) VALIDATE(ERRC::PRS_STACK_IDX_OVERFLOW, uint64_t(num) < uint64_t(address_header_constants::index_max), \
     "Index exceeds supported maximum value")
 #define UNDEFINED_STACK_IDX(expr, num) VALIDATE(ERRC::PRS_UNDEFINED_STACK_IDX, expr, \
     "Undefined stack index: '%'", num)
@@ -915,7 +915,7 @@ namespace propane
                 {
                     // Return address
                     result.header.set_type(address_type::stackvar);
-                    result.header.set_index(address_header::index_max);
+                    result.header.set_index(address_header_constants::index_max);
                     break;
                 }
 
