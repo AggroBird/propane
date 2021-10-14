@@ -857,8 +857,8 @@ namespace propane
                         }
                     }
 
-                    VALIDATE_TYPE_FIELD_DEFINITION(field_type != type_idx::invalid, get_name(fn), get_name(*type), make_meta(type->index))
-                        f.type = field_type;
+                    VALIDATE_TYPE_FIELD_DEFINITION(field_type != type_idx::invalid, get_name(fn), get_name(*type), make_meta(type->index));
+                    f.type = field_type;
                 }
 
                 VALIDATE_TYPE_FIELD_DEFINITION(f.type != type_idx::invalid, get_name(f.name.field_names[0]), get_name(*type), make_meta(type->index))
