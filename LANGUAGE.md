@@ -258,7 +258,8 @@ The arithmetic conversion rules assume the following order of significance in ar
 Implicit conversion of different arithmetic types dictates that the left-hand operand should always be able to represent the value of the right-hand operand. If left-hand operand and right-hand operand are not of the same type, implicit conversion is only possible when:
 * The left-hand type is a double and the right-hand type is a float or integral.
 * The left-hand type is a float and the right-hand type is integral.
-* The left-hand type has the same sign as the righ-hand type and the right-hand type is less significant than the left-hand type.
+* The left-hand type has the same sign as the right-hand type and the right-hand type is less significant than the left-hand type.
+
 For all of the above cases, the right-hand type is converted to the left-hand type.
 
 ### Comparison conversion rules
