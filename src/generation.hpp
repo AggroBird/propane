@@ -64,7 +64,7 @@ namespace propane
 
         generated_type generated = 0;
 
-        inline void make_pointer(type_idx underlying_type, size_t underlying_size = 0)
+        inline void make_pointer(type_idx underlying_type)
         {
             generated = generated_type::pointer_data(underlying_type, 0);
             flags |= type_flags::is_pointer_type;

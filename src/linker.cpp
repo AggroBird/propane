@@ -254,66 +254,73 @@ namespace propane
 
         void resolve_type_recursive(asm_type& type)
         {
-            VALIDATE_TYPE_RECURSIVE(!(type.flags & extended_flags::is_resolving), get_name(type));
-            type.flags |= extended_flags::is_resolving;
-
-            VALIDATE_TYPE_DEFINITION(type.is_defined(), get_name(type));
-
-            if (is_base_type(type.index))
+            if (!type.is_resolved())
             {
-                // Base type (build-in)
-                type.total_size = get_base_type_size(type.index);
-                type.flags |= extended_flags::is_resolved;
-            }
-            else if (type.is_generated())
-            {
-                if (type.is_pointer())
+                VALIDATE_TYPE_RECURSIVE(!(type.flags & extended_flags::is_resolving), get_name(type));
+                type.flags |= extended_flags::is_resolving;
+
+                VALIDATE_TYPE_DEFINITION(type.is_defined(), get_name(type));
+
+                if (is_base_type(type.index))
                 {
-                    // Pointer
-                    auto& underlying_type = types[type.generated.array.underlying_type];
-                    if (!underlying_type.is_resolved()) resolve_type_recursive(underlying_type);
-                    type.total_size = ptr_size;
-                    type.generated.pointer.underlying_size = underlying_type.total_size;
+                    // Base type (build-in)
+                    type.total_size = get_base_type_size(type.index);
+                    type.flags |= extended_flags::is_resolved;
                 }
-                else if (type.is_array())
+                else if (type.is_generated())
                 {
-                    // Array
-                    auto& underlying_type = types[type.generated.array.underlying_type];
-                    if (!underlying_type.is_resolved()) resolve_type_recursive(underlying_type);
-                    type.total_size = underlying_type.total_size * type.generated.array.array_size;
-                }
-                else if (type.is_signature())
-                {
-                    // Signature
-                    type.total_size = ptr_size;
+                    if (type.is_pointer())
+                    {
+                        // Pointer
+                        type.total_size = ptr_size;
+                    }
+                    else if (type.is_array())
+                    {
+                        // Array
+                        auto& underlying_type = types[type.generated.array.underlying_type];
+                        resolve_type_recursive(underlying_type);
+                        type.total_size = underlying_type.total_size * type.generated.array.array_size;
+                    }
+                    else if (type.is_signature())
+                    {
+                        // Signature
+                        type.total_size = ptr_size;
+                    }
+                    else
+                    {
+                        ASSERT(false, "Malformed type flag");
+                    }
+
+                    type.flags |= extended_flags::is_resolved;
                 }
                 else
                 {
-                    ASSERT(false, "Malformed type flag");
-                }
-
-                type.flags |= extended_flags::is_resolved;
-                return;
-            }
-            else
-            {
-                // User-defined types
-                if (!type.fields.empty())
-                {
-                    const auto current_size = type.total_size;
-                    type.total_size = 0;
-                    for (auto& field : type.fields)
+                    // User-defined types
+                    if (!type.fields.empty())
                     {
-                        auto& field_type = types[field.type];
-                        if (!field_type.is_resolved()) resolve_type_recursive(field_type);
-                        field.offset = type.is_union() ? 0 : type.total_size;
-                        type.total_size = type.is_union() ? std::max(type.total_size, field_type.total_size) : (type.total_size + field_type.total_size);
+                        const auto current_size = type.total_size;
+                        type.total_size = 0;
+                        for (auto& field : type.fields)
+                        {
+                            auto& field_type = types[field.type];
+                            resolve_type_recursive(field_type);
+                            field.offset = type.is_union() ? 0 : type.total_size;
+                            type.total_size = type.is_union() ? std::max(type.total_size, field_type.total_size) : (type.total_size + field_type.total_size);
+                        }
+                        // Ensure that size matches native declaration
+                        ASSERT(current_size == 0 || current_size == type.total_size, "Native type size mismatch");
                     }
-                    // Ensure that size matches native declaration
-                    ASSERT(current_size == 0 || current_size == type.total_size, "Native type size mismatch");
+                    VALIDATE_TYPE_SIZE(type.total_size > 0, get_name(type), make_meta(type.index));
+                    type.flags |= extended_flags::is_resolved;
                 }
-                VALIDATE_TYPE_SIZE(type.total_size > 0, get_name(type), make_meta(type.index));
-                type.flags |= extended_flags::is_resolved;
+            }
+
+            // Pointer types underlying size needs to be resolved after the underlying type
+            // knows its own size
+            if (type.pointer_type != type_idx::invalid)
+            {
+                auto& pointer_type = types[type.pointer_type];
+                pointer_type.generated.pointer.underlying_size = type.total_size;
             }
         }
 
@@ -803,7 +810,7 @@ namespace propane
                         gen_type pointer_type = gen_type(name_idx::invalid, type_idx(types.size()));
                         pointer_type.flags = extended_flags::is_defined | extended_flags::is_resolved;
                         pointer_type.total_size = ptr_size;
-                        pointer_type.make_pointer(type.index, type.total_size);
+                        pointer_type.make_pointer(type.index);
                         type.pointer_type = pointer_type.index;
                         last_type = pointer_type.index;
                         types.push_back(std::move(pointer_type));
