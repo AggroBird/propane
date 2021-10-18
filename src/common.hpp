@@ -310,6 +310,22 @@ namespace propane
             return *this;
         }
     };
+
+    struct address_info
+    {
+        inline address_info(address_header header) noexcept
+        {
+            index = header.index();
+            modifier = header.modifier();
+            prefix = header.prefix();
+            type = header.type();
+        }
+
+        index_t index;
+        address_modifier modifier;
+        address_prefix prefix;
+        address_type type;
+    };
 }
 
 #endif
