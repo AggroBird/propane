@@ -66,6 +66,12 @@ namespace propane
         constant(name_idx val) : constant(type_idx::voidtype) { payload.global = val; }
     };
 
+    struct invalid_address : public constant
+    {
+    public:
+        invalid_address() : constant(name_idx::invalid) {}
+    };
+
     struct prefixable_address : public address
     {
     protected:
