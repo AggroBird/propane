@@ -65,7 +65,7 @@ namespace propane
         constant(std::nullptr_t) : constant(type_idx::vptr) { payload.vptr = nullptr; }
         constant(name_idx val) : constant(type_idx::voidtype) { payload.global = val; }
 
-        inline type_idx type_index() const noexcept
+        inline type_idx type() const noexcept
         {
             return type_idx(header.index());
         }
@@ -146,12 +146,22 @@ namespace propane
     {
         stack(index_t index) :
             modifyable_address(index, address_type::stackvar) {}
+
+        inline index_t index() const noexcept
+        {
+            return header.index();
+        }
     };
 
     struct param : public modifyable_address
     {
         param(index_t index) :
             modifyable_address(index, address_type::parameter) {}
+
+        inline index_t index() const noexcept
+        {
+            return header.index();
+        }
     };
 
     struct retval : public modifyable_address
@@ -164,6 +174,11 @@ namespace propane
     {
         global(name_idx name) :
             modifyable_address(index_t(name), address_type::global) {}
+
+        inline name_idx name() const noexcept
+        {
+            return name_idx(header.index());
+        }
     };
 
     // Experimental Propane bytecode generator
