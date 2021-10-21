@@ -64,6 +64,11 @@ namespace propane
         constant(double val) : constant(type_idx::f64) { payload.f64 = val; }
         constant(std::nullptr_t) : constant(type_idx::vptr) { payload.vptr = nullptr; }
         constant(name_idx val) : constant(type_idx::voidtype) { payload.global = val; }
+
+        inline type_idx type_index() const noexcept
+        {
+            return type_idx(header.index());
+        }
     };
 
     struct invalid_address : public constant
