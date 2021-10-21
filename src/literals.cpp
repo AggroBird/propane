@@ -281,6 +281,11 @@ namespace propane
                     if (is_exp) return result;
                     is_exp = is_float = true;
                 }
+                else if (c == 'f' || c == 'F')
+                {
+                    is_float = true;
+                    break;
+                }
             }
 
             if (is_float)
