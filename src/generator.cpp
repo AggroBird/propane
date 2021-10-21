@@ -17,6 +17,8 @@
     "Array length cannot be zero")
 #define VALIDATE_INDEX_VALUE(idx) VALIDATE(ERRC::GNR_INVALID_INDEX, size_t(idx) != size_t(invalid_index), \
     "Invalid index provided")
+#define VALIDATE_OFFSET_VALUE(empty) VALIDATE(ERRC::GNR_EMPTY_OFFSET, empty, \
+    "Empty offset sequence provided")
 #define VALIDATE_IDENTIFIER_TYPE(expr, lhs_type, rhs_type, name) VALIDATE(ERRC::GNR_IDENTIFIER_TYPE_MISMATCH, expr, \
     "Declaration of % '%' collides with previous % declaration", lhs_type, name, rhs_type)
 #define VALIDATE_NONVOID(type) VALIDATE(ERRC::GNR_INVALID_VOID_TYPE, (type) != propane::type_idx::voidtype, \
@@ -1024,6 +1026,7 @@ namespace propane
 
         VALIDATE_INDEX(type, gen.types.size());
         VALIDATE_INDICES(fields, gen.database.size());
+        VALIDATE_OFFSET_VALUE(!fields.empty());
 
         make_key(type, fields, gen.keybuf);
         auto find = gen.offset_lookup.find(gen.keybuf);
