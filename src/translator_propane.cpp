@@ -403,8 +403,8 @@ namespace propane
                 case type_idx::u32: file_writer.write(std::to_string(*reinterpret_cast<const u32*>(ptr)), "u32"); break;
                 case type_idx::i64: file_writer.write(std::to_string(*reinterpret_cast<const i64*>(ptr)), "i64"); break;
                 case type_idx::u64: file_writer.write(std::to_string(*reinterpret_cast<const u64*>(ptr)), "u64"); break;
-                case type_idx::f32: file_writer.write(std::to_string(*reinterpret_cast<const f32*>(ptr)), "f"); break;
-                case type_idx::f64: file_writer.write(std::to_string(*reinterpret_cast<const f64*>(ptr))); break;
+                case type_idx::f32: file_writer.write(std::to_string(*reinterpret_cast<const f32*>(ptr)), "f32"); break;
+                case type_idx::f64: file_writer.write(std::to_string(*reinterpret_cast<const f64*>(ptr)), "f64"); break;
                 case type_idx::vptr: file_writer.write(null_keyword); break;
                 default: ASSERT(false, "Unknown constant type");
             }
