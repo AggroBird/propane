@@ -19,13 +19,25 @@ namespace propane
     {
         return c >= '0' && c <= '9';
     }
+    inline constexpr char to_lower(char c)
+    {
+        return (c >= 'A' && c <= 'Z') ? (c - 'A') + 'a' : c;
+    }
 
     template<size_t len> inline bool cmp_str(const char*& beg, const char* end, const char(&str)[len])
     {
-        const auto offset = end - beg;
-        if (offset == (len - 1) && memcmp(str, beg, offset) == 0)
+        const auto offset = size_t(end - beg);
+        if (offset == (len - 1))
         {
-            beg += (len - 1);
+            for (size_t i = 0; i < offset; i++)
+            {
+                const char c = to_lower(beg[i]);
+                if (c != str[i])
+                {
+                    return false;
+                }
+            }
+            beg += offset;
             return true;
         }
         return false;
@@ -77,14 +89,37 @@ namespace propane
         if (beg < end)
         {
             // Manual type override
-            if (cmp_str(beg, end, "i8")) btype = type_idx::i8;
-            else if (cmp_str(beg, end, "u8")) btype = type_idx::u8;
-            else if (cmp_str(beg, end, "i16")) btype = type_idx::i16;
-            else if (cmp_str(beg, end, "u16")) btype = type_idx::u16;
-            else if (cmp_str(beg, end, "i32")) btype = type_idx::i32;
-            else if (cmp_str(beg, end, "u32")) btype = type_idx::u32;
-            else if (cmp_str(beg, end, "i64")) btype = type_idx::i64;
-            else if (cmp_str(beg, end, "u64")) btype = type_idx::u64;
+            switch (beg[0])
+            {
+                case 'i':
+                case 'I':
+                {
+                    if (cmp_str(beg, end, "i8")) return type_idx::i8;
+                    if (cmp_str(beg, end, "i16")) return type_idx::i16;
+                    if (cmp_str(beg, end, "i32")) return type_idx::i32;
+                    if (cmp_str(beg, end, "i64")) return type_idx::i64;
+                }
+                break;
+
+                case 'u':
+                case 'U':
+                {
+                    if (cmp_str(beg, end, "u8")) return type_idx::u8;
+                    if (cmp_str(beg, end, "u16")) return type_idx::u16;
+                    if (cmp_str(beg, end, "u32")) return type_idx::u32;
+                    if (cmp_str(beg, end, "u64")) return type_idx::u64;
+                    if (cmp_str(beg, end, "u")) return type_idx::u32;
+                    if (cmp_str(beg, end, "ul")) return type_idx::u64;
+                }
+                break;
+
+                case 'l':
+                case 'L':
+                {
+                    if (cmp_str(beg, end, "l")) return type_idx::i64;
+                }
+                break;
+            }
         }
         return btype;
     }
@@ -265,8 +300,17 @@ namespace propane
                 // Parse suffix
                 if (beg < end)
                 {
-                    if (cmp_str(beg, end, "f32")) btype = type_idx::f32;
-                    else if (cmp_str(beg, end, "f64")) btype = type_idx::f64;
+                    switch (beg[0])
+                    {
+                        case 'f':
+                        case 'F':
+                        {
+                            if (cmp_str(beg, end, "f")) { btype = type_idx::f32; break; }
+                            if (cmp_str(beg, end, "f32")) { btype = type_idx::f32; break; }
+                            if (cmp_str(beg, end, "f64")) { btype = type_idx::f64; break; }
+                        }
+                        break;
+                    }
                 }
 
                 switch (btype)
