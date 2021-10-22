@@ -385,10 +385,8 @@ namespace propane
         {
             const size_t jump = read_bytecode<size_t>(sf.iptr);
             auto find = label_indices.find(jump);
-            if (find != label_indices.end())
-            {
-                file_writer.write(" label_", get_number_str(find->second));
-            }
+            ASSERT(find != label_indices.end(), "Invalid jump location");
+            file_writer.write(" label_", get_number_str(find->second));
         }
 
         void write_literal(const_pointer_t ptr, type_idx type)

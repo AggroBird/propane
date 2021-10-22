@@ -242,7 +242,7 @@ namespace propane
         void resolve_labels()
         {
             // Fetch all labels that have been referenced by a branch
-            map<size_t, label_idx> write_labels;
+            map<size_t, vector<label_idx>> write_labels;
             for (auto& branch : unresolved_branches)
             {
                 auto label = label_locations.find(branch.first);
@@ -259,17 +259,20 @@ namespace propane
                         VALIDATE_LABEL_DEF(false, named_labels[label_name_index].name);
                     }
                 }
-                write_labels.emplace(label->second, label->first);
+                write_labels[label->second].push_back(label->first);
             }
 
             // Export labels
             labels.reserve(write_labels.size());
             for (auto& label : write_labels)
             {
-                auto branch = unresolved_branches.find(label.second);
-                for (auto& offset : branch->second)
+                for (auto& branch_index : label.second)
                 {
-                    *reinterpret_cast<size_t*>(bytecode.data() + offset) = label.first;
+                    auto locations = unresolved_branches.find(branch_index);
+                    for (auto& offset : locations->second)
+                    {
+                        *reinterpret_cast<size_t*>(bytecode.data() + offset) = label.first;
+                    }
                 }
                 labels.push_back(label.first);
             }
