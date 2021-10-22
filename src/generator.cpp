@@ -199,7 +199,8 @@ namespace propane
         // Labels
         unordered_map<label_idx, size_t> label_locations;
         unordered_map<label_idx, vector<size_t>> unresolved_branches;
-        database<label_idx, void> label_names;
+        database<index_t, label_idx> named_labels;
+        indexed_vector<label_idx, index_t> label_declarations; // Unnamed labels will be added to the declarations list as 'invalid_index'
 
         size_t parameter_count = 0;
         size_t last_return = 0;
@@ -245,7 +246,19 @@ namespace propane
             for (auto& branch : unresolved_branches)
             {
                 auto label = label_locations.find(branch.first);
-                VALIDATE_LABEL_DEF(label != label_locations.end(), label_names[branch.first].name);
+                if (label == label_locations.end())
+                {
+                    // Label location not known
+                    const auto label_name_index = label_declarations[branch.first];
+                    if (label_name_index == invalid_index)
+                    {
+                        VALIDATE_LABEL_DEF(false, size_t(branch.first));
+                    }
+                    else
+                    {
+                        VALIDATE_LABEL_DEF(false, named_labels[label_name_index].name);
+                    }
+                }
                 write_labels.emplace(label->second, label->first);
             }
 
@@ -459,14 +472,14 @@ namespace propane
 
         void write_branch(opcode op, label_idx label)
         {
-            VALIDATE_INDEX(label, label_names.size());
+            VALIDATE_INDEX(label, label_declarations.size());
 
             append_bytecode(op);
             write_label(label);
         }
         void write_branch(opcode op, label_idx label, address lhs)
         {
-            VALIDATE_INDEX(label, label_names.size());
+            VALIDATE_INDEX(label, label_declarations.size());
             if (validate_address(lhs))
             {
                 append_bytecode(op);
@@ -477,7 +490,7 @@ namespace propane
         }
         void write_branch(opcode op, label_idx label, address lhs, address rhs)
         {
-            VALIDATE_INDEX(label, label_names.size());
+            VALIDATE_INDEX(label, label_declarations.size());
             if (validate_address(lhs) && validate_operand(rhs))
             {
                 append_bytecode(op);
@@ -491,7 +504,7 @@ namespace propane
         void write_sw(address addr, span<const label_idx> labels)
         {
             VALIDATE_ARRAY_LENGTH(labels.size());
-            VALIDATE_INDICES(labels, label_names.size());
+            VALIDATE_INDICES(labels, label_declarations.size());
             if (validate_address(addr))
             {
                 append_bytecode(opcode::sw);
@@ -735,16 +748,46 @@ namespace propane
     {
         VALIDATE_IDENTIFIER(label_name);
 
-        return self().label_names.emplace(label_name);
+        auto& writer = self();
+
+        auto find = writer.named_labels.find(label_name);
+        if (!find)
+        {
+            // New named label
+            const label_idx next = label_idx(writer.label_declarations.size());
+            writer.label_declarations.push_back(writer.named_labels.emplace(label_name, next).key);
+            return next;
+        }
+        return *find;
+    }
+    label_idx generator::method_writer::declare_label()
+    {
+        auto& writer = self();
+
+        // New unnamed label
+        const label_idx next = label_idx(writer.label_declarations.size());
+        writer.label_declarations.push_back(invalid_index);
+        return next;
     }
     void generator::method_writer::write_label(label_idx label)
     {
         auto& writer = self();
 
-        VALIDATE_INDEX(label, writer.label_names.size());
+        VALIDATE_INDEX(label, writer.label_declarations.size());
 
         const auto find = writer.label_locations.find(label);
-        VALIDATE_LABEL_DEC(find == writer.label_locations.end(), writer.label_names[label].name);
+        if (find != writer.label_locations.end())
+        {
+            const auto label_name_index = writer.label_declarations[label];
+            if (label_name_index == invalid_index)
+            {
+                VALIDATE_LABEL_DEC(false, size_t(label));
+            }
+            else
+            {
+                VALIDATE_LABEL_DEC(false, writer.named_labels[label_name_index].name);
+            }
+        }
 
         writer.label_locations.emplace(label, writer.bytecode.size());
     }

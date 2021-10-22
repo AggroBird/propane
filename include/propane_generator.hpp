@@ -245,8 +245,9 @@ namespace propane
 
             std::span<const stackvar> stack() const;
 
-            // Declare label for later use
+            // Declare label for later use (name is optional)
             label_idx declare_label(std::string_view label_name);
+            label_idx declare_label();
             // Write label (this should be called only once per label)
             void write_label(label_idx label);
 
