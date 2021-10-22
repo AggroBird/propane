@@ -274,6 +274,12 @@ namespace propane
                         *reinterpret_cast<size_t*>(bytecode.data() + offset) = label.first;
                     }
                 }
+                if (label.first >= bytecode.size())
+                {
+                    const bool expected = !gen.signatures[signature].has_return_value();
+                    VALIDATE_RET_VAL(expected, gen.database[name].name, gen.make_meta(index));
+                    write_ret();
+                }
                 labels.push_back(label.first);
             }
         }
