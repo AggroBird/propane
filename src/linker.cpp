@@ -694,7 +694,7 @@ namespace propane
                     const auto& table = is_constant ? constants : globals;
                     global &= global_flags::constant_mask;
 
-                    ASSERT(index < table.info.size(), "Parameter index out of range");
+                    ASSERT(table.info.is_valid_index(global), "Parameter index out of range");
 
                     last_type = table.info[global].type;
                 }
