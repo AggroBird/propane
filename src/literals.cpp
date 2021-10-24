@@ -1,4 +1,5 @@
-#include "literals.hpp"
+#include "propane_literals.hpp"
+#include "common.hpp"
 
 
 namespace propane
@@ -24,6 +25,11 @@ namespace propane
         return (c >= 'A' && c <= 'Z') ? (c - 'A') + 'a' : c;
     }
 
+    template<typename value_t> constexpr value_t negate_num(value_t val, bool negate)
+    {
+        return negate ? static_cast<value_t>(-static_cast<std::make_signed_t<value_t>>(val)) : val;
+    }
+
     template<size_t len> inline bool cmp_str(const char*& beg, const char* end, const char(&str)[len])
     {
         const auto offset = size_t(end - beg);
@@ -44,6 +50,7 @@ namespace propane
     }
 
 
+    // '-'
     bool parse_negate(const char*& beg, const char* end)
     {
         const auto offset = end - beg;
@@ -63,6 +70,7 @@ namespace propane
         return false;
     }
 
+    // '0x' or '0b'
     int32_t parse_base(const char*& beg, const char* end)
     {
         int32_t base = 10;
@@ -83,6 +91,7 @@ namespace propane
         return base;
     }
 
+    // Parse integer type from a suffix if provided (e.g. i32, u64, etc.)
     type_idx parse_integer_suffix(const char*& beg, const char* end)
     {
         type_idx btype = type_idx::invalid;
@@ -124,6 +133,9 @@ namespace propane
         return btype;
     }
 
+    // Determine integer type from a suffix if provided (see above)
+    // If no suffix is provided, try to guess the number type based on the biggest fit
+    // int if value <= 2147483647, long if value <= 9223372036854775807, else ulong
     type_idx determine_integer_type(uint64_t value, const char*& beg, const char* end)
     {
         type_idx btype = parse_integer_suffix(beg, end);
@@ -222,6 +234,20 @@ namespace propane
 
         return result;
     }
+    parse_result<uint64_t> parse_ulong(const char*& beg, const char* end)
+    {
+        // Get base
+        const int32_t base = parse_base(beg, end);
+
+        // Parse integer
+        return parse_ulong(beg, end, base);
+    }
+    parse_result<uint64_t> parse_ulong(string_view str)
+    {
+        const char* beg = str.data();
+        const char* end = beg + str.size();
+        return parse_ulong(beg, end);
+    }
 
     parse_result<literal_t> parse_int_literal(const char*& beg, const char* end, bool negate, int32_t base)
     {
@@ -251,6 +277,12 @@ namespace propane
         const bool negate = parse_negate(beg, end);
         const int32_t base = parse_base(beg, end);
         return parse_int_literal(beg, end, negate, base);
+    }
+    parse_result<literal_t> parse_int_literal(string_view str)
+    {
+        const char* beg = str.data();
+        const char* end = beg + str.size();
+        return parse_int_literal(beg, end);
     }
 
     parse_result<literal_t> parse_literal(const char*& beg, const char* end)
@@ -330,5 +362,11 @@ namespace propane
 
         // Return regular number
         return parse_int_literal(beg, end, negate, base);
+    }
+    parse_result<literal_t> parse_literal(string_view str)
+    {
+        const char* beg = str.data();
+        const char* end = beg + str.size();
+        return parse_literal(beg, end);
     }
 }

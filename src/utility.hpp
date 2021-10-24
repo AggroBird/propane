@@ -2,12 +2,11 @@
 #define _HEADER_UTILITY
 
 #include "propane_common.hpp"
-#include "literals.hpp"
+#include "propane_literals.hpp"
+#include "runtime.hpp"
 
 namespace propane
 {
-    constexpr string_view null_keyword = "null";
-
     // Parsing
     inline bool is_literal(char c) noexcept
     {

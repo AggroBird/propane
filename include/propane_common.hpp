@@ -19,6 +19,8 @@ namespace propane
         language_c,
     };
 
+    constexpr std::string_view null_keyword = "null";
+
     // Index types
     using index_t = uint32_t;
     enum : index_t { invalid_index = 0xFFFFFFFF };
