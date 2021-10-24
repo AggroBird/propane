@@ -1098,6 +1098,48 @@ namespace propane
         }
     }
 
+    offset_idx generator::append_offset(offset_idx offset, span<const name_idx> fields)
+    {
+        auto& gen = self();
+
+        VALIDATE_INDEX(offset, gen.offsets.size());
+        VALIDATE_INDICES(fields, gen.database.size());
+        VALIDATE_OFFSET_VALUE(!fields.empty());
+
+        const auto& base = gen.offsets[offset];
+
+        gen.keybuf.clear();
+        append_key(gen.keybuf, base.name.object_type);
+        for (size_t i = 0; i < base.name.field_names.size(); i++)
+        {
+            append_key(gen.keybuf, base.name.field_names[i]);
+        }
+        for (size_t i = 0; i < fields.size(); i++)
+        {
+            append_key(gen.keybuf, fields[i]);
+        }
+
+        auto find = gen.offset_lookup.find(gen.keybuf);
+        if (find == gen.offset_lookup.end())
+        {
+            block<name_idx> field_indices(base.name.field_names.size() + fields.size());
+            name_idx* dst = field_indices.data();
+            for (size_t i = 0; i < base.name.field_names.size(); i++)
+                *dst++ = base.name.field_names[i];
+            for (size_t i = 0; i < fields.size(); i++)
+                *dst++ = fields[i];
+            gen_field_address addr(base.name.object_type, std::move(field_indices));
+            const offset_idx index = offset_idx(gen.offsets.size());
+            gen.offsets.push_back(std::move(addr));
+            gen.offset_lookup.emplace(gen.keybuf, index);
+            return index;
+        }
+        else
+        {
+            return find->second;
+        }
+    }
+
     void generator::define_global(name_idx name, bool is_constant, type_idx type, span<const constant> values)
     {
         self().define_data(is_constant ? lookup_type::constant : lookup_type::global, type, name, values);

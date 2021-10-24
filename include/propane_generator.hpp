@@ -353,6 +353,17 @@ namespace propane
         {
             return make_offset(type, init_span(field));
         }
+        // Append more fields to existing offsets (creates a new offset)
+        offset_idx append_offset(offset_idx offset, std::span<const name_idx> fields);
+        inline offset_idx append_offset(offset_idx offset, std::initializer_list<name_idx> fields)
+        {
+            return append_offset(offset, init_span(fields));
+        }
+        inline offset_idx append_offset(offset_idx offset, name_idx field)
+        {
+            return append_offset(offset, init_span(field));
+        }
+
 
         // Global and constant definition
         void define_global(name_idx name, bool is_constant, type_idx type, std::span<const constant> values = std::span<const constant>());
