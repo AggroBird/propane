@@ -1122,8 +1122,6 @@ namespace propane
                     const type_idx init_type = type_idx(*rhs_addr++);
                     if (init_type == type_idx::vptr)
                     {
-                        VALIDATE_METHOD_PTR_INITIALIZER(!is_constant, get_name(name));
-
                         // nullptr initialiation for signatures
                         write_bytecode<size_t>(lhs_addr, 0);
                     }
