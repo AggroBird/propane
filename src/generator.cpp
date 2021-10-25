@@ -117,7 +117,10 @@ namespace propane
                 {
                     // Encoded constant
                     append_bytecode(table.data, uint8_t(init_type));
-                    append_constant(table.data, it);
+                    if (init_type != type_idx::vptr)
+                    {
+                        append_constant(table.data, it);
+                    }
                 }
             }
         }
@@ -630,11 +633,11 @@ namespace propane
     generator::type_writer::type_writer(generator_impl& gen, name_idx name, type_idx index, bool is_union) :
         handle(gen, name, index, is_union)
     {
-        
+
     }
     generator::type_writer::~type_writer()
     {
-        
+
     }
 
     name_idx generator::type_writer::name() const
@@ -720,11 +723,11 @@ namespace propane
     generator::method_writer::method_writer(class generator_impl& gen, name_idx name, method_idx index, signature_idx signature) :
         handle(gen, name, index, signature)
     {
-        
+
     }
     generator::method_writer::~method_writer()
     {
-        
+
     }
 
     name_idx generator::method_writer::name() const
@@ -1019,7 +1022,7 @@ namespace propane
 
     generator::generator()
     {
-        
+
     }
     generator::generator(string_view name)
     {
@@ -1029,7 +1032,7 @@ namespace propane
     }
     generator::~generator()
     {
-        
+
     }
 
     name_idx generator::make_identifier(string_view name)

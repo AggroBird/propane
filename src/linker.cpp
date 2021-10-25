@@ -1087,7 +1087,7 @@ namespace propane
                 const auto lhs_size = types[lhs_type].total_size;
                 if (init_count > 0)
                 {
-                    const type_idx init_type = type_idx(*rhs_addr++);
+                    const type_idx init_type = type_idx(read_bytecode<uint8_t>(rhs_addr));
                     if (init_type == type_idx::voidtype)
                     {
                         // Currently, globals are not valid initializers for constants
@@ -1119,7 +1119,7 @@ namespace propane
                 if (init_count > 0)
                 {
                     // Initialize signature (find method constant)
-                    const type_idx init_type = type_idx(*rhs_addr++);
+                    const type_idx init_type = type_idx(read_bytecode<uint8_t>(rhs_addr));
                     if (init_type == type_idx::vptr)
                     {
                         // nullptr initialiation for signatures
