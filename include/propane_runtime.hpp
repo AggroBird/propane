@@ -337,18 +337,31 @@ namespace propane
         size_t max_callstack_depth;
     };
 
+
+
+    class library;
+    class environment : public handle<class environment_data, sizeof(size_t) * 30>
+    {
+    public:
+        environment(std::span<const library> libs = std::span<const library>());
+        environment(const library& lib);
+        ~environment();
+
+        environment& operator+=(const library& lib);
+
+    private:
+        friend class runtime;
+    };
+
     // Runtime object.
     // Contains a list of libraries with external function calls which can be invoked at runtime.
-    // When executing an assembly, make sure the assembly was linked with the same version of the runtime.
-    // This also includes the order in which the libraries were added to the runtime.
+    // When executing an assembly, make sure the assembly was linked with the same environment.
     class runtime : public handle<class runtime_data, sizeof(size_t) * 44>
     {
     public:
-        runtime(std::span<const class library> libs = std::span<const class library>());
-        explicit runtime(const class library& lib);
+        runtime();
+        explicit runtime(const environment& env);
         ~runtime();
-
-        runtime& operator+=(const class library&);
 
         int32_t execute(const class assembly& linked_assembly, runtime_parameters parameters = runtime_parameters()) const;
 

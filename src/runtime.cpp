@@ -19,47 +19,62 @@ static_assert(sizeof(char) == 1, "Size of char is expected to be 1");
 
 namespace propane
 {
-    runtime::runtime(span<const library> libs)
+    environment::environment(span<const library> libs)
     {
-        auto& data = self();
-
-        toolchain_version version = toolchain_version::current();
-        data.hash = fnv::hash(&version, sizeof(toolchain_version));
-
-        for (auto& lib : libs)
+        for (const auto& lib : libs)
         {
             *this += lib;
         }
     }
-    runtime::runtime(const library& lib) : runtime(init_span(lib))
+    environment::environment(const library& lib)
     {
-
-    }
-    runtime::~runtime()
-    {
-
+        *this += lib;
     }
 
-    runtime& runtime::operator+=(const library& lib)
+    environment& environment::operator+=(const library& lib)
     {
+        auto& data = self();
         auto& lib_data = lib.self();
 
-        if (!lib_data.calls.empty())
-        {
-            auto& data = self();
+        ASSERT(!data.libraries.contains(lib_data.path), "Duplicate library entry");
+        data.libraries[lib_data.path] = &lib_data;
+        
+        return *this;
+    }
+    environment::~environment()
+    {
 
-            auto find_lib = data.libraries.find(lib_data.path);
-            ASSERT(!find_lib, "Duplicate library");
-            find_lib = data.libraries.emplace(lib_data.path, lib_data.preload_symbols, lib_data.calls);
+    }
+
+
+    runtime::runtime()
+    {
+        auto& data = self();
+
+        toolchain_version version = toolchain_version::current();
+        self().hash = fnv::hash(&version, sizeof(toolchain_version));
+    }
+    runtime::runtime(const environment& env) : runtime()
+    {
+        auto& data = self();
+        auto& env_data = env.self();
+
+        index_t lib_idx = 0;
+        for (auto& pair : env_data.libraries)
+        {
+            auto& lib_data = *pair.second;
 
             data.hash = fnv::append(data.hash, lib_data.hash);
+            
+            library_info add_lib(lib_data.path, lib_data.preload_symbols, lib_data.calls);
 
-            index_t idx = 0;
-            for (auto& call : find_lib->calls)
+            const name_idx lib_name = name_idx(lib_idx++);
+            index_t call_idx = 0;
+            for (auto& call : add_lib.calls)
             {
-                data.call_lookup.emplace(call.name, runtime_data::call_index(find_lib.key, idx++));
+                data.call_lookup.emplace(call.name, runtime_call_index(lib_name, call_idx++));
             }
-
+            
             for (auto& type : lib_data.types)
             {
                 auto find_type = data.type_lookup.find(type.type);
@@ -72,8 +87,12 @@ namespace propane
                     ASSERT(find_type->second.size == type.size, "Native type size mismatch");
                 }
             }
-        }
 
-        return *this;
+            data.libraries.push_back(std::move(add_lib));
+        }
+    }
+    runtime::~runtime()
+    {
+
     }
 }

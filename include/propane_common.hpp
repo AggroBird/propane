@@ -273,7 +273,7 @@ namespace propane
         ~handle()
         {
             reinterpret_cast<value_t*>(data.bytes)->~value_t();
-            memset(data.bytes, 0, size);
+            std::memset(data.bytes, 0, size);
         }
 
         handle(const handle&) = delete;

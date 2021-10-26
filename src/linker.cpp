@@ -107,7 +107,7 @@ namespace propane
 
                     // Create signature
                     auto cidx = find_external->second;
-                    const external_call_info& call = rt_data.libraries[cidx.library]->calls[cidx.index];
+                    const external_call_info& call = rt_data.libraries[cidx.library].calls[cidx.index];
                     const signature_idx sig_idx = resolve_native_types(call);
 
                     // Create method

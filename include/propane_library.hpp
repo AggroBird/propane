@@ -230,7 +230,7 @@ namespace propane
         ~library();
 
     private:
-        friend class runtime;
+        friend class environment;
     };
 }
 

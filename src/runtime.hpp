@@ -344,36 +344,46 @@ namespace propane
         return (lhs < rhs) ? -1 : (lhs > rhs) ? 1 : 0;
     }
 
+    class library_info
+    {
+    public:
+        library_info(string_view name, bool preload_symbols, const block<external_call_info>& calls) :
+            name(name),
+            preload_symbols(preload_symbols),
+            calls(calls) {}
+
+        string name;
+        bool preload_symbols;
+        indexed_block<index_t, external_call_info> calls;
+    };
+
+    struct runtime_call_index
+    {
+        runtime_call_index() = default;
+        runtime_call_index(name_idx library, index_t index) :
+            library(library),
+            index(index) {}
+
+        name_idx library;
+        index_t index;
+    };
+
+    class environment_data
+    {
+    public:
+        NOCOPY_CLASS_DEFAULT(environment_data) = default;
+
+        map<string, const library_data*> libraries;
+    };
+
     // Runtime data
     class runtime_data
     {
     public:
-        class runtime_library
-        {
-        public:
-            runtime_library(bool preload_symbols, const block<external_call_info>& calls) :
-                preload_symbols(preload_symbols),
-                calls(calls) {}
-
-            bool preload_symbols;
-            indexed_block<index_t, external_call_info> calls;
-        };
-
         NOCOPY_CLASS_DEFAULT(runtime_data) = default;
 
-        struct call_index
-        {
-            call_index() = default;
-            call_index(name_idx library, index_t index) :
-                library(library),
-                index(index) {}
-
-            name_idx library;
-            index_t index;
-        };
-
-        database<name_idx, runtime_library> libraries;
-        unordered_map<string_view, call_index> call_lookup;
+        indexed_vector<name_idx, library_info> libraries;
+        unordered_map<string_view, runtime_call_index> call_lookup;
         unordered_map<string_view, native_type_info> type_lookup;
         size_t hash = 0;
     };

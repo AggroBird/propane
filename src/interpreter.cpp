@@ -111,19 +111,19 @@ namespace propane
             // Initialize externals
             for (size_t i = 0; i < runtime.libraries.size(); i++)
             {
-                auto it = runtime.libraries[name_idx(i)];
+                const auto& it = runtime.libraries[name_idx(i)];
 
                 runtime_library lib(it.name);
 
-                lib.calls = indexed_block<index_t, runtime_library::call>(it->calls.size());
-                auto src = it->calls.data();
+                lib.calls = indexed_block<index_t, runtime_library::call>(it.calls.size());
+                auto src = it.calls.data();
                 for (auto& it : lib.calls)
                 {
                     it = runtime_library::call(*src++);
                 }
 
                 // Preload symbols
-                if (it->preload_symbols)
+                if (it.preload_symbols)
                 {
                     for (auto& call : lib.calls)
                     {
@@ -2311,8 +2311,8 @@ namespace propane
             }
             else
             {
-                ASSERT(method.bytecode.size() == sizeof(runtime_data::call_index), "Invalid external index");
-                const runtime_data::call_index cidx = *reinterpret_cast<const runtime_data::call_index*>(method.bytecode.data());
+                ASSERT(method.bytecode.size() == sizeof(runtime_call_index), "Invalid external index");
+                const runtime_call_index cidx = *reinterpret_cast<const runtime_call_index*>(method.bytecode.data());
 
                 // Ensure method handle
                 ASSERT(libraries.is_valid_index(cidx.library), "Invalid library index");
