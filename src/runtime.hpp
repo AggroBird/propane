@@ -53,24 +53,22 @@ namespace propane
     }
 
     // Derivatives
-    template<typename value_t> struct derive_type_index { static constexpr type_idx value = type_idx::invalid; };
-    template<> struct derive_type_index<i8> { static constexpr type_idx value = type_idx::i8; };
-    template<> struct derive_type_index<u8> { static constexpr type_idx value = type_idx::u8; };
-    template<> struct derive_type_index<i16> { static constexpr type_idx value = type_idx::i16; };
-    template<> struct derive_type_index<u16> { static constexpr type_idx value = type_idx::u16; };
-    template<> struct derive_type_index<i32> { static constexpr type_idx value = type_idx::i32; };
-    template<> struct derive_type_index<u32> { static constexpr type_idx value = type_idx::u32; };
-    template<> struct derive_type_index<i64> { static constexpr type_idx value = type_idx::i64; };
-    template<> struct derive_type_index<u64> { static constexpr type_idx value = type_idx::u64; };
-    template<> struct derive_type_index<f32> { static constexpr type_idx value = type_idx::f32; };
-    template<> struct derive_type_index<f64> { static constexpr type_idx value = type_idx::f64; };
-    template<> struct derive_type_index<vptr> { static constexpr type_idx value = type_idx::vptr; };
-    template<> struct derive_type_index<void> { static constexpr type_idx value = type_idx::voidtype; };
-    template<typename value_t> inline constexpr type_idx derive_type_index_v = derive_type_index<value_t>::value;
+    template<typename value_t> constexpr type_idx derive_type_index_v = type_idx::invalid;
+    template<> constexpr type_idx derive_type_index_v<i8> = type_idx::i8;
+    template<> constexpr type_idx derive_type_index_v<u8> = type_idx::u8;
+    template<> constexpr type_idx derive_type_index_v<i16> = type_idx::i16;
+    template<> constexpr type_idx derive_type_index_v<u16> = type_idx::u16;
+    template<> constexpr type_idx derive_type_index_v<i32> = type_idx::i32;
+    template<> constexpr type_idx derive_type_index_v<u32> = type_idx::u32;
+    template<> constexpr type_idx derive_type_index_v<i64> = type_idx::i64;
+    template<> constexpr type_idx derive_type_index_v<u64> = type_idx::u64;
+    template<> constexpr type_idx derive_type_index_v<f32> = type_idx::f32;
+    template<> constexpr type_idx derive_type_index_v<f64> = type_idx::f64;
+    template<> constexpr type_idx derive_type_index_v<vptr> = type_idx::vptr;
+    template<> constexpr type_idx derive_type_index_v<void> = type_idx::voidtype;
 
-    template<typename value_t> struct derive_base_size { static constexpr size_t value = sizeof(value_t); };
-    template<> struct derive_base_size<void> { static constexpr size_t value = 0; };
-    template<typename value_t> inline constexpr size_t derive_base_size_v = derive_base_size<value_t>::value;
+    template<typename value_t> constexpr size_t derive_base_size_v = sizeof(value_t);
+    template<> constexpr size_t derive_base_size_v<void> = 0;
 
     struct base_type_info
     {

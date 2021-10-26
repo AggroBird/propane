@@ -4,23 +4,23 @@
 
 namespace propane
 {
-    inline constexpr bool is_bit(char c) noexcept
+    constexpr bool is_bit(char c) noexcept
     {
         return c == '0' || c == '1';
     }
-    inline constexpr bool is_uppercase_hex(char c) noexcept
+    constexpr bool is_uppercase_hex(char c) noexcept
     {
         return c >= 'A' && c <= 'F';
     }
-    inline constexpr bool is_lowercase_hex(char c) noexcept
+    constexpr bool is_lowercase_hex(char c) noexcept
     {
         return c >= 'a' && c <= 'f';
     }
-    inline constexpr bool is_digit(char c) noexcept
+    constexpr bool is_digit(char c) noexcept
     {
         return c >= '0' && c <= '9';
     }
-    inline constexpr char to_lower(char c)
+    constexpr char to_lower(char c)
     {
         return (c >= 'A' && c <= 'Z') ? (c - 'A') + 'a' : c;
     }

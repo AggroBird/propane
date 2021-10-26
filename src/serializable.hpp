@@ -23,7 +23,7 @@ namespace propane
         {
             static constexpr bool value = std::is_arithmetic_v<value_t> || std::is_enum_v<value_t>;
         };
-        template<typename value_t> inline constexpr bool is_packed_v = is_packed<value_t>::value;
+        template<typename value_t> constexpr bool is_packed_v = is_packed<value_t>::value;
 
         // Is serializable
         template<typename value_t> struct is_serializable
@@ -36,7 +36,7 @@ namespace propane
         template<typename value_t> struct is_serializable<std::vector<value_t>> { static constexpr bool value = is_serializable<value_t>::value; };
         template<typename key_t, typename value_t> struct is_serializable<std::map<key_t, value_t>> { static constexpr bool value = is_serializable<key_t>::value && is_serializable<value_t>::value; };
         template<typename key_t, typename value_t> struct is_serializable<indexed_vector<key_t, value_t>> { static constexpr bool value = is_serializable<value_t>::value; };
-        template<typename value_t> inline constexpr bool is_serializable_v = is_serializable<value_t>::value;
+        template<typename value_t> constexpr bool is_serializable_v = is_serializable<value_t>::value;
 
         // Compatibility
         template<typename lhs_t, typename rhs_t> struct is_serialization_compatible
@@ -61,7 +61,7 @@ namespace propane
         {
             static constexpr bool value = is_serialization_compatible<lhs_value_t, rhs_value_t>::value;
         };
-        template<typename lhs_t, typename rhs_t> inline constexpr bool is_serialization_compatible_v = is_serialization_compatible<lhs_t, rhs_t>::value;
+        template<typename lhs_t, typename rhs_t> constexpr bool is_serialization_compatible_v = is_serialization_compatible<lhs_t, rhs_t>::value;
 
         // Serializable size check
         template<typename value_t, typename... rest_t> struct serializable_size_check_recursive;
@@ -79,7 +79,7 @@ namespace propane
             static constexpr size_t object_size = sizeof(value_t);
             static constexpr bool value = member_size == object_size;
         };
-        template<typename value_t, typename... rest_t> inline constexpr size_t serializable_size_check_v = serializable_size_check<value_t, rest_t...>::value;
+        template<typename value_t, typename... rest_t> constexpr size_t serializable_size_check_v = serializable_size_check<value_t, rest_t...>::value;
 
         // Get type at idx
         template<typename> constexpr bool false_condition = false;
@@ -118,7 +118,7 @@ namespace propane
         {
             static constexpr bool value = check_serialization_compatible_recursive<elem_t, 0, rest_t...>::value;
         };
-        template<typename value_t, typename... rest_t> inline constexpr bool check_serialization_compatible_v = check_serialization_compatible<value_t, rest_t...>::value;
+        template<typename value_t, typename... rest_t> constexpr bool check_serialization_compatible_v = check_serialization_compatible<value_t, rest_t...>::value;
 
         // Serialization check
         template<typename value_t, typename... rest_t> struct serializable_check_recursive;
@@ -134,7 +134,7 @@ namespace propane
         {
             static constexpr bool value = serializable_check_recursive<rest_t...>::value;
         };
-        template<typename value_t, typename... rest_t> inline constexpr bool serializable_check_v = serializable_check<value_t, rest_t...>::value;
+        template<typename value_t, typename... rest_t> constexpr bool serializable_check_v = serializable_check<value_t, rest_t...>::value;
 
         template<typename value_t> struct serializer;
 

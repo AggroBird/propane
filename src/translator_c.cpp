@@ -71,7 +71,7 @@ namespace propane
         " ^= ",
         " |= ",
     };
-    inline constexpr bool is_unary(opcode op) noexcept
+    constexpr bool is_unary(opcode op) noexcept
     {
         return op >= opcode::ari_not && op <= opcode::ari_neg;
     }
@@ -87,12 +87,12 @@ namespace propane
         " == 0",
         " != 0",
     };
-    inline constexpr bool is_cmpzero(opcode op) noexcept
+    constexpr bool is_cmpzero(opcode op) noexcept
     {
         return op >= opcode::cze && op <= opcode::cnz;
     }
 
-    inline constexpr type_idx get_comp_type(type_idx lhs, type_idx rhs) noexcept
+    constexpr type_idx get_comp_type(type_idx lhs, type_idx rhs) noexcept
     {
         if (lhs != rhs)
         {
