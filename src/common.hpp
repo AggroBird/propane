@@ -326,6 +326,32 @@ namespace propane
         address_prefix prefix;
         address_type type;
     };
+
+    class number_converter
+    {
+    public:
+        static constexpr size_t precision = 1024;
+
+        number_converter()
+        {
+            num_converter.precision(std::streamsize(precision));
+        }
+
+        template<typename value_t> const string& convert(value_t val)
+        {
+            num_converter.str(string());
+            num_converter << val;
+            num_buffer.resize(precision);
+            num_converter.get(num_buffer.data(), std::streamsize(precision));
+            num_buffer.resize(num_converter.gcount());
+            num_converter.seekg(0, num_converter.beg);
+            return num_buffer;
+        }
+
+    private:
+        stringstream num_converter;
+        string num_buffer;
+    };
 }
 
 #endif

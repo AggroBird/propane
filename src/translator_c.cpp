@@ -4,7 +4,9 @@
 #include "errors.hpp"
 
 #include <fstream>
+#include <sstream>
 using std::ofstream;
+using std::stringstream;
 
 #define VALIDATE(errc, expr, ...) ENSURE(errc, expr, propane::generator_exception, __VA_ARGS__)
 
@@ -924,7 +926,7 @@ namespace propane
 
                         meta.generated = underlying_meta.generated;
                         meta.generated.append("$A");
-                        meta.generated.append(std::to_string(type.generated.array.array_size));
+                        meta.generated.append(num_conv.convert(type.generated.array.array_size));
 
                         meta.declaration = "struct ";
                         meta.declaration.append(meta.generated);
@@ -1021,6 +1023,8 @@ namespace propane
         string_writer method_definitions;
         string_writer file_writer;
 
+        number_converter num_conv;
+
         string_writer string_buffers[4];
         size_t buffer_index = 0;
         string_writer& get_next_buffer()
@@ -1048,7 +1052,7 @@ namespace propane
                 number_str.resize(idx + 1);
                 for (size_t i = beg; i < number_str.size(); i++)
                 {
-                    number_str[i] = std::to_string(i);
+                    number_str[i] = num_conv.convert(i);
                 }
             }
             return number_str[idx];
@@ -1073,16 +1077,16 @@ namespace propane
         {
             switch (type)
             {
-                case type_idx::i8: buf.write(std::to_string(*reinterpret_cast<const i8*>(ptr))); break;
-                case type_idx::u8: buf.write(std::to_string(*reinterpret_cast<const u8*>(ptr))); break;
-                case type_idx::i16: buf.write(std::to_string(*reinterpret_cast<const i16*>(ptr))); break;
-                case type_idx::u16: buf.write(std::to_string(*reinterpret_cast<const u16*>(ptr))); break;
-                case type_idx::i32: buf.write(std::to_string(*reinterpret_cast<const i32*>(ptr))); break;
-                case type_idx::u32: buf.write(std::to_string(*reinterpret_cast<const u32*>(ptr))); break;
-                case type_idx::i64: buf.write(std::to_string(*reinterpret_cast<const i64*>(ptr))); break;
-                case type_idx::u64: buf.write(std::to_string(*reinterpret_cast<const u64*>(ptr))); break;
-                case type_idx::f32: buf.write(std::to_string(*reinterpret_cast<const f32*>(ptr)), "f"); break;
-                case type_idx::f64: buf.write(std::to_string(*reinterpret_cast<const f64*>(ptr))); break;
+                case type_idx::i8: buf.write(num_conv.convert(*reinterpret_cast<const i8*>(ptr))); break;
+                case type_idx::u8: buf.write(num_conv.convert(*reinterpret_cast<const u8*>(ptr))); break;
+                case type_idx::i16: buf.write(num_conv.convert(*reinterpret_cast<const i16*>(ptr))); break;
+                case type_idx::u16: buf.write(num_conv.convert(*reinterpret_cast<const u16*>(ptr))); break;
+                case type_idx::i32: buf.write(num_conv.convert(*reinterpret_cast<const i32*>(ptr))); break;
+                case type_idx::u32: buf.write(num_conv.convert(*reinterpret_cast<const u32*>(ptr))); break;
+                case type_idx::i64: buf.write(num_conv.convert(*reinterpret_cast<const i64*>(ptr))); break;
+                case type_idx::u64: buf.write(num_conv.convert(*reinterpret_cast<const u64*>(ptr))); break;
+                case type_idx::f32: buf.write(num_conv.convert(*reinterpret_cast<const f32*>(ptr)), "f"); break;
+                case type_idx::f64: buf.write(num_conv.convert(*reinterpret_cast<const f64*>(ptr))); break;
                 case type_idx::vptr: write_hex(buf, *reinterpret_cast<const size_t*>(ptr)); break;
                 default: ASSERT(false, "Unknown constant type");
             }
@@ -1320,7 +1324,7 @@ namespace propane
                         ASSERT(false, "Offset is not valid here");
                     }
                     buf.write("[");
-                    buf.write(std::to_string(offset));
+                    buf.write(num_conv.convert(offset));
                     buf.write("]");
                 }
                 break;
@@ -1467,12 +1471,12 @@ namespace propane
             if (meta.ptr_offset != 0)
             {
                 dst.write(meta.declaration.substr(0, meta.ptr_offset));
-                dst.write("$val", "[", std::to_string(array_size), "]");
+                dst.write("$val", "[", num_conv.convert(array_size), "]");
                 dst.write(meta.declaration.substr(meta.ptr_offset));
             }
             else
             {
-                dst.write(meta.declaration, " $val", "[", std::to_string(array_size), "]");
+                dst.write(meta.declaration, " $val", "[", num_conv.convert(array_size), "]");
             }
             dst.write(";");
         }

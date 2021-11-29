@@ -374,7 +374,7 @@ namespace propane
 
                 case address_modifier::subscript:
                 {
-                    file_writer.write("[", std::to_string(addr.offset), "]");
+                    file_writer.write("[", num_conv.convert(addr.offset), "]");
                 }
                 break;
             }
@@ -393,16 +393,16 @@ namespace propane
         {
             switch (type)
             {
-                case type_idx::i8: file_writer.write(std::to_string(*reinterpret_cast<const i8*>(ptr)), "i8"); break;
-                case type_idx::u8: file_writer.write(std::to_string(*reinterpret_cast<const u8*>(ptr)), "u8"); break;
-                case type_idx::i16: file_writer.write(std::to_string(*reinterpret_cast<const i16*>(ptr)), "i16"); break;
-                case type_idx::u16: file_writer.write(std::to_string(*reinterpret_cast<const u16*>(ptr)), "u16"); break;
-                case type_idx::i32: file_writer.write(std::to_string(*reinterpret_cast<const i32*>(ptr)), "i32"); break;
-                case type_idx::u32: file_writer.write(std::to_string(*reinterpret_cast<const u32*>(ptr)), "u32"); break;
-                case type_idx::i64: file_writer.write(std::to_string(*reinterpret_cast<const i64*>(ptr)), "i64"); break;
-                case type_idx::u64: file_writer.write(std::to_string(*reinterpret_cast<const u64*>(ptr)), "u64"); break;
-                case type_idx::f32: file_writer.write(std::to_string(*reinterpret_cast<const f32*>(ptr)), "f32"); break;
-                case type_idx::f64: file_writer.write(std::to_string(*reinterpret_cast<const f64*>(ptr)), "f64"); break;
+                case type_idx::i8: file_writer.write(num_conv.convert(*reinterpret_cast<const i8*>(ptr)), "i8"); break;
+                case type_idx::u8: file_writer.write(num_conv.convert(*reinterpret_cast<const u8*>(ptr)), "u8"); break;
+                case type_idx::i16: file_writer.write(num_conv.convert(*reinterpret_cast<const i16*>(ptr)), "i16"); break;
+                case type_idx::u16: file_writer.write(num_conv.convert(*reinterpret_cast<const u16*>(ptr)), "u16"); break;
+                case type_idx::i32: file_writer.write(num_conv.convert(*reinterpret_cast<const i32*>(ptr)), "i32"); break;
+                case type_idx::u32: file_writer.write(num_conv.convert(*reinterpret_cast<const u32*>(ptr)), "u32"); break;
+                case type_idx::i64: file_writer.write(num_conv.convert(*reinterpret_cast<const i64*>(ptr)), "i64"); break;
+                case type_idx::u64: file_writer.write(num_conv.convert(*reinterpret_cast<const u64*>(ptr)), "u64"); break;
+                case type_idx::f32: file_writer.write(num_conv.convert(*reinterpret_cast<const f32*>(ptr)), "f32"); break;
+                case type_idx::f64: file_writer.write(num_conv.convert(*reinterpret_cast<const f64*>(ptr)), "f64"); break;
                 case type_idx::vptr: file_writer.write(null_keyword); break;
                 default: ASSERT(false, "Unknown constant type");
             }
@@ -508,11 +508,13 @@ namespace propane
                 number_str.resize(idx + 1);
                 for (size_t i = beg; i < number_str.size(); i++)
                 {
-                    number_str[i] = std::to_string(i);
+                    number_str[i] = num_conv.convert(i);
                 }
             }
             return number_str[idx];
         }
+
+        number_converter num_conv;
 
 
         const assembly_data& data;
