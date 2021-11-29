@@ -7,18 +7,18 @@ namespace propane
 {
     union literal_t
     {
-        literal_t() : as_u64(0) {}
-        literal_t(int8_t i8) : as_i8(i8) {}
-        literal_t(uint8_t u8) : as_u8(u8) {}
-        literal_t(int16_t i16) : as_i16(i16) {}
-        literal_t(uint16_t u16) : as_u16(u16) {}
-        literal_t(int32_t i32) : as_i32(i32) {}
-        literal_t(uint32_t u32) : as_u32(u32) {}
-        literal_t(int64_t i64) : as_i64(i64) {}
-        literal_t(uint64_t u64) : as_u64(u64) {}
-        literal_t(float f32) : as_f32(f32) {}
-        literal_t(double f64) : as_f64(f64) {}
-        literal_t(void* vptr) : as_vptr(vptr) {}
+        constexpr literal_t() : as_u64(0) {}
+        constexpr literal_t(int8_t i8) : as_i8(i8) {}
+        constexpr literal_t(uint8_t u8) : as_u8(u8) {}
+        constexpr literal_t(int16_t i16) : as_i16(i16) {}
+        constexpr literal_t(uint16_t u16) : as_u16(u16) {}
+        constexpr literal_t(int32_t i32) : as_i32(i32) {}
+        constexpr literal_t(uint32_t u32) : as_u32(u32) {}
+        constexpr literal_t(int64_t i64) : as_i64(i64) {}
+        constexpr literal_t(uint64_t u64) : as_u64(u64) {}
+        constexpr literal_t(float f32) : as_f32(f32) {}
+        constexpr literal_t(double f64) : as_f64(f64) {}
+        constexpr literal_t(void* vptr) : as_vptr(vptr) {}
 
         int8_t as_i8;
         uint8_t as_u8;
