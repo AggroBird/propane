@@ -330,19 +330,18 @@ namespace propane
     class number_converter
     {
     public:
-        static constexpr size_t precision = 1024;
-
-        number_converter()
+        number_converter(size_t precision = 17)
         {
             num_converter.precision(std::streamsize(precision));
         }
 
         template<typename value_t> const string& convert(value_t val)
         {
+            constexpr size_t buffer_size = 1024;
             num_converter.str(string());
             num_converter << val;
-            num_buffer.resize(precision);
-            num_converter.get(num_buffer.data(), std::streamsize(precision));
+            num_buffer.resize(buffer_size);
+            num_converter.get(num_buffer.data(), std::streamsize(buffer_size));
             num_buffer.resize(num_converter.gcount());
             num_converter.seekg(0, num_converter.beg);
             return num_buffer;
