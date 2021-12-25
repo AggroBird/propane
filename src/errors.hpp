@@ -130,7 +130,7 @@ template<> inline bool validate_expression<bool>(bool expr) noexcept
             propane::format(fmt, ##__VA_ARGS__).data(),     \
             meta_copy.file_name,                            \
             meta_copy.line_number);                         \
-        abort();                                            \
+        std::abort();                                       \
     }                                                       \
 }
 #define ASSERT(expr, fmt, ...)                                                      \
@@ -140,7 +140,7 @@ template<> inline bool validate_expression<bool>(bool expr) noexcept
         const std::string str = propane::format("%:%, assertion failed: " fmt,      \
             propane::strip_filepath(__FILE__), __LINE__, ##__VA_ARGS__);            \
         fprintf(stderr, "%s", str.data());                                          \
-        abort();                                                                    \
+        std::abort();                                                               \
     }                                                                               \
 }
 #else
