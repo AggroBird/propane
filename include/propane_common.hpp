@@ -264,6 +264,9 @@ namespace propane
 
     template<typename value_t, size_t size> class handle
     {
+    public:
+        static constexpr size_t buffer_size = size;
+
     protected:
         template<typename... args> handle(args&... arg)
         {
