@@ -985,7 +985,7 @@ namespace propane
                 offset_t offset;
                 if (parse_offset_num(c, end, '[', ']', offset))
                 {
-                    result.header.set_modifier(address_modifier::subscript);
+                    result.header.set_modifier(address_modifier::offset);
                     result.payload.offset = offset;
                     break;
                 }

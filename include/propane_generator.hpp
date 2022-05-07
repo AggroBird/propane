@@ -136,7 +136,7 @@ namespace propane
         prefixable_address operator[](offset_t offset) const
         {
             prefixable_address result = *this;
-            result.header.set_modifier(address_modifier::subscript);
+            result.header.set_modifier(address_modifier::offset);
             result.payload.offset = offset;
             return result;
         }

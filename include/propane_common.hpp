@@ -129,7 +129,7 @@ namespace propane
         none = 0,
         direct_field,
         indirect_field,
-        subscript,
+        offset,
     };
 
     namespace address_header_constants

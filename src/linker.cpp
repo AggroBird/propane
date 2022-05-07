@@ -760,7 +760,7 @@ namespace propane
                 }
                 break;
 
-                case address_modifier::subscript:
+                case address_modifier::offset:
                 {
                     const auto& type = types[last_type];
                     if (type.is_pointer())

@@ -1305,7 +1305,7 @@ namespace propane
                 }
                 break;
 
-                case address_modifier::subscript:
+                case address_modifier::offset:
                 {
                     const offset_t offset = addr.offset;
 

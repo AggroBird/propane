@@ -414,7 +414,7 @@ namespace propane
                 }
                 break;
 
-                case address_modifier::subscript:
+                case address_modifier::offset:
                 {
                     data.offset = addr.payload.offset;
                 }

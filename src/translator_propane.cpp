@@ -372,7 +372,7 @@ namespace propane
                 }
                 break;
 
-                case address_modifier::subscript:
+                case address_modifier::offset:
                 {
                     file_writer.write("[", num_conv.convert(addr.offset), "]");
                 }
