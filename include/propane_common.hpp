@@ -243,12 +243,12 @@ namespace propane
     struct file_meta
     {
         file_meta() = default;
-        file_meta(std::string_view file_name, uint32_t line_number) :
+        file_meta(std::string_view file_name, index_t line_number) :
             file_name(file_name),
             line_number(line_number) {}
 
         std::string_view file_name;
-        uint32_t line_number = 0;
+        index_t line_number = 0;
     };
 
     struct string_offset
