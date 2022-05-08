@@ -657,7 +657,6 @@ namespace propane
         VALIDATE_TYPE(type, gen.types.size());
         VALIDATE_INDEX(name, gen.database.size());
 
-        bool is_defined = false;
         for (auto& f : writer.fields)
         {
             VALIDATE_FIELD_DEC(name != f.name, gen.database[name].name, gen.database[writer.name].name, gen.make_meta(writer.index));
@@ -1022,12 +1021,12 @@ namespace propane
 
     generator::generator()
     {
-
-    }
-    generator::generator(string_view name)
-    {
         auto& gen = self();
         gen.initialize_base_types();
+    }
+    generator::generator(string_view name) : generator()
+    {
+        auto& gen = self();
         gen.meta_index = gen.metatable.emplace(name);
     }
     generator::~generator()
@@ -1180,16 +1179,13 @@ namespace propane
         VALIDATE_INDEX(type, gen.types.size());
 
         auto& dst = gen.types[type];
-        VALIDATE_TYPE_DEC(!dst.is_defined(), gen.database[dst.name].name, gen.make_meta(dst.index));
+        generator::type_writer*& writer = gen.type_writers[type];
+        VALIDATE_TYPE_DEC(!dst.is_defined() && !writer, gen.database[dst.name].name, gen.make_meta(dst.index));
 
         dst.meta.index = gen.meta_index;
         dst.meta.line_number = gen.line_number;
 
-        generator::type_writer*& writer = gen.type_writers[type];
-        if (!writer)
-        {
-            writer = new generator::type_writer(gen, dst.name, dst.index, is_union);
-        }
+        writer = new generator::type_writer(gen, dst.name, dst.index, is_union);
         return *writer;
     }
 
@@ -1295,16 +1291,13 @@ namespace propane
         VALIDATE_INDEX(signature, gen.signatures.size());
 
         auto& dst = gen.methods[method];
-        VALIDATE_METHOD_DEC(!dst.is_defined(), gen.database[dst.name].name, gen.make_meta(dst.index));
+        generator::method_writer*& writer = gen.method_writers[method];
+        VALIDATE_METHOD_DEC(!dst.is_defined() && !writer, gen.database[dst.name].name, gen.make_meta(dst.index));
 
         dst.meta.index = gen.meta_index;
         dst.meta.line_number = gen.line_number;
 
-        generator::method_writer*& writer = gen.method_writers[method];
-        if (!writer)
-        {
-            writer = new generator::method_writer(gen, dst.name, dst.index, signature);
-        }
+        writer = new generator::method_writer(gen, dst.name, dst.index, signature);
         return *writer;
     }
 
