@@ -392,7 +392,7 @@ namespace propane
         type_writer& define_type(type_idx type, bool is_union = false);
         inline type_writer& define_type(std::string_view name, bool is_union = false)
         {
-            return define_type(declare_type(make_identifier(name)));
+            return define_type(declare_type(make_identifier(name)), is_union);
         }
 
         // Creation of generated types
