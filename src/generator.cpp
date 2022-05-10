@@ -107,20 +107,17 @@ namespace propane
             for (const auto& it : values)
             {
                 const type_idx init_type = type_idx(it.header.index());
+
+                append_bytecode(table.data, uint8_t(init_type));
                 if (init_type == type_idx::voidtype)
                 {
                     // Constant identifier
-                    append_bytecode(table.data, uint8_t(init_type));
                     append_bytecode(table.data, it.payload.global);
                 }
-                else
+                else if (init_type != type_idx::vptr)
                 {
                     // Encoded constant
-                    append_bytecode(table.data, uint8_t(init_type));
-                    if (init_type != type_idx::vptr)
-                    {
-                        append_constant(table.data, it);
-                    }
+                    append_constant(table.data, it);
                 }
             }
         }
@@ -361,15 +358,6 @@ namespace propane
 
             switch (addr.header.type())
             {
-                case address_type::stackvar:
-                {
-                    if (addr.header.index() == address_header_constants::index_max)
-                    {
-                        data.header.set_index(address_header_constants::index_max);
-                    }
-                }
-                break;
-
                 case address_type::global:
                 {
                     const name_idx global_name = (name_idx)addr.header.index();
