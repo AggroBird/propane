@@ -1009,8 +1009,7 @@ namespace propane
 
     generator::generator()
     {
-        auto& gen = self();
-        gen.initialize_base_types();
+
     }
     generator::generator(string_view name) : generator()
     {
