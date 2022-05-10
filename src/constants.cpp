@@ -36,23 +36,23 @@ namespace propane
     template<uint64_t offset, uint64_t bytecount, typename value_t> inline void fold(uint64_t& value, value_t fold) noexcept
     {
         version_bytes& vb = reinterpret_cast<version_bytes&>(value);
-        uint64_t i64 = uint64_t(fold);
+        uint64_t u64 = uint64_t(fold);
         for (uint64_t i = 0; i < bytecount; i++)
         {
-            vb.bytes[i + offset] = uint8_t(i64 & uint64_t(0xFF));
-            i64 >>= 8;
+            vb.bytes[i + offset] = uint8_t(u64);
+            u64 >>= 8;
         }
     }
     template<uint64_t offset, uint64_t bytecount, typename value_t> inline value_t unfold(uint64_t value) noexcept
     {
         const version_bytes& vb = reinterpret_cast<const version_bytes&>(value);
-        uint64_t i64 = 0;
+        uint64_t u64 = 0;
         for (uint64_t i = 0; i < bytecount; i++)
         {
-            i64 <<= 8;
-            i64 |= uint64_t(vb.bytes[((bytecount - 1) - i) + offset]);
+            u64 <<= 8;
+            u64 |= uint64_t(vb.bytes[((bytecount - 1) - i) + offset]);
         }
-        return value_t(i64);
+        return value_t(u64);
     }
 
 
