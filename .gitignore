@@ -26,9 +26,11 @@
 .vs
 *.sln
 *.vcxproj
+*.csproj
 *.vcxproj.*
 intermediate
 bin
+obj
 
 # Test
 buildtool
