@@ -205,7 +205,7 @@ namespace propane
 
             // Field declaration for structs
             void declare_field(type_idx type, name_idx name);
-            void declare_field(type_idx type, std::string_view name);
+            name_idx declare_field(type_idx type, std::string_view name);
 
             std::span<const field> fields() const;
 
@@ -371,13 +371,17 @@ namespace propane
         {
             define_global(name, is_constant, type, init_span(values));
         }
-        inline void define_global(std::string_view name, bool is_constant, type_idx type, std::span<const constant> values = std::span<const constant>())
+        inline name_idx define_global(std::string_view name, bool is_constant, type_idx type, std::span<const constant> values = std::span<const constant>())
         {
-            return define_global(make_identifier(name), is_constant, type, values);
+            const name_idx id = make_identifier(name);
+            define_global(id, is_constant, type, values);
+            return id;
         }
-        inline void define_global(std::string_view name, bool is_constant, type_idx type, std::initializer_list<constant> values)
+        inline name_idx define_global(std::string_view name, bool is_constant, type_idx type, std::initializer_list<constant> values)
         {
-            return define_global(make_identifier(name), is_constant, type, init_span(values));
+            const name_idx id = make_identifier(name);
+            define_global(id, is_constant, type, init_span(values));
+            return id;
         }
 
         // Type declaration

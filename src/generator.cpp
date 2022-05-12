@@ -652,7 +652,7 @@ namespace propane
 
         writer.fields.push_back(field(name, type));
     }
-    void generator::type_writer::declare_field(type_idx type, string_view name)
+    name_idx generator::type_writer::declare_field(type_idx type, string_view name)
     {
         auto& writer = self();
         auto& gen = writer.gen;
@@ -660,7 +660,9 @@ namespace propane
         VALIDATE_IDENTIFIER(name);
         VALIDATE_TYPE(type, gen.types.size());
 
-        return declare_field(type, gen.emplace_identifier(name));
+        const name_idx id = gen.emplace_identifier(name);
+        declare_field(type, id);
+        return id;
     }
     span<const field> generator::type_writer::fields() const
     {
