@@ -25,7 +25,7 @@ method main returns int
 end
 ```
 
-Running this through the provided C generator would yield the following result:
+Running this through the provided C translator would yield the following result:
 
 ```c
 int32_t $main()
