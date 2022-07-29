@@ -61,7 +61,7 @@ namespace propane
 
             OPCODE_STR(dump);
 
-            default: return "<UNKNOWN OPCODE>";
+            default: ASSERT(false, "Unknown opcode"); return string_view();
         }
     }
 }
