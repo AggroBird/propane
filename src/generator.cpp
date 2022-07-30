@@ -47,6 +47,8 @@
     "Constant is not valid as left-hand side operand")
 #define VALIDATE_HAS_RETURNED(expr, method_name, method_meta) VALIDATE(ERRC::GNR_MISSING_RET_VAL, expr, \
     "Method is expecting a return value (see declaration for '%' at %)", method_name, method_meta)
+#define VALIDATE_CONST_ADDR(expr) VALIDATE(ERRC::GNR_INVALID_CONSTANT_ADDR, expr, \
+    "Constant address cannot have modifiers or prefixes")
 
 #define VALIDATE_INDEX(id, max) { VALIDATE_INDEX_VALUE(id); VALIDATE_INDEX_RANGE(id, max); }
 #define VALIDATE_TYPE(id, max) { VALIDATE_INDEX(id, max); VALIDATE_NONVOID(id); }
@@ -332,6 +334,7 @@ namespace propane
         {
             if (addr.header.type() == address_type::constant)
             {
+                VALIDATE_CONST_ADDR(addr.header.prefix() == address_prefix::none && addr.header.modifier() == address_modifier::none);
                 return true;
             }
 
