@@ -1077,8 +1077,8 @@ namespace propane
         {
             switch (type)
             {
-                case type_idx::i8: buf.write(num_conv.convert(*reinterpret_cast<const i8*>(ptr))); break;
-                case type_idx::u8: buf.write(num_conv.convert(*reinterpret_cast<const u8*>(ptr))); break;
+                case type_idx::i8: buf.write(num_conv.convert((int32_t)*reinterpret_cast<const i8*>(ptr))); break;
+                case type_idx::u8: buf.write(num_conv.convert((uint32_t)*reinterpret_cast<const u8*>(ptr))); break;
                 case type_idx::i16: buf.write(num_conv.convert(*reinterpret_cast<const i16*>(ptr))); break;
                 case type_idx::u16: buf.write(num_conv.convert(*reinterpret_cast<const u16*>(ptr))); break;
                 case type_idx::i32: buf.write(num_conv.convert(*reinterpret_cast<const i32*>(ptr))); break;

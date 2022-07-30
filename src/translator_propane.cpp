@@ -393,8 +393,8 @@ namespace propane
         {
             switch (type)
             {
-                case type_idx::i8: file_writer.write(num_conv.convert(*reinterpret_cast<const i8*>(ptr)), "i8"); break;
-                case type_idx::u8: file_writer.write(num_conv.convert(*reinterpret_cast<const u8*>(ptr)), "u8"); break;
+                case type_idx::i8: file_writer.write(num_conv.convert((int32_t)*reinterpret_cast<const i8*>(ptr)), "i8"); break;
+                case type_idx::u8: file_writer.write(num_conv.convert((uint32_t)*reinterpret_cast<const u8*>(ptr)), "u8"); break;
                 case type_idx::i16: file_writer.write(num_conv.convert(*reinterpret_cast<const i16*>(ptr)), "i16"); break;
                 case type_idx::u16: file_writer.write(num_conv.convert(*reinterpret_cast<const u16*>(ptr)), "u16"); break;
                 case type_idx::i32: file_writer.write(num_conv.convert(*reinterpret_cast<const i32*>(ptr)), "i32"); break;
