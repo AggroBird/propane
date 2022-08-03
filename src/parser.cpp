@@ -4,6 +4,7 @@
 #include "utility.hpp"
 #include "errors.hpp"
 #include "propane_literals.hpp"
+#include "parser_tokens.hpp"
 
 #include <charconv>
 #include <system_error>
@@ -45,15 +46,29 @@
 
 namespace propane
 {
+    struct token
+    {
+    public:
+        token(token_type type, string_view str, index_t line_num) : type(type), str(str), line_num(line_num)
+        {
+
+        }
+
+        const token_type type;
+        const string_view str;
+        const index_t line_num;
+
+        inline operator string_view() const
+        {
+            return str;
+        }
+    };
+
     enum class definition_type
     {
         none = 0,
         object,
         method,
-        param,
-        stack,
-        global,
-        constant,
     };
 
     enum class comment_type
@@ -81,6 +96,7 @@ namespace propane
                 file.seekg(0, file.end);
                 const std::streamsize file_size = file.tellg();
                 file.seekg(0, file.beg);
+                // Add one extra newline
                 file_text = block<char>(size_t(file_size) + 1);
                 file_text[file_size] = '\n';
                 file.read((char*)file_text.data(), file_size);
@@ -88,376 +104,392 @@ namespace propane
 
             const char* beg = file_text.data();
             const char* end = beg + file_text.size();
-            index_t line_number = 1;
-            set_line_number(line_number);
-            vector<string_view> tokens;
+            const char* ptr = beg;
+            line_num = 1;
+            set_line_number(line_num);
             comment_type comment = comment_type::none;
-            for (const char* it = beg; it < end; it++)
+            while (ptr < end)
             {
-                if (*it == '\n' || *it == '\t' || *it == ' ' || *it == '\r')
+                const char c = *ptr++;
+                if (c == '\n')
                 {
-                    if (comment == comment_type::none)
-                    {
-                        const auto len = it - beg;
-                        if (len > 0)
-                        {
-                            tokens.push_back(string_view(beg, len));
-                        }
-                    }
-
-                    if (*it == '\n')
-                    {
-                        if (!tokens.empty())
-                        {
-                            evaluate(tokens.data(), tokens.size());
-                        }
-
-                        tokens.clear();
-                        if (comment == comment_type::single)
-                        {
-                            comment = comment_type::none;
-                        }
-
-                        set_line_number(++line_number);
-                    }
-
-                    beg = it + 1;
-                }
-                else if (comment == comment_type::none)
-                {
-                    if (*it == '/')
-                    {
-                        const char next = *(it + 1);
-                        if (next == '/' || next == '*')
-                        {
-                            comment = next == '*' ? comment_type::multi : comment_type::single;
-                            const auto len = it - beg;
-                            if (len > 0)
-                            {
-                                tokens.push_back(string_view(beg, len));
-                            }
-                            it++;
-                        }
-                    }
-                }
-                else if (comment == comment_type::multi)
-                {
-                    if (*it == '*' && *(it + 1) == '/')
+                    set_line_number(++line_num);
+                    beg = ptr;
+                    if (comment == comment_type::single)
                     {
                         comment = comment_type::none;
-                        it++;
-                        beg = it + 1;
                     }
+                    continue;
                 }
+
+                if (comment != comment_type::none)
+                {
+                    if (c == '*' && *ptr == '/')
+                    {
+                        ptr++;
+                        comment = comment_type::none;
+                    }
+                    continue;
+                }
+
+                switch (c)
+                {
+                    case ' ':
+                    case '\r':
+                    case '\t':
+                    case '\v':
+                        break;
+
+                    case '/':
+                    {
+                        const char n = *ptr++;
+                        switch (n)
+                        {
+                            case '/': comment = comment_type::single; break;
+                            case '*': comment = comment_type::multi; break;
+                            default: UNEXPECTED_CHARACTER(false, c); break;
+                        }
+                        break;
+                    }
+                    break;
+
+                    default:
+                    {
+                        if (is_identifier(c, true))
+                        {
+                            for (; ptr < end;)
+                            {
+                                const char n = *ptr;
+                                if (!is_identifier(n, false))
+                                {
+                                    const auto len = ptr - beg;
+                                    if (len > 0)
+                                    {
+                                        const string_view str = string_view(beg, len);
+                                        auto lookup_result = token_string_lookup_table.try_find_token(str);
+                                        if (lookup_result.type != token_type::invalid)
+                                        {
+                                            // Treat as keyword
+                                            add_token(lookup_result.type, lookup_result.str);
+                                        }
+                                        else
+                                        {
+                                            // Treat as identifier
+                                            add_token(token_type::identifier, str);
+                                        }
+                                    }
+                                    break;
+                                }
+                                ptr++;
+                            }
+                        }
+                        else if (is_literal(c) && *ptr != '>')
+                        {
+                            for (; ptr < end;)
+                            {
+                                const char n = *ptr;
+                                if (!((n >= 'a' && n <= 'z') || (n >= 'A' && n <= 'Z') || n == '.' || n == '-'))
+                                {
+                                    const auto len = ptr - beg;
+                                    if (len > 0)
+                                    {
+                                        // Literal
+                                        const string_view str = string_view(beg, len);
+                                        add_token(token_type::literal, str);
+                                        break;
+                                    }
+                                }
+                                ptr++;
+                            }
+                        }
+                        else
+                        {
+                            switch (c)
+                            {
+                                case '{': add_token(token_type::lbrace, ptr, 1); break;
+                                case '}': add_token(token_type::rbrace, ptr, 1); break;
+                                case '[': add_token(token_type::lbracket, ptr, 1); break;
+                                case ']': add_token(token_type::rbracket, ptr, 1); break;
+                                case '(': add_token(token_type::lparen, ptr, 1); break;
+                                case ')': add_token(token_type::rparen, ptr, 1); break;
+                                case '-':
+                                {
+                                    const char n = *ptr++;
+                                    UNEXPECTED_CHARACTER(n == '>', c);
+                                    add_token(token_type::deref, ptr, 2);
+                                    break;
+                                }
+                                break;
+                                case '*': add_token(token_type::asterisk, ptr, 1); break;
+                                case '&': add_token(token_type::ampersand, ptr, 1); break;
+                                case '!': add_token(token_type::exclamation, ptr, 1); break;
+                                case '^': add_token(token_type::circumflex, ptr, 1); break;
+                                case ':': add_token(token_type::colon, ptr, 1); break;
+                                case ',': add_token(token_type::comma, ptr, 1); break;
+                                case '.': add_token(token_type::period, ptr, 1); break;
+                                default: UNEXPECTED_CHARACTER(false, c); break;
+                            }
+                        }
+                    }
+                    break;
+                }
+                beg = ptr;
             }
 
             UNEXPECTED_EOF(current_scope == definition_type::none);
             UNTERMINATED_COMMENT(comment != comment_type::multi);
+
+            if (tokens.size() > 0) evaluate();
         }
 
     private:
-        void evaluate(string_view* tokens, size_t num)
+        void add_token(token_type type, const char* c, size_t len)
         {
-            if (current_scope != definition_type::none)
+            tokens.push_back(token(type, string_view(c - len, len), line_num));
+        }
+        void add_token(token_type type, string_view str)
+        {
+            tokens.push_back(token(type, str, line_num));
+        }
+
+        void evaluate()
+        {
+            tokens.push_back(token(token_type::eof, "EOF", line_num));
+
+            const token* ptr = tokens.data();
+            const token* const end = ptr + (tokens.size() - 1);
+            while (ptr < end)
             {
-                if (num == 1)
+                const token& t = *ptr;
+                set_line_number(t.line_num);
+
+                switch (current_scope)
                 {
-                    if (tokens[0] == "end") return end();
+                    case definition_type::none:
+                    {
+                        ptr++;
+
+                        switch (t.type)
+                        {
+                            case token_type::kw_global: parse_globals(ptr, false); continue;
+                            case token_type::kw_constant: parse_globals(ptr, true); continue;
+                            case token_type::kw_method: begin_method(ptr); continue;
+                            case token_type::kw_struct: begin_struct(ptr); continue;
+                            case token_type::kw_union: begin_union(ptr); continue;
+                            case token_type::kw_end: UNEXPECTED_END(false);
+                        }
+                    }
+                    break;
+
+                    case definition_type::object:
+                    {
+                        switch (t.type)
+                        {
+                            case token_type::identifier: parse_field(ptr); continue;
+                            case token_type::kw_end: ptr++; end_object(); continue;
+                        }
+                    }
+                    break;
+
+                    case definition_type::method:
+                    {
+                        ptr++;
+
+                        switch (t.type)
+                        {
+                            case token_type::kw_stack: parse_stack(ptr); continue;
+
+                            case token_type::op_noop: write_noop(); continue;
+                            case token_type::op_set: write_set(ptr); continue;
+                            case token_type::op_conv: write_conv(ptr); continue;
+                            case token_type::op_not: write_not(ptr); continue;
+                            case token_type::op_neg: write_neg(ptr); continue;
+                            case token_type::op_mul: write_mul(ptr); continue;
+                            case token_type::op_div: write_div(ptr); continue;
+                            case token_type::op_mod: write_mod(ptr); continue;
+                            case token_type::op_add: write_add(ptr); continue;
+                            case token_type::op_sub: write_sub(ptr); continue;
+                            case token_type::op_lsh: write_lsh(ptr); continue;
+                            case token_type::op_rsh: write_rsh(ptr); continue;
+                            case token_type::op_and: write_and(ptr); continue;
+                            case token_type::op_xor: write_xor(ptr); continue;
+                            case token_type::op_or: write_or(ptr); continue;
+                            case token_type::op_padd: write_padd(ptr); continue;
+                            case token_type::op_psub: write_psub(ptr); continue;
+                            case token_type::op_pdif: write_pdif(ptr); continue;
+                            case token_type::op_cmp: write_cmp(ptr); continue;
+                            case token_type::op_ceq: write_ceq(ptr); continue;
+                            case token_type::op_cne: write_cne(ptr); continue;
+                            case token_type::op_cgt: write_cgt(ptr); continue;
+                            case token_type::op_cge: write_cge(ptr); continue;
+                            case token_type::op_clt: write_clt(ptr); continue;
+                            case token_type::op_cle: write_cle(ptr); continue;
+                            case token_type::op_cze: write_cze(ptr); continue;
+                            case token_type::op_cnz: write_cnz(ptr); continue;
+                            case token_type::op_br: write_br(ptr); continue;
+                            case token_type::op_beq: write_beq(ptr); continue;
+                            case token_type::op_bne: write_bne(ptr); continue;
+                            case token_type::op_bgt: write_bgt(ptr); continue;
+                            case token_type::op_bge: write_bge(ptr); continue;
+                            case token_type::op_blt: write_blt(ptr); continue;
+                            case token_type::op_ble: write_ble(ptr); continue;
+                            case token_type::op_bze: write_bze(ptr); continue;
+                            case token_type::op_bnz: write_bnz(ptr); continue;
+                            case token_type::op_sw: write_sw(ptr); continue;
+                            case token_type::op_call: write_call(ptr); continue;
+                            case token_type::op_callv: write_callv(ptr); continue;
+                            case token_type::op_ret: write_ret(); continue;
+                            case token_type::op_retv: write_retv(ptr); continue;
+                            case token_type::op_dump: write_dump(ptr); continue;
+
+                            case token_type::kw_end: end_method(); continue;
+                        }
+                    }
+                    break;
                 }
+
+                UNEXPECTED_EXPRESSION(false, t.str);
             }
-
-            switch (current_scope)
-            {
-                case definition_type::none:
-                {
-                    if (num == 1)
-                    {
-                        if (tokens[0] == "global") return begin_global();
-                        if (tokens[0] == "constant") return begin_constant();
-                    }
-                    if (num >= 2)
-                    {
-                        if (tokens[0] == "method") return begin_method(tokens[1], tokens + 2, num - 2);
-                    }
-                    if (num == 2)
-                    {
-                        if (tokens[0] == "struct") return begin_struct(tokens[1], false);
-                        if (tokens[0] == "union") return begin_struct(tokens[1], true);
-                    }
-                }
-                break;
-
-                case definition_type::object:
-                {
-                    if (num == 2)
-                    {
-                        return field(tokens[0], tokens[1]);
-                    }
-                }
-                break;
-
-                case definition_type::method:
-                {
-                    if (num == 1)
-                    {
-                        if (tokens[0] == "noop") return write_noop();
-
-                        if (tokens[0] == "ret") return write_ret();
-
-                        if (tokens[0].size() > 1 && tokens[0].back() == ':') return write_label(tokens[0].substr(0, tokens[0].size() - 1));
-                    }
-                    if (num >= 1)
-                    {
-                        if (tokens[0] == "stack") return begin_stack(tokens + 1, num - 1);
-                    }
-                    if (num >= 2)
-                    {
-                        if (tokens[0] == "call") return write_call(tokens[1], tokens + 2, num - 2);
-                        if (tokens[0] == "callv") return write_callv(tokens[1], tokens + 2, num - 2);
-                    }
-                    if (num >= 3)
-                    {
-                        if (tokens[0] == "sw") return write_sw(tokens[1], tokens + 2, num - 2);
-                    }
-                    if (num == 2)
-                    {
-                        if (tokens[0] == "retv") return write_retv(tokens[1]);
-
-                        if (tokens[0] == "not") return write_not(tokens[1]);
-                        if (tokens[0] == "neg") return write_neg(tokens[1]);
-
-                        if (tokens[0] == "cze") return write_cze(tokens[1]);
-                        if (tokens[0] == "cnz") return write_cnz(tokens[1]);
-
-                        if (tokens[0] == "br") return write_br(tokens[1]);
-
-                        if (tokens[0] == "dump") return write_dump(tokens[1]);
-                    }
-                    if (num == 3)
-                    {
-                        if (tokens[0] == "set") return write_set(tokens[1], tokens[2]);
-                        if (tokens[0] == "conv") return write_conv(tokens[1], tokens[2]);
-
-                        if (tokens[0] == "mul") return write_mul(tokens[1], tokens[2]);
-                        if (tokens[0] == "div") return write_div(tokens[1], tokens[2]);
-                        if (tokens[0] == "mod") return write_mod(tokens[1], tokens[2]);
-                        if (tokens[0] == "add") return write_add(tokens[1], tokens[2]);
-                        if (tokens[0] == "sub") return write_sub(tokens[1], tokens[2]);
-                        if (tokens[0] == "lsh") return write_lsh(tokens[1], tokens[2]);
-                        if (tokens[0] == "rsh") return write_rsh(tokens[1], tokens[2]);
-                        if (tokens[0] == "and") return write_and(tokens[1], tokens[2]);
-                        if (tokens[0] == "xor") return write_xor(tokens[1], tokens[2]);
-                        if (tokens[0] == "or") return write_or(tokens[1], tokens[2]);
-
-                        if (tokens[0] == "padd") return write_padd(tokens[1], tokens[2]);
-                        if (tokens[0] == "psub") return write_psub(tokens[1], tokens[2]);
-                        if (tokens[0] == "pdif") return write_pdif(tokens[1], tokens[2]);
-
-                        if (tokens[0] == "cmp") return write_cmp(tokens[1], tokens[2]);
-                        if (tokens[0] == "ceq") return write_ceq(tokens[1], tokens[2]);
-                        if (tokens[0] == "cne") return write_cne(tokens[1], tokens[2]);
-                        if (tokens[0] == "cgt") return write_cgt(tokens[1], tokens[2]);
-                        if (tokens[0] == "cge") return write_cge(tokens[1], tokens[2]);
-                        if (tokens[0] == "clt") return write_clt(tokens[1], tokens[2]);
-                        if (tokens[0] == "cle") return write_cle(tokens[1], tokens[2]);
-
-                        if (tokens[0] == "bze") return write_bze(tokens[1], tokens[2]);
-                        if (tokens[0] == "bnz") return write_bnz(tokens[1], tokens[2]);
-                    }
-                    if (num == 4)
-                    {
-                        if (tokens[0] == "beq") return write_beq(tokens[1], tokens[2], tokens[3]);
-                        if (tokens[0] == "bne") return write_bne(tokens[1], tokens[2], tokens[3]);
-                        if (tokens[0] == "bgt") return write_bgt(tokens[1], tokens[2], tokens[3]);
-                        if (tokens[0] == "bge") return write_bge(tokens[1], tokens[2], tokens[3]);
-                        if (tokens[0] == "blt") return write_blt(tokens[1], tokens[2], tokens[3]);
-                        if (tokens[0] == "ble") return write_ble(tokens[1], tokens[2], tokens[3]);
-                    }
-                }
-                break;
-
-                case definition_type::param:
-                {
-                    return param(tokens, num);
-                }
-                break;
-
-                case definition_type::stack:
-                {
-                    return stack(tokens, num);
-                }
-                break;
-
-                case definition_type::global:
-                {
-                    if (num >= 2) return global(tokens[0], false, tokens[1], tokens + 2, num - 2);
-                }
-                break;
-
-                case definition_type::constant:
-                {
-                    if (num >= 2) return global(tokens[0], true, tokens[1], tokens + 2, num - 2);
-                }
-                break;
-            }
-
-            UNEXPECTED_EXPRESSION(false, tokens[0]);
         }
 
 
-        void begin_struct(string_view obj_name, bool is_union)
+        void begin_struct(const token*& ptr)
         {
+            UNEXPECTED_EXPRESSION(ptr->type == token_type::identifier, ptr->str);
+
             current_scope = definition_type::object;
 
-            current_type = &define_type(obj_name, is_union);
+            set_line_number(ptr->line_num);
+            current_type = &define_type((ptr++)->str, false);
         }
-        void field(string_view type_name, string_view field_name)
+        void begin_union(const token*& ptr)
         {
-            current_type->declare_field(resolve_typename(type_name), field_name);
+            UNEXPECTED_EXPRESSION(ptr->type == token_type::identifier, ptr->str);
+
+            current_scope = definition_type::object;
+
+            set_line_number(ptr->line_num);
+            current_type = &define_type((ptr++)->str, true);
+        }
+        void parse_field(const token*& ptr)
+        {
+            type_idx field_type = parse_typename(ptr);
+
+            UNEXPECTED_EXPRESSION(ptr->type == token_type::identifier, ptr->str);
+            set_line_number(ptr->line_num);
+            current_type->declare_field(field_type, (ptr++)->str);
         }
 
-        void begin_method(string_view method_name, string_view* args, size_t num)
+        void begin_method(const token*& ptr)
         {
+            UNEXPECTED_EXPRESSION(ptr->type == token_type::identifier, ptr->str);
+            method_idx method_index = declare_method((ptr++)->str);
+
+            // Parse return type
+            type_idx method_return_type = type_idx::voidtype;
+            if (ptr->type == token_type::kw_returns)
+            {
+                ptr++;
+                method_return_type = parse_typename(ptr);
+            }
+
+            // Parse parameters
+            parameters.clear();
+            if (ptr->type == token_type::kw_parameters)
+            {
+                ptr++;
+
+            parse_next_parameter:
+                switch (ptr->type)
+                {
+                    case token_type::identifier:
+                    case token_type::literal:
+                        parameters.push_back(parse_parameter(ptr, true));
+                        goto parse_next_parameter;
+
+                    case token_type::kw_end: ptr++; break;
+
+                    default: UNEXPECTED_EXPRESSION(false, ptr->str);
+                }
+            }
+
             current_scope = definition_type::method;
 
-            parameters.clear();
-
-            method_return_type = type_idx::voidtype;
-            if (num > 0 && args[0] == "returns")
-            {
-                method_return_type = resolve_typename(args[1]);
-
-                args += 2;
-                num -= 2;
-            }
-
-            method_index = declare_method(method_name);
-            if (num > 0 && args[0] == "parameters")
-            {
-                current_scope = definition_type::param;
-                return param(args + 1, num - 1);
-            }
-
-            UNEXPECTED_EXPRESSION(num == 0, args[0]);
-
+            set_line_number(ptr->line_num);
             current_method = &define_method(method_index, make_signature(method_return_type, parameters));
         }
 
-        void begin_stack(string_view* args, size_t num)
+        void parse_stack(const token*& ptr)
         {
-            current_scope = definition_type::stack;
+            set_line_number(ptr->line_num);
+            parameters.clear();
 
-            if (num > 0)
+        parse_next_parameter:
+            switch (ptr->type)
             {
-                return stack(args, num);
+                case token_type::identifier:
+                case token_type::literal:
+                    parameters.push_back(parse_parameter(ptr, false));
+                    goto parse_next_parameter;
+
+                case token_type::kw_end: ptr++; break;
+
+                default: UNEXPECTED_EXPRESSION(false, ptr->str);
             }
-        }
-        void param(string_view* args, size_t num)
-        {
-            while (num > 0)
-            {
-                if (num == 1 && args[0] == "end")
-                {
-                    end();
-                    break;
-                }
 
-                parameters.push_back(parse_parameters(args, num, parameter_lookup));
-            }
-        }
-        void stack(string_view* args, size_t num)
-        {
-            while (num > 0)
+            if (parameters.size() > 0)
             {
-                if (num == 1 && args[0] == "end")
-                {
-                    end();
-                    break;
-                }
-
-                stackvars.push_back(parse_parameters(args, num, stackvar_lookup));
+                current_method->push(parameters);
             }
         }
 
-        void begin_global()
+        vector<constant> constant_buffer;
+        void parse_globals(const token*& ptr, bool is_constant)
         {
-            current_scope = definition_type::global;
-        }
-        void begin_constant()
-        {
-            current_scope = definition_type::constant;
-        }
-        void global(string_view type_name, bool is_constant, string_view global_name, string_view* args, size_t num)
-        {
-            vector<constant> init;
-            for (size_t i = 0; i < num; i++)
+        parse_next_global:
+            switch (ptr->type)
             {
-                if (is_identifier(args[i]))
+                case token_type::identifier:
                 {
-                    init.push_back(make_identifier(args[i]));
+                    const type_idx global_type = parse_typename(ptr);
+                    set_line_number(ptr->line_num);
+                    const string_view global_name = (ptr++)->str;
+                    constant_buffer.clear();
+                    if (ptr->type == token_type::kw_init)
+                    {
+                        ptr++;
+                    parse_next_constant:
+                        switch (ptr->type)
+                        {
+                            default: constant_buffer.push_back(parse_constant(ptr)); goto parse_next_constant;
+                            case token_type::kw_end: ptr++; break;
+                        }
+                    }
+                    define_global(make_identifier(global_name), is_constant, global_type, constant_buffer);
+                    goto parse_next_global;
                 }
-                else
-                {
-                    init.push_back(read_constant(args[i]));
-                }
-            }
 
-            define_global(make_identifier(global_name), is_constant, resolve_typename(type_name), init);
+                case token_type::kw_end: ptr++; break;
+            }
         }
 
 
-        void end()
+        void end_object()
         {
-            switch (current_scope)
-            {
-                case definition_type::object:
-                {
-                    current_type->finalize();
+            current_type->finalize();
+            current_type = nullptr;
 
-                    current_scope = definition_type::none;
-                }
-                break;
+            current_scope = definition_type::none;
+        }
+        void end_method()
+        {
+            stackvar_lookup.clear();
+            parameter_lookup.clear();
 
-                case definition_type::method:
-                {
-                    stackvar_lookup.clear();
-                    parameter_lookup.clear();
+            current_method->finalize();
+            current_method = nullptr;
 
-                    current_method->finalize();
-
-                    current_scope = definition_type::none;
-                }
-                break;
-
-                case definition_type::param:
-                {
-                    current_method = &define_method(method_index, make_signature(method_return_type, parameters));
-
-                    parameters.clear();
-
-                    current_scope = definition_type::method;
-                }
-                break;
-
-                case definition_type::stack:
-                {
-                    current_method->push(stackvars);
-
-                    stackvars.clear();
-
-                    current_scope = definition_type::method;
-                }
-                break;
-
-                case definition_type::global:
-                case definition_type::constant:
-                {
-                    current_scope = definition_type::none;
-                }
-                break;
-
-                default: UNEXPECTED_END(false);
-            }
+            current_scope = definition_type::none;
         }
 
 
@@ -466,194 +498,298 @@ namespace propane
             current_method->write_noop();
         }
 
-        void write_set(string_view lhs, string_view rhs)
+        void write_set(const token*& ptr)
         {
-            current_method->write_set(read_address(lhs), read_address(rhs));
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_set(lhs, rhs);
         }
-        void write_conv(string_view lhs, string_view rhs)
+        void write_conv(const token*& ptr)
         {
-            current_method->write_conv(read_address(lhs), read_address(rhs));
-        }
-
-        void write_not(string_view addr)
-        {
-            current_method->write_not(read_address(addr));
-        }
-        void write_neg(string_view addr)
-        {
-            current_method->write_neg(read_address(addr));
-        }
-        void write_mul(string_view lhs, string_view rhs)
-        {
-            current_method->write_mul(read_address(lhs), read_address(rhs));
-        }
-        void write_div(string_view lhs, string_view rhs)
-        {
-            current_method->write_div(read_address(lhs), read_address(rhs));
-        }
-        void write_mod(string_view lhs, string_view rhs)
-        {
-            current_method->write_mod(read_address(lhs), read_address(rhs));
-        }
-        void write_add(string_view lhs, string_view rhs)
-        {
-            current_method->write_add(read_address(lhs), read_address(rhs));
-        }
-        void write_sub(string_view lhs, string_view rhs)
-        {
-            current_method->write_sub(read_address(lhs), read_address(rhs));
-        }
-        void write_lsh(string_view lhs, string_view rhs)
-        {
-            current_method->write_lsh(read_address(lhs), read_address(rhs));
-        }
-        void write_rsh(string_view lhs, string_view rhs)
-        {
-            current_method->write_rsh(read_address(lhs), read_address(rhs));
-        }
-        void write_and(string_view lhs, string_view rhs)
-        {
-            current_method->write_and(read_address(lhs), read_address(rhs));
-        }
-        void write_xor(string_view lhs, string_view rhs)
-        {
-            current_method->write_xor(read_address(lhs), read_address(rhs));
-        }
-        void write_or(string_view lhs, string_view rhs)
-        {
-            current_method->write_or(read_address(lhs), read_address(rhs));
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_conv(lhs, rhs);
         }
 
-        void write_padd(string_view lhs, string_view rhs)
+        void write_not(const token*& ptr)
         {
-            current_method->write_padd(read_address(lhs), read_address(rhs));
+            const address addr = parse_address(ptr);
+            current_method->write_not(addr);
         }
-        void write_psub(string_view lhs, string_view rhs)
+        void write_neg(const token*& ptr)
         {
-            current_method->write_psub(read_address(lhs), read_address(rhs));
+            const address addr = parse_address(ptr);
+            current_method->write_neg(addr);
         }
-        void write_pdif(string_view lhs, string_view rhs)
+        void write_mul(const token*& ptr)
         {
-            current_method->write_pdif(read_address(lhs), read_address(rhs));
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_mul(lhs, rhs);
         }
-
-        void write_cmp(string_view lhs, string_view rhs)
+        void write_div(const token*& ptr)
         {
-            current_method->write_cmp(read_address(lhs), read_address(rhs));
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_div(lhs, rhs);
         }
-        void write_ceq(string_view lhs, string_view rhs)
+        void write_mod(const token*& ptr)
         {
-            current_method->write_ceq(read_address(lhs), read_address(rhs));
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_mod(lhs, rhs);
         }
-        void write_cne(string_view lhs, string_view rhs)
+        void write_add(const token*& ptr)
         {
-            current_method->write_cne(read_address(lhs), read_address(rhs));
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_add(lhs, rhs);
         }
-        void write_cgt(string_view lhs, string_view rhs)
+        void write_sub(const token*& ptr)
         {
-            current_method->write_cgt(read_address(lhs), read_address(rhs));
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_sub(lhs, rhs);
         }
-        void write_cge(string_view lhs, string_view rhs)
+        void write_lsh(const token*& ptr)
         {
-            current_method->write_cge(read_address(lhs), read_address(rhs));
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_lsh(lhs, rhs);
         }
-        void write_clt(string_view lhs, string_view rhs)
+        void write_rsh(const token*& ptr)
         {
-            current_method->write_clt(read_address(lhs), read_address(rhs));
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_rsh(lhs, rhs);
         }
-        void write_cle(string_view lhs, string_view rhs)
+        void write_and(const token*& ptr)
         {
-            current_method->write_cle(read_address(lhs), read_address(rhs));
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_and(lhs, rhs);
         }
-        void write_cze(string_view addr)
+        void write_xor(const token*& ptr)
         {
-            current_method->write_cze(read_address(addr));
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_xor(lhs, rhs);
         }
-        void write_cnz(string_view addr)
+        void write_or(const token*& ptr)
         {
-            current_method->write_cnz(read_address(addr));
-        }
-
-        void write_br(string_view label)
-        {
-            current_method->write_br(current_method->declare_label(label));
-        }
-        void write_beq(string_view label, string_view lhs, string_view rhs)
-        {
-            current_method->write_beq(current_method->declare_label(label), read_address(lhs), read_address(rhs));
-        }
-        void write_bne(string_view label, string_view lhs, string_view rhs)
-        {
-            current_method->write_bne(current_method->declare_label(label), read_address(lhs), read_address(rhs));
-        }
-        void write_bgt(string_view label, string_view lhs, string_view rhs)
-        {
-            current_method->write_bgt(current_method->declare_label(label), read_address(lhs), read_address(rhs));
-        }
-        void write_bge(string_view label, string_view lhs, string_view rhs)
-        {
-            current_method->write_bge(current_method->declare_label(label), read_address(lhs), read_address(rhs));
-        }
-        void write_blt(string_view label, string_view lhs, string_view rhs)
-        {
-            current_method->write_blt(current_method->declare_label(label), read_address(lhs), read_address(rhs));
-        }
-        void write_ble(string_view label, string_view lhs, string_view rhs)
-        {
-            current_method->write_ble(current_method->declare_label(label), read_address(lhs), read_address(rhs));
-        }
-        void write_bze(string_view label, string_view addr)
-        {
-            current_method->write_bze(current_method->declare_label(label), read_address(addr));
-        }
-        void write_bnz(string_view label, string_view addr)
-        {
-            current_method->write_bnz(current_method->declare_label(label), read_address(addr));
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_or(lhs, rhs);
         }
 
-        void write_sw(string_view addr, string_view* args, size_t num)
+        void write_padd(const token*& ptr)
         {
-            vector<label_idx> labels;
-            for (size_t i = 0; i < num; i++)
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_padd(lhs, rhs);
+        }
+        void write_psub(const token*& ptr)
+        {
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_psub(lhs, rhs);
+        }
+        void write_pdif(const token*& ptr)
+        {
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_pdif(lhs, rhs);
+        }
+
+        void write_cmp(const token*& ptr)
+        {
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_cmp(lhs, rhs);
+        }
+        void write_ceq(const token*& ptr)
+        {
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_ceq(lhs, rhs);
+        }
+        void write_cne(const token*& ptr)
+        {
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_cne(lhs, rhs);
+        }
+        void write_cgt(const token*& ptr)
+        {
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_cgt(lhs, rhs);
+        }
+        void write_cge(const token*& ptr)
+        {
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_cge(lhs, rhs);
+        }
+        void write_clt(const token*& ptr)
+        {
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_clt(lhs, rhs);
+        }
+        void write_cle(const token*& ptr)
+        {
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_cle(lhs, rhs);
+        }
+        void write_cze(const token*& ptr)
+        {
+            const address addr = parse_address(ptr);
+            current_method->write_cze(addr);
+        }
+        void write_cnz(const token*& ptr)
+        {
+            const address addr = parse_address(ptr);
+            current_method->write_cnz(addr);
+        }
+
+
+        label_idx parse_label(const token*& ptr)
+        {
+            UNEXPECTED_EXPRESSION(ptr->type == token_type::identifier, ptr->str);
+            return current_method->declare_label((ptr++)->str);
+        }
+
+        void write_br(const token*& ptr)
+        {
+            const label_idx label = parse_label(ptr);
+            current_method->write_br(label);
+        }
+        void write_beq(const token*& ptr)
+        {
+            const label_idx label = parse_label(ptr);
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_beq(label, lhs, rhs);
+        }
+        void write_bne(const token*& ptr)
+        {
+            const label_idx label = parse_label(ptr);
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_bne(label, lhs, rhs);
+        }
+        void write_bgt(const token*& ptr)
+        {
+            const label_idx label = parse_label(ptr);
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_bgt(label, lhs, rhs);
+        }
+        void write_bge(const token*& ptr)
+        {
+            const label_idx label = parse_label(ptr);
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_bge(label, lhs, rhs);
+        }
+        void write_blt(const token*& ptr)
+        {
+            const label_idx label = parse_label(ptr);
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_blt(label, lhs, rhs);
+        }
+        void write_ble(const token*& ptr)
+        {
+            const label_idx label = parse_label(ptr);
+            const address lhs = parse_address(ptr);
+            const address rhs = parse_address(ptr);
+            current_method->write_ble(label, lhs, rhs);
+        }
+        void write_bze(const token*& ptr)
+        {
+            const label_idx label = parse_label(ptr);
+            current_method->write_bze(label, parse_address(ptr));
+        }
+        void write_bnz(const token*& ptr)
+        {
+            const label_idx label = parse_label(ptr);
+            current_method->write_bnz(label, parse_address(ptr));
+        }
+
+        vector<label_idx> label_buffer;
+        void write_sw(const token*& ptr)
+        {
+            const address addr = parse_address(ptr);
+
+            label_buffer.clear();
+            while (ptr->type == token_type::identifier)
             {
-                labels.push_back(current_method->declare_label(args[i]));
+                label_buffer.push_back(current_method->declare_label(ptr->str));
+                ptr++;
             }
 
-            current_method->write_sw(read_address(addr), labels);
+            current_method->write_sw(addr, label_buffer);
         }
 
-        void write_call(string_view method, string_view* args, size_t num)
+        vector<address> arg_buffer;
+        void write_call(const token*& ptr)
         {
-            vector<address> arg;
-            for (size_t i = 0; i < num; i++)
+            UNEXPECTED_CHARACTER(ptr->type == token_type::identifier, ptr->str);
+            const string_view method = (ptr++)->str;
+
+            arg_buffer.clear();
+        parse_next_arg:
+            switch (ptr->type)
             {
-                arg.push_back(read_address(args[i]));
+                case token_type::kw_null: arg_buffer.push_back(constant(nullptr)); ptr++; goto parse_next_arg;
+                case token_type::literal: arg_buffer.push_back(parse_constant(ptr)); goto parse_next_arg;
+                default:
+                {
+                    if (ptr->type <= token_type::op_dump) break;
+                    arg_buffer.push_back(parse_address(ptr));
+                    goto parse_next_arg;
+                }
             }
 
-            current_method->write_call(declare_method(method), arg);
+            current_method->write_call(declare_method(method), arg_buffer);
         }
-        void write_callv(string_view addr, string_view* args, size_t num)
+        void write_callv(const token*& ptr)
         {
-            vector<address> arg;
-            for (size_t i = 0; i < num; i++)
+            const address addr = parse_address(ptr);
+
+            arg_buffer.clear();
+        parse_next_arg:
+            switch (ptr->type)
             {
-                arg.push_back(read_address(args[i]));
+                case token_type::kw_null: arg_buffer.push_back(constant(nullptr)); ptr++; goto parse_next_arg;
+                case token_type::literal: arg_buffer.push_back(parse_constant(ptr)); goto parse_next_arg;
+                default:
+                {
+                    if (ptr->type <= token_type::op_dump) break;
+                    arg_buffer.push_back(parse_address(ptr));
+                    goto parse_next_arg;
+                }
             }
 
-            current_method->write_callv(read_address(addr), arg);
+            current_method->write_callv(addr, arg_buffer);
         }
         void write_ret()
         {
             current_method->write_ret();
         }
-        void write_retv(string_view addr)
+        void write_retv(const token*& ptr)
         {
-            current_method->write_retv(read_address(addr));
+            const address addr = parse_address(ptr);
+            current_method->write_retv(addr);
         }
 
-        void write_dump(string_view addr)
+        void write_dump(const token*& ptr)
         {
-            current_method->write_dump(read_address(addr));
+            const address addr = parse_address(ptr);
+            current_method->write_dump(addr);
         }
 
 
@@ -662,103 +798,287 @@ namespace propane
             current_method->write_label(current_method->declare_label(label_name));
         }
 
-
-        type_idx resolve_typename(string_view type_name)
+        type_idx parse_typename(const token*& ptr, size_t depth = 0)
         {
-            type_idx index = type_idx::invalid;
+            UNEXPECTED_EXPRESSION(ptr->type == token_type::identifier, ptr->str);
+            set_line_number(ptr->line_num);
+            const string_view base_name = (ptr++)->str;
 
-            const char* beg = type_name.data();
-            const char* end = beg + type_name.size();
+            type_idx index = declare_type(base_name);
 
-            // Find base name (without array/pointer decorators)
-            const char* base = beg;
-            for (; base < end; ++base)
+        parse_next_modifier:
+            switch (ptr->type)
             {
-                if (*base == '(' || *base == '[' || *base == '*')
-                {
-                    break;
-                }
-            }
-
-            UNEXPECTED_CHARACTER(base > beg, *beg);
-            string_view base_name(beg, base - beg);
-
-            index = declare_type(base_name);
-
-            // Resolve decorators
-            while (base < end)
-            {
-                if (*base == '*')
+                case token_type::asterisk:
                 {
                     index = declare_pointer_type(index);
-                    base++;
-                    continue;
+                    ptr++;
+                    goto parse_next_modifier;
                 }
 
-                if (*base == '[')
+                case token_type::lbracket:
                 {
-                    base++;
-                    auto offset = end - base;
-                    if (offset > 0)
-                    {
-                        auto size = parse_ulong(base, end);
-                        if (base < end && base[0] == ']')
-                        {
-                            VALIDATE_ARRAY_SIZE(size.value);
-                            index = declare_array_type(index, size_t(size.value));
-                            base++;
-                            continue;
-                        }
-                    }
+                    ptr++;
+                    UNEXPECTED_EXPRESSION(ptr->type == token_type::literal, ptr->str);
+                    auto size = parse_ulong(ptr->str);
+                    LITERAL_PARSE_FAILURE(size.is_valid(), ptr->str);
+                    VALIDATE_ARRAY_SIZE(size.value);
+                    ptr++;
+                    UNEXPECTED_END(ptr->type == token_type::rbracket);
+                    ptr++;
+                    index = declare_array_type(index, size_t(size.value));
+                    goto parse_next_modifier;
                 }
 
-                // Resolve signature
-                if (*base == '(')
+                case token_type::lparen:
                 {
-                    type_idx return_type = index;
-                    vector<type_idx> parameters;
-                    base++;
-                    size_t level = 1;
-                    for (const char* c = base; c < end; c++)
+                    ptr++;
+                    vector<type_idx> param_buffer;
+                parse_next_parameter:
+                    param_buffer.push_back(parse_typename(ptr, depth + 1));
+                    switch (ptr->type)
                     {
-                        if (*c == '(') level++;
-                        if (level == 1 && (*c == ',' || *c == ')'))
-                        {
-                            const auto offset = c - base;
-                            UNEXPECTED_CHARACTER(offset > 0 || *c == ')', *c);
-
-                            if (offset > 0)
-                            {
-                                string_view param(base, offset);
-                                parameters.push_back(resolve_typename(param));
-                            }
-
-                            base = c + 1;
-
-                            if (*c == ')')
-                            {
-                                level = 0;
-                                break;
-                            }
-                        }
-                        if (*c == ')') level--;
+                        case token_type::comma: ptr++; goto parse_next_parameter;
+                        case token_type::rparen: ptr++; break;
+                        default: UNEXPECTED_EXPRESSION(false, ptr->str);
                     }
-
-                    UNTERMINATED_CHARACTER(level == 0, '(');
-                    const signature_idx sig_idx = make_signature(return_type, parameters);
-                    index = declare_signature_type(sig_idx);
-                    continue;
+                    index = declare_signature_type(make_signature(index, param_buffer));
+                    goto parse_next_modifier;
                 }
-
-                UNEXPECTED_CHARACTER(beg != base, *base);
             }
 
             return index;
         }
+        type_idx parse_parameter(const token*& ptr, bool is_parameter)
+        {
+            switch (ptr->type)
+            {
+                case token_type::identifier:
+                {
+                    // <type> <identifier>
+                    const type_idx type = parse_typename(ptr);
+                    if (is_parameter)
+                    {
+                        const auto find = parameter_lookup.names.find(ptr->str);
+                        DUPLICATE_STACK_NAME(!find, ptr->str);
+                        parameter_lookup.names.emplace(ptr->str, parameter_lookup.count++);
+                    }
+                    else
+                    {
+                        const auto find = stackvar_lookup.names.find(ptr->str);
+                        DUPLICATE_STACK_NAME(!find, ptr->str);
+                        stackvar_lookup.names.emplace(ptr->str, stackvar_lookup.count++);
+                    }
+                    ptr++;
+                    return type;
+                }
 
+                case token_type::literal:
+                {
+                    // <number>: <type>
+                    const auto parse = parse_ulong(ptr->str);
+                    LITERAL_PARSE_FAILURE(parse.is_valid(), ptr->str);
+                    VALIDATE_STACK_INDEX(parse.value);
+                    const index_t index = (index_t)parse.value;
+                    ptr++;
+                    UNEXPECTED_EXPRESSION(ptr->type == token_type::colon, ptr->str);
+                    ptr++;
+                    const type_idx type = parse_typename(ptr);
+                    if (is_parameter)
+                    {
+                        DUPLICATE_PARAM_IDX(parameter_lookup.indices.find(index) == parameter_lookup.indices.end(), index);
+                        parameter_lookup.indices.emplace(index, parameter_lookup.count++);
+                    }
+                    else
+                    {
+                        DUPLICATE_STACK_IDX(stackvar_lookup.indices.find(index) == stackvar_lookup.indices.end(), index);
+                        stackvar_lookup.indices.emplace(index, stackvar_lookup.count++);
+                    }
+                    return type;
+                }
+
+                default: UNEXPECTED_EXPRESSION(false, ptr->str);
+            }
+            return type_idx::invalid;
+        }
+
+        template<typename value_t> value_t parse_offset_num(const token*& ptr)
+        {
+            UNEXPECTED_EXPRESSION(ptr->type == token_type::literal, ptr->str);
+            auto num = parse_int_literal_cast<value_t>(ptr->str);
+            LITERAL_PARSE_FAILURE(num.is_valid(), ptr->str);
+            ptr++;
+            return num.value;
+        }
+
+        vector<name_idx> field_names;
+        address parse_address(const token*& ptr)
+        {
+            set_line_number(ptr->line_num);
+            address result(0, address_type::stackvar);
+
+            // Prefix
+            switch (ptr->type)
+            {
+                case token_type::kw_null: ptr++; return constant(nullptr);
+                case token_type::literal: return parse_constant(ptr);
+
+                case token_type::asterisk: ptr++; result.header.set_prefix(address_prefix::indirection); break;
+                case token_type::ampersand: ptr++; result.header.set_prefix(address_prefix::address_of); break;
+                case token_type::exclamation: ptr++; result.header.set_prefix(address_prefix::size_of); break;
+
+                default: break;
+            }
+
+            // Type
+            const token_type type = ptr->type;
+            switch (ptr->type)
+            {
+                case token_type::literal: UNEXPECTED_LITERAL(false); break;
+
+                case token_type::identifier:
+                {
+                    const string_view name = (ptr++)->str;
+
+                    if (const auto find = stackvar_lookup.names.find(name))
+                    {
+                        // Named stackvar
+                        result.header.set_type(address_type::stackvar);
+                        result.header.set_index(*find);
+                        break;
+                    }
+
+                    if (const auto find = parameter_lookup.names.find(name))
+                    {
+                        // Named parameter
+                        result.header.set_type(address_type::parameter);
+                        result.header.set_index(*find);
+                        break;
+                    }
+
+                    // Global
+                    result.header.set_type(address_type::global);
+                    result.header.set_index((index_t)make_identifier(name));
+                }
+                break;
+
+                case token_type::lbrace:
+                {
+                    ptr++;
+                    if (ptr->type == token_type::circumflex)
+                    {
+                        // Return address
+                        ptr++;
+                        result.header.set_type(address_type::stackvar);
+                        result.header.set_index(address_header_constants::index_max);
+                    }
+                    else
+                    {
+                        const index_t parse_idx = parse_offset_num<index_t>(ptr);
+                        const auto find = stackvar_lookup.indices.find(parse_idx);
+                        UNDEFINED_STACK_IDX(find != stackvar_lookup.indices.end(), parse_idx);
+                        result.header.set_type(address_type::stackvar);
+                        result.header.set_index(find->second);
+                    }
+                    UNEXPECTED_EXPRESSION(ptr->type == token_type::rbrace, ptr->str);
+                    ptr++;
+                }
+                break;
+
+                case token_type::lparen:
+                {
+                    ptr++;
+                    const index_t parse_idx = parse_offset_num<index_t>(ptr);
+                    const auto find = parameter_lookup.indices.find(parse_idx);
+                    UNDEFINED_STACK_IDX(find != parameter_lookup.indices.end(), parse_idx);
+                    UNEXPECTED_EXPRESSION(ptr->type == token_type::rparen, ptr->str);
+                    ptr++;
+                    result.header.set_type(address_type::parameter);
+                    result.header.set_index(find->second);
+                }
+                break;
+
+                default: UNEXPECTED_EXPRESSION(false, ptr->str);
+            }
+
+            // Modifier
+            switch (ptr->type)
+            {
+                case token_type::period:
+                case token_type::deref:
+                {
+                    const address_modifier modifier_type = ptr->type == token_type::deref ? address_modifier::indirect_field : address_modifier::direct_field;
+                    ptr++;
+                    UNEXPECTED_EXPRESSION(ptr->type == token_type::identifier, ptr->str);
+                    const type_idx object_type = declare_type((ptr++)->str);
+                    UNEXPECTED_EXPRESSION(ptr->type == token_type::colon, ptr->str);
+                    ptr++;
+
+                    field_names.clear();
+                parse_next_field:
+                    UNEXPECTED_EXPRESSION(ptr->type == token_type::identifier, ptr->str);
+                    field_names.push_back(make_identifier((ptr++)->str));
+                    if (ptr->type == token_type::period)
+                    {
+                        ptr++;
+                        goto parse_next_field;
+                    }
+
+                    result.header.set_modifier(modifier_type);
+                    result.payload.field = make_offset(object_type, field_names);
+                }
+                break;
+
+                case token_type::lbracket:
+                {
+                    ptr++;
+                    const offset_t offset = parse_offset_num<offset_t>(ptr);
+                    UNEXPECTED_EXPRESSION(ptr->type == token_type::rbracket, ptr->str);
+                    ptr++;
+                    result.header.set_modifier(address_modifier::offset);
+                    result.payload.offset = offset;
+                }
+                break;
+
+                default: break;
+            }
+
+            return result;
+        }
+        constant parse_constant(const token*& ptr)
+        {
+            if (ptr->type == token_type::kw_null)
+            {
+                ptr++;
+                return constant(nullptr);
+            }
+
+            UNEXPECTED_EXPRESSION(ptr->type == token_type::literal, ptr->str);
+
+            const auto result = parse_literal(ptr->str);
+            LITERAL_PARSE_FAILURE(result.is_valid(), ptr->str);
+            ptr++;
+
+            switch (result.type)
+            {
+                case type_idx::i8:  return constant(result.value.as_i8);
+                case type_idx::u8:  return constant(result.value.as_u8);
+                case type_idx::i16: return constant(result.value.as_i16);
+                case type_idx::u16: return constant(result.value.as_u16);
+                case type_idx::i32: return constant(result.value.as_i32);
+                case type_idx::u32: return constant(result.value.as_u32);
+                case type_idx::i64: return constant(result.value.as_i64);
+                case type_idx::u64: return constant(result.value.as_u64);
+                case type_idx::f32: return constant(result.value.as_f32);
+                case type_idx::f64: return constant(result.value.as_f64);
+                default: ASSERT(false, "Invalid constant type"); return constant(0);
+            }
+        }
 
         // Parser state
         definition_type current_scope = definition_type::none;
+        vector<token> tokens;
+        index_t line_num;
 
         // Locals
         class variable_lookup
@@ -781,293 +1101,8 @@ namespace propane
         type_writer* current_type = nullptr;
         method_writer* current_method = nullptr;
 
-        method_idx method_index = method_idx::invalid;
-        type_idx method_return_type = type_idx::invalid;
-        vector<type_idx> stackvars;
+        // Reusable buffers
         vector<type_idx> parameters;
-
-
-
-        type_idx parse_parameters(string_view*& args, size_t& num, variable_lookup& lookup)
-        {
-            if (num >= 2)
-            {
-                type_idx type;
-                if (args[0].back() == ':')
-                {
-                    // <number>: <type>
-                    auto parse = parse_ulong(args[0].substr(0, args[0].length() - 1));
-                    LITERAL_PARSE_FAILURE(parse.is_valid(), args[0]);
-                    VALIDATE_STACK_INDEX(parse.value);
-                    index_t index = (index_t)parse.value;
-
-                    type = resolve_typename(args[1]);
-
-                    if (current_scope == definition_type::param)
-                    {
-                        DUPLICATE_PARAM_IDX(lookup.indices.find(index) == lookup.indices.end(), index);
-                    }
-                    else
-                    {
-                        DUPLICATE_STACK_IDX(lookup.indices.find(index) == lookup.indices.end(), index);
-                    }
-                    lookup.indices.emplace(index, lookup.count++);
-                }
-                else
-                {
-                    // <type> <identifier>
-                    type = resolve_typename(args[0]);
-
-                    auto find = lookup.names.find(args[1]);
-                    DUPLICATE_STACK_NAME(!find, args[1]);
-
-                    lookup.names.emplace(args[1], lookup.count++);
-                }
-
-                args += 2;
-                num -= 2;
-
-                return type;
-            }
-
-            UNEXPECTED_EXPRESSION(num == 0, args[0]);
-            return type_idx::invalid;
-        }
-
-        template<typename value_t> bool parse_offset_num(const char*& c, const char* end, char open, char close, value_t& out_val)
-        {
-            if (*c == open)
-            {
-                c += 1;
-                // Find closing delimiter
-                bool found = false;
-                for (const char* ptr = c; ptr < end; ptr++)
-                {
-                    if (*ptr == close)
-                    {
-                        found = true;
-                        end = ptr;
-                        break;
-                    }
-                }
-                if (found)
-                {
-                    // Parse number
-                    auto num = parse_int_literal_cast<value_t>(c, end);
-                    LITERAL_PARSE_FAILURE(num.is_valid(), string_view(c, end - c));
-                    UNEXPECTED_CHARACTER(*c == close, *c);
-                    c += 1;
-                    out_val = num.value;
-                    return true;
-                }
-            }
-            return false;
-        }
-        template<typename value_t> bool parse_offset_num(string_view str, char open, char close, value_t& out_val)
-        {
-            const char* c = str.data();
-            const char* end = c + str.size();
-            bool result = parse_offset_num(c, end, open, close, out_val);
-            return result && c == end;
-        }
-        template<size_t len> bool parse_addr_str(const char*& c, const char* end, const char(&in_arr)[len])
-        {
-            constexpr size_t str_len = len - 1;
-            const size_t offset = (end - c);
-            if (offset >= str_len)
-            {
-                if (memcmp(c, in_arr, str_len) == 0)
-                {
-                    c += str_len;
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        address read_address(string_view str)
-        {
-            if (is_literal(str))
-            {
-                return read_constant(str);
-            }
-
-            const char* c = str.data();
-            const char* const end = c + str.size();
-
-            address result(0, address_type::stackvar);
-
-            // Prefix
-            switch (*c)
-            {
-                case '*': result.header.set_prefix(address_prefix::indirection); c++; break;
-                case '&': result.header.set_prefix(address_prefix::address_of); c++; break;
-                case '!': result.header.set_prefix(address_prefix::size_of); c++; break;
-            }
-            UNEXPECTED_CHARACTER(c < end, *c);
-
-            UNEXPECTED_LITERAL(!is_literal(string_view(c, end - c)));
-
-            // Type
-            while (c < end)
-            {
-                if (parse_addr_str(c, end, "{^}"))
-                {
-                    // Return address
-                    result.header.set_type(address_type::stackvar);
-                    result.header.set_index(address_header_constants::index_max);
-                    break;
-                }
-
-                index_t parse_idx;
-                if (parse_offset_num(c, end, '{', '}', parse_idx))
-                {
-                    // Indexed stackvar
-                    auto find = stackvar_lookup.indices.find(parse_idx);
-                    UNDEFINED_STACK_IDX(find != stackvar_lookup.indices.end(), parse_idx);
-                    result.header.set_type(address_type::stackvar);
-                    result.header.set_index(find->second);
-                    break;
-                }
-
-                if (parse_offset_num(c, end, '(', ')', parse_idx))
-                {
-                    // Indexed parameter
-                    auto find = parameter_lookup.indices.find(parse_idx);
-                    UNDEFINED_PARAM_IDX(find != parameter_lookup.indices.end(), parse_idx);
-                    result.header.set_type(address_type::parameter);
-                    result.header.set_index(find->second);
-                    break;
-                }
-
-                if (is_identifier(*c, true))
-                {
-                    const char* beg = c;
-                    string_view name;
-                    for (c = beg + 1; c <= end; c++)
-                    {
-                        if (!is_identifier(*c, false) || c == end)
-                        {
-                            UNEXPECTED_CHARACTER(c > beg, *c);
-                            name = string_view(beg, c - beg);
-                            break;
-                        }
-                    }
-
-                    if (auto find = stackvar_lookup.names.find(name))
-                    {
-                        // Named stackvar
-                        result.header.set_type(address_type::stackvar);
-                        result.header.set_index(*find);
-                        break;
-                    }
-
-                    if (auto find = parameter_lookup.names.find(name))
-                    {
-                        // Named parameter
-                        result.header.set_type(address_type::parameter);
-                        result.header.set_index(*find);
-                        break;
-                    }
-
-                    // Global
-                    result.header.set_type(address_type::global);
-                    result.header.set_index((index_t)make_identifier(name));
-                    break;
-                }
-
-                UNEXPECTED_CHARACTER(false, *c);
-            }
-
-            // Modifier
-            while (c < end)
-            {
-                offset_t offset;
-                if (parse_offset_num(c, end, '[', ']', offset))
-                {
-                    result.header.set_modifier(address_modifier::offset);
-                    result.payload.offset = offset;
-                    break;
-                }
-
-                if (*c == '.' || *c == '-')
-                {
-                    // Check for ->
-                    const bool is_deref = *c == '-';
-                    if (is_deref)
-                    {
-                        c++;
-                        UNEXPECTED_CHARACTER(*c == '>', *c);
-                    }
-
-                    // Parse field offset address
-                    const char* beg = c + 1;
-                    type_idx object_type = type_idx::invalid;
-                    vector<name_idx> field_names;
-                    for (c = beg; c <= end; c++)
-                    {
-                        if (c < end && *c == ':')
-                        {
-                            UNEXPECTED_CHARACTER(object_type == type_idx::invalid, *c);
-                            object_type = declare_type(string_view(beg, c - beg));
-                            beg = c + 1;
-                        }
-                        else if (*c == '.')
-                        {
-                            UNEXPECTED_CHARACTER(c > beg && object_type != type_idx::invalid, *c);
-                            field_names.push_back(make_identifier(string_view(beg, c - beg)));
-                            beg = c + 1;
-                        }
-                        else if (c == end)
-                        {
-                            UNEXPECTED_CHARACTER(c > beg && object_type != type_idx::invalid, *c);
-                            field_names.push_back(make_identifier(string_view(beg, c - beg)));
-                            break;
-                        }
-                    }
-
-                    result.header.set_modifier(is_deref ? address_modifier::indirect_field : address_modifier::direct_field);
-                    result.payload.field = make_offset(object_type, field_names);
-
-                    break;
-                }
-
-                UNEXPECTED_CHARACTER(false, *c);
-            }
-
-            UNEXPECTED_CHARACTER(c == end, *c);
-
-            return result;
-        }
-        constant read_constant(string_view str)
-        {
-            if (str == null_keyword)
-            {
-                return constant(nullptr);
-            }
-
-            const char* beg = str.data();
-            const char* end = str.data() + str.size();
-
-            const auto result = parse_literal(beg, end);
-            LITERAL_PARSE_FAILURE(result.is_valid(), str);
-            UNEXPECTED_CHARACTER(beg == end, *beg);
-
-            switch (result.type)
-            {
-                case type_idx::i8:  return constant(result.value.as_i8);
-                case type_idx::u8:  return constant(result.value.as_u8);
-                case type_idx::i16: return constant(result.value.as_i16);
-                case type_idx::u16: return constant(result.value.as_u16);
-                case type_idx::i32: return constant(result.value.as_i32);
-                case type_idx::u32: return constant(result.value.as_u32);
-                case type_idx::i64: return constant(result.value.as_i64);
-                case type_idx::u64: return constant(result.value.as_u64);
-                case type_idx::f32: return constant(result.value.as_f32);
-                case type_idx::f64: return constant(result.value.as_f64);
-                default: ASSERT(false, "Invalid constant type"); return constant(0);
-            }
-        }
     };
 
     intermediate parser_propane::parse(const char* file_path)

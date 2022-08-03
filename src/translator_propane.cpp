@@ -427,7 +427,7 @@ namespace propane
         }
         void write_constant(const_pointer_t& ptr, type_idx type, bool top_level = false)
         {
-            if (top_level) file_writer.write_space();
+            if (top_level) file_writer.write(" init ");
 
             const auto& t = data.types[type];
 
@@ -472,6 +472,8 @@ namespace propane
                     write_constant(ptr, t.fields[i].type);
                 }
             }
+
+            if (top_level) file_writer.write(" end");
         }
         void write_offset(offset_idx idx)
         {
