@@ -206,6 +206,8 @@ namespace propane
         native_type_info return_type;
         std::span<const native::parameter> parameters;
         size_t parameters_size = 0;
+        // TODO: Change this implementation:
+        // According to the standard, function pointers cannot be casted to void*
         void* handle = nullptr;
 
     public:
