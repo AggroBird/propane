@@ -36,7 +36,7 @@ namespace propane
         auto& self_data = self();
         auto& lib_data = lib.self();
 
-        ASSERT(self_data.libraries.find(lib_data.path) != self_data.libraries.end(), "Duplicate library entry");
+        ASSERT(self_data.libraries.find(lib_data.path) == self_data.libraries.end(), "Duplicate library entry");
         self_data.libraries[lib_data.path] = &lib_data;
         
         return *this;
