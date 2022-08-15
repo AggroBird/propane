@@ -365,10 +365,10 @@ namespace propane
                 const size_t method_handle = *reinterpret_cast<const size_t*>(table.data.data() + global_info.offset);
                 method_idx call_method_idx = method_idx(method_handle - 1);
 
-                dst_buf.write(global_type_meta.declaration.substr(0, global_type_meta.ptr_offset));
+                dst_buf.write(string_view(global_type_meta.declaration).substr(0, global_type_meta.ptr_offset));
                 if (is_constant) dst_buf.write("const ");
                 dst_buf.write("$", name_info);
-                dst_buf.write(global_type_meta.declaration.substr(global_type_meta.ptr_offset));
+                dst_buf.write(string_view(global_type_meta.declaration).substr(global_type_meta.ptr_offset));
             }
             else if (global_type.is_pointer())
             {
@@ -894,9 +894,9 @@ namespace propane
 
                         if (underlying_meta.ptr_offset != 0)
                         {
-                            meta.declaration.append(underlying_meta.declaration.substr(0, underlying_meta.ptr_offset));
+                            meta.declaration.append(string_view(underlying_meta.declaration).substr(0, underlying_meta.ptr_offset));
                             meta.declaration.append("*");
-                            meta.declaration.append(underlying_meta.declaration.substr(underlying_meta.ptr_offset));
+                            meta.declaration.append(string_view(underlying_meta.declaration).substr(underlying_meta.ptr_offset));
                             meta.ptr_offset = underlying_meta.ptr_offset + 1;
                         }
                         else
@@ -908,7 +908,7 @@ namespace propane
                         if (underlying_type.is_pointer())
                         {
                             meta.ptr_level = underlying_meta.ptr_level + 1;
-                            meta.generated.append(underlying_meta.generated.substr(0, underlying_meta.generated.find_last_of('$')));
+                            meta.generated.append(string_view(underlying_meta.generated).substr(0, underlying_meta.generated.find_last_of('$')));
                             meta.generated.append("$P");
                             meta.generated.append(get_number_str(meta.ptr_level));
                         }
@@ -940,7 +940,7 @@ namespace propane
                         const auto& return_type_meta = resolve_name_recursive(ret_type.index);
                         if (return_type_meta.ptr_offset != 0)
                         {
-                            meta.declaration.append(return_type_meta.declaration.substr(0, return_type_meta.ptr_offset));
+                            meta.declaration.append(string_view(return_type_meta.declaration).substr(0, return_type_meta.ptr_offset));
                         }
                         else
                         {
@@ -964,7 +964,7 @@ namespace propane
 
                         if (return_type_meta.ptr_offset != 0)
                         {
-                            meta.declaration.append(return_type_meta.declaration.substr(return_type_meta.ptr_offset));
+                            meta.declaration.append(string_view(return_type_meta.declaration).substr(return_type_meta.ptr_offset));
                         }
                     }
                     else
@@ -1323,9 +1323,7 @@ namespace propane
                     {
                         ASSERT(false, "Offset is not valid here");
                     }
-                    buf.write("[");
-                    buf.write(num_conv.convert(offset));
-                    buf.write("]");
+                    buf.write('[', num_conv.convert(offset), ']');
                 }
                 break;
             }
@@ -1411,7 +1409,7 @@ namespace propane
             const auto& return_meta = type_metas[signature.return_type];
             if (return_meta.ptr_offset != 0)
             {
-                dst.write(return_meta.declaration.substr(0, return_meta.ptr_offset));
+                dst.write(string_view(return_meta.declaration).substr(0, return_meta.ptr_offset));
             }
             else
             {
@@ -1429,7 +1427,7 @@ namespace propane
 
             if (return_meta.ptr_offset != 0)
             {
-                dst.write(return_meta.declaration.substr(return_meta.ptr_offset));
+                dst.write(string_view(return_meta.declaration).substr(return_meta.ptr_offset));
             }
         }
 
@@ -1438,9 +1436,9 @@ namespace propane
             const auto& meta = resolve_type(type);
             if (meta.ptr_offset != 0)
             {
-                dst.write(meta.declaration.substr(0, meta.ptr_offset));
+                dst.write(string_view(meta.declaration).substr(0, meta.ptr_offset));
                 dst.write("$", get_number_str(idx), postfix);
-                dst.write(meta.declaration.substr(meta.ptr_offset));
+                dst.write(string_view(meta.declaration).substr(meta.ptr_offset));
             }
             else
             {
@@ -1453,9 +1451,9 @@ namespace propane
             const auto& meta = resolve_type(type);
             if (meta.ptr_offset != 0)
             {
-                dst.write(meta.declaration.substr(0, meta.ptr_offset));
+                dst.write(string_view(meta.declaration).substr(0, meta.ptr_offset));
                 dst.write("$", name);
-                dst.write(meta.declaration.substr(meta.ptr_offset));
+                dst.write(string_view(meta.declaration).substr(meta.ptr_offset));
             }
             else
             {
@@ -1469,9 +1467,9 @@ namespace propane
             const auto& meta = resolve_type(type);
             if (meta.ptr_offset != 0)
             {
-                dst.write(meta.declaration.substr(0, meta.ptr_offset));
+                dst.write(string_view(meta.declaration).substr(0, meta.ptr_offset));
                 dst.write("$val", "[", num_conv.convert(array_size), "]");
-                dst.write(meta.declaration.substr(meta.ptr_offset));
+                dst.write(string_view(meta.declaration).substr(meta.ptr_offset));
             }
             else
             {
