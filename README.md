@@ -67,7 +67,7 @@ Assemblies can be fed into a translator to generate other programming languages 
 - Interpreter to execute bytecode directly in a runtime
 - Generator that converts assemblies into C code, ready to be compiled to any platform
 - Tools to generate Propane from and to text files via a prototype programming language
-- Call methods from a subset of the C standard library directly or from dynamic libraries
+- Call methods from C directly or from dynamic libraries
 
 ## Potential future additions
 
