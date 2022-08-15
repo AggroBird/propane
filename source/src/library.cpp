@@ -70,33 +70,33 @@ namespace propane
     }
 
 
-    host_library::host_library(string_view path) : path(path), handle(nullptr)
+    host_library::host_library(string_view path) : path(path), lib_handle(nullptr)
     {
 
     }
     host_library::~host_library()
     {
-        if (handle)
+        if (lib_handle)
         {
             close();
         }
     }
 
-    host_library::host_library(host_library&& other) noexcept : path(other.path), handle(other.handle)
+    host_library::host_library(host_library&& other) noexcept : path(other.path), lib_handle(other.lib_handle)
     {
-        other.handle = nullptr;
+        other.lib_handle = nullptr;
     }
     host_library& host_library::operator=(host_library&& other) noexcept
     {
         if (&other != this)
         {
-            if (handle)
+            if (lib_handle)
             {
                 close();
             }
 
-            handle = other.handle;
-            other.handle = nullptr;
+            lib_handle = other.lib_handle;
+            other.lib_handle = nullptr;
 
             path = other.path;
         }
@@ -105,22 +105,22 @@ namespace propane
 
     bool host_library::is_open() const noexcept
     {
-        return handle != nullptr;
+        return lib_handle != nullptr;
     }
 
     bool host_library::open()
     {
-        handle = host::openlib(path.data());
-        return handle != nullptr;
+        lib_handle = host::openlib(path.data());
+        return lib_handle != nullptr;
     }
     void host_library::close()
     {
-        host::closelib(handle);
-        handle = nullptr;
+        host::closelib(lib_handle);
+        lib_handle = nullptr;
     }
 
-    void* host_library::get_proc(const char* name)
+    void(*host_library::get_proc(const char* name))()
     {
-        return host::loadsym(handle, name);
+        return host::loadsym(lib_handle, name);
     }
 }

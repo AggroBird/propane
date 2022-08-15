@@ -2058,7 +2058,7 @@ namespace propane
 
                 string_view name;
                 external_call::forward_method forward = nullptr;
-                void* handle = nullptr;
+                void(*handle)() = nullptr;
             };
 
             runtime_library() = default;

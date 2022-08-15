@@ -156,7 +156,7 @@ namespace propane
     class external_call
     {
     public:
-        typedef void(*forward_method)(void*, void*, const void*);
+        typedef void(*forward_method)(void(*)(), void*, const void*);
 
     private:
         external_call(std::string_view name);
@@ -171,9 +171,9 @@ namespace propane
                     native::method_signature_param<param_t...>::generate_signature(parameters, parameters_size);
                 }
 
-                static void forward_call(void* handle, void* ret_val, const void* param)
+                static void forward_call(void(*handle)(), void* ret_val, const void* param)
                 {
-                    const auto method_ptr = reinterpret_cast<retval_t(*)(param_t...)>(handle);
+                    const auto method_ptr = (retval_t(*)(param_t...))(handle);
                     native::method_invoke<retval_t, param_t...>::invoke(ret_val, param, method_ptr);
                 }
 
@@ -195,7 +195,7 @@ namespace propane
             call.return_type = native_type_info(type, size, pointer);
             call.parameters = std::span<const native::parameter>(instance.parameters, sizeof...(param_t));
             call.parameters_size = instance.parameters_size;
-            call.handle = method;
+            call.handle = (void(*)())(method);
         }
 
         friend class library;
@@ -205,9 +205,7 @@ namespace propane
         native_type_info return_type;
         std::span<const native::parameter> parameters;
         size_t parameters_size = 0;
-        // TODO: Change this implementation:
-        // According to the standard, function pointers cannot be casted to void*
-        void* handle = nullptr;
+        void(*handle)() = nullptr;
 
     public:
         template<typename method_t> static external_call bind(std::string_view name, method_t method = nullptr)

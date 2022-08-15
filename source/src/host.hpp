@@ -30,7 +30,7 @@ namespace propane
 
         void* openlib(const char*);
         void closelib(void*);
-        void* loadsym(void*, const char*);
+        void(*loadsym(void*, const char*))();
     }
 }
 

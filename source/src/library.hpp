@@ -26,7 +26,7 @@ namespace propane
         size_t parameters_size = 0;
 
         external_call::forward_method forward = nullptr;
-        void* handle = nullptr;
+        void(*handle)() = nullptr;
     };
 
     class library_data
@@ -60,11 +60,11 @@ namespace propane
         bool open();
         void close();
 
-        void* get_proc(const char* name);
+        void(*get_proc(const char* name))();
 
     private:
         string path;
-        void* handle;
+        void* lib_handle;
     };
 }
 
