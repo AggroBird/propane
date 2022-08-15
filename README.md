@@ -78,9 +78,7 @@ Assemblies can be fed into a translator to generate other programming languages 
 
 ## Version history
 
-- 1.1
-
-Added initial support for loading importing dynamic libraries at runtime.
+- 1.1: Added initial support for loading importing dynamic libraries at runtime.
 
 ## Motivations
 
