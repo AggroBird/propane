@@ -294,10 +294,10 @@ namespace propane
             void write_bze(label_idx label, address lhs);
             void write_bnz(label_idx label, address lhs);
 
-            void write_sw(address addr, std::span<const label_idx> labels);
-            inline void write_sw(address addr, std::initializer_list<label_idx> labels)
+            void write_sw(address addr, std::span<const label_idx> switch_labels);
+            inline void write_sw(address addr, std::initializer_list<label_idx> switch_labels)
             {
-                write_sw(addr, init_span(labels));
+                write_sw(addr, init_span(switch_labels));
             }
 
             void write_call(method_idx method, std::span<const address> args = std::span<const address>());

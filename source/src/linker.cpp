@@ -36,10 +36,10 @@
 // This only works in the assembly_linker class
 #define VALIDATE_INSTRUCTION(errc, expr, fmt, ...) VALIDATE(ERRC::LNK_INVALID_IMPLICIT_CONVERSION, expr, \
     fmt " (See definition of method '%' at '%', instruction #%: %)", __VA_ARGS__ \
-    this->database[this->current_method->name].name, this->make_meta(this->current_method->index), this->iidx, propane::opcode_str(this->op))
+    this->database[this->current_method->name].name, this->make_meta(this->current_method->index), this->iidx, propane::opcode_str(this->current_op))
 #define VALIDATE_INSTRUCTION_NOARG(errc, expr, fmt) VALIDATE(ERRC::LNK_INVALID_IMPLICIT_CONVERSION, expr, \
     fmt " (See definition of method '%' at '%', instruction #%: %)", \
-    this->database[this->current_method->name].name, this->make_meta(this->current_method->index), this->iidx, propane::opcode_str(this->op))
+    this->database[this->current_method->name].name, this->make_meta(this->current_method->index), this->iidx, propane::opcode_str(this->current_op))
 
 #define VALIDATE_IMPLICIT_CONVERSION(expr, lhs_type, rhs_type) VALIDATE_INSTRUCTION(ERRC::LNK_INVALID_IMPLICIT_CONVERSION, expr, \
     "Invalid implicit conversion between types '%' and '%'", this->get_name(lhs_type), this->get_name(rhs_type),)
@@ -402,8 +402,8 @@ namespace propane
 
                         iidx++;
 
-                        op = read_bytecode<opcode>(iptr);
-                        switch (op)
+                        current_op = read_bytecode<opcode>(iptr);
+                        switch (current_op)
                         {
                             case opcode::noop:
                                 break;
@@ -431,7 +431,7 @@ namespace propane
                             {
                                 subcode& sub = read_subcode();
                                 const type_idx lhs = resolve_address();
-                                sub = resolve_ari(op, lhs, lhs);
+                                sub = resolve_ari(current_op, lhs, lhs);
                             }
                             break;
 
@@ -449,7 +449,7 @@ namespace propane
                                 subcode& sub = read_subcode();
                                 const type_idx lhs = resolve_address();
                                 const type_idx rhs = resolve_operand(lhs);
-                                sub = resolve_ari(op, lhs, rhs);
+                                sub = resolve_ari(current_op, lhs, rhs);
                             }
                             break;
 
@@ -459,7 +459,7 @@ namespace propane
                                 subcode& sub = read_subcode();
                                 const type_idx lhs = resolve_address();
                                 const type_idx rhs = resolve_operand(lhs);
-                                sub = resolve_ptr(op, lhs, rhs);
+                                sub = resolve_ptr(current_op, lhs, rhs);
                             }
                             break;
 
@@ -484,7 +484,7 @@ namespace propane
                                 subcode& sub = read_subcode();
                                 const type_idx lhs = resolve_address();
                                 const type_idx rhs = resolve_operand(lhs);
-                                sub = resolve_cmp(op, lhs, rhs);
+                                sub = resolve_cmp(current_op, lhs, rhs);
                                 // Comparison return value
                                 return_value = type_idx::i32;
                             }
@@ -495,7 +495,7 @@ namespace propane
                             {
                                 subcode& sub = read_subcode();
                                 const type_idx lhs = resolve_operand();
-                                sub = resolve_cmp(op, lhs, lhs);
+                                sub = resolve_cmp(current_op, lhs, lhs);
                                 // Comparison return value
                                 return_value = type_idx::i32;
                             }
@@ -520,7 +520,7 @@ namespace propane
                                 subcode& sub = read_subcode();
                                 const type_idx lhs = resolve_address();
                                 const type_idx rhs = resolve_operand(lhs);
-                                sub = resolve_cmp(op - (opcode::br - opcode::cmp), lhs, rhs);
+                                sub = resolve_cmp(current_op - (opcode::br - opcode::cmp), lhs, rhs);
                                 // Reset return value after branch
                                 return_value = type_idx::voidtype;
                             }
@@ -532,7 +532,7 @@ namespace propane
                                 const size_t jump = read_bytecode<size_t>(iptr);
                                 subcode& sub = read_subcode();
                                 const type_idx lhs = resolve_operand();
-                                sub = resolve_cmp(op - (opcode::br - opcode::cmp), lhs, lhs);
+                                sub = resolve_cmp(current_op - (opcode::br - opcode::cmp), lhs, lhs);
                                 // Reset return value after branch
                                 return_value = type_idx::voidtype;
                             }
@@ -1207,7 +1207,7 @@ namespace propane
         type_idx return_value = type_idx::invalid;
         pointer_t iptr = nullptr;
         size_t iidx = 0;
-        opcode op = opcode::noop;
+        opcode current_op = opcode::noop;
 
         vector<size_t> labels;
         size_t label_idx = 0;

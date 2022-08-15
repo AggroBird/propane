@@ -936,8 +936,8 @@ namespace propane
                         meta.generated = "$";
 
                         const auto& signature = get_signature(type.generated.signature.index);
-                        const auto& return_type = get_type(signature.return_type);
-                        const auto& return_type_meta = resolve_name_recursive(return_type.index);
+                        const auto& ret_type = get_type(signature.return_type);
+                        const auto& return_type_meta = resolve_name_recursive(ret_type.index);
                         if (return_type_meta.ptr_offset != 0)
                         {
                             meta.declaration.append(return_type_meta.declaration.substr(0, return_type_meta.ptr_offset));
@@ -1048,9 +1048,9 @@ namespace propane
         {
             if (idx >= number_str.size())
             {
-                const size_t beg = number_str.size();
+                const size_t begin = number_str.size();
                 number_str.resize(idx + 1);
-                for (size_t i = beg; i < number_str.size(); i++)
+                for (size_t i = begin; i < number_str.size(); i++)
                 {
                     number_str[i] = num_conv.convert(i);
                 }
@@ -1062,9 +1062,9 @@ namespace propane
         {
             if (idx >= indent_str.size())
             {
-                const size_t beg = indent_str.empty() ? 1 : indent_str.size();
+                const size_t begin = indent_str.empty() ? 1 : indent_str.size();
                 indent_str.resize(idx + 1);
-                for (size_t i = beg; i < indent_str.size(); i++)
+                for (size_t i = begin; i < indent_str.size(); i++)
                 {
                     indent_str[i] = indent_str[i - 1];
                     indent_str[i].push_back('\t');
@@ -1254,10 +1254,10 @@ namespace propane
                     sf.iptr += sizeof(address_header);
                     pointer_t ptr = (pointer_t)sf.iptr;
                     const auto& type = get_type(btype_idx);
-                    string_writer& buf = get_next_buffer();
-                    write_literal(buf, ptr, type.index);
+                    string_writer& next_buf = get_next_buffer();
+                    write_literal(next_buf, ptr, type.index);
                     sf.iptr += type.total_size;
-                    return string_address_t(&type, buf);
+                    return string_address_t(&type, next_buf);
                 }
                 break;
             }
@@ -1408,7 +1408,6 @@ namespace propane
         }
         void generate_method_declaration(string_writer& dst, const method& method, const signature& signature)
         {
-            const auto& return_type = get_type(signature.return_type);
             const auto& return_meta = type_metas[signature.return_type];
             if (return_meta.ptr_offset != 0)
             {

@@ -196,13 +196,13 @@ namespace propane
                     auto& signature = signatures[dst_idx];
                     if (signature.signature_type == type_idx::invalid)
                     {
-                        const type_idx src_idx = src.index;
+                        const type_idx src_type = src.index;
 
                         // Signature type not yet defined
                         src.index = type_idx(next_index++);
                         signature.signature_type = src.index;
                         types.push_back(std::move(src));
-                        type_translations[src_idx] = src.index;
+                        type_translations[src_type] = src.index;
                     }
                     else if (src.index != signature.signature_type)
                     {

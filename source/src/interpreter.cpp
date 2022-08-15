@@ -111,19 +111,19 @@ namespace propane
             // Initialize externals
             for (size_t i = 0; i < runtime.libraries.size(); i++)
             {
-                const auto& it = runtime.libraries[name_idx(i)];
+                const auto& init_lib = runtime.libraries[name_idx(i)];
 
-                runtime_library lib(it.name);
+                runtime_library lib(init_lib.name);
 
-                lib.calls = indexed_block<index_t, runtime_library::call>(it.calls.size());
-                auto src = it.calls.data();
+                lib.calls = indexed_block<index_t, runtime_library::call>(init_lib.calls.size());
+                auto src = init_lib.calls.data();
                 for (auto& it : lib.calls)
                 {
                     it = runtime_library::call(*src++);
                 }
 
                 // Preload symbols
-                if (it.preload_symbols)
+                if (init_lib.preload_symbols)
                 {
                     for (auto& call : lib.calls)
                     {

@@ -198,9 +198,9 @@ namespace propane
         {
             return reinterpret_cast<value_t*>(operator new(sizeof(value_t) * length));
         }
-        inline void dealloc(value_t* ptr) noexcept
+        inline void dealloc(value_t* addr) noexcept
         {
-            operator delete(ptr);
+            operator delete(addr);
         }
 
         value_t* ptr;

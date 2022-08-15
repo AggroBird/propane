@@ -100,8 +100,8 @@ namespace propane
             name_pair() :
                 key(key_t(invalid_index)) {}
             name_pair(string_view name, key_t key) :
-                key(key),
-                name(name) {}
+                name(name),
+                key(key) {}
 
             string_view name;
             key_t key;
@@ -112,8 +112,8 @@ namespace propane
             const_name_pair() :
                 key(key_t(invalid_index)) {}
             const_name_pair(string_view name, key_t key) :
-                key(key),
-                name(name) {}
+                name(name),
+                key(key) {}
 
             string_view name;
             key_t key;

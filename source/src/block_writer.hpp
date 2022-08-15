@@ -89,14 +89,14 @@ namespace propane
 
         uint32_t len;
 
-        inline void append(const uint8_t* ptr, uint32_t len)
+        inline void append(const uint8_t* ptr, uint32_t length)
         {
-            binary.insert(binary.end(), ptr, ptr + len);
+            binary.insert(binary.end(), ptr, ptr + length);
         }
 
-        inline void reserve(uint32_t len)
+        inline void reserve(uint32_t length)
         {
-            binary.resize(binary.size() + len);
+            binary.resize(binary.size() + length);
         }
 
         void free_children()

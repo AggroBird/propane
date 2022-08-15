@@ -504,17 +504,17 @@ namespace propane
             }
         }
 
-        void write_sw(address addr, span<const label_idx> labels)
+        void write_sw(address addr, span<const label_idx> switch_labels)
         {
-            VALIDATE_ARRAY_LENGTH(labels.size());
-            VALIDATE_INDICES(labels, label_declarations.size());
+            VALIDATE_ARRAY_LENGTH(switch_labels.size());
+            VALIDATE_INDICES(switch_labels, label_declarations.size());
             if (validate_address(addr))
             {
                 append_bytecode(opcode::sw);
                 write_address(addr);
 
-                append_bytecode(uint32_t(labels.size()));
-                for (auto it : labels)
+                append_bytecode(uint32_t(switch_labels.size()));
+                for (auto it : switch_labels)
                 {
                     write_label(it);
                 }
@@ -946,9 +946,9 @@ namespace propane
         self().write_branch(opcode::bnz, label, lhs);
     }
 
-    void generator::method_writer::write_sw(address addr, span<const label_idx> labels)
+    void generator::method_writer::write_sw(address addr, span<const label_idx> switch_labels)
     {
-        self().write_sw(addr, labels);
+        self().write_sw(addr, switch_labels);
     }
 
     void generator::method_writer::write_call(method_idx method, span<const address> args)

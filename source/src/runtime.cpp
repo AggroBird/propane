@@ -33,11 +33,11 @@ namespace propane
 
     environment& environment::operator+=(const library& lib)
     {
-        auto& data = self();
+        auto& self_data = self();
         auto& lib_data = lib.self();
 
-        ASSERT(data.libraries.find(lib_data.path) != data.libraries.end(), "Duplicate library entry");
-        data.libraries[lib_data.path] = &lib_data;
+        ASSERT(self_data.libraries.find(lib_data.path) != self_data.libraries.end(), "Duplicate library entry");
+        self_data.libraries[lib_data.path] = &lib_data;
         
         return *this;
     }
@@ -49,14 +49,13 @@ namespace propane
 
     runtime::runtime()
     {
-        auto& data = self();
-
+        auto& self_data = self();
         toolchain_version version = toolchain_version::current();
-        self().hash = fnv::hash(&version, sizeof(toolchain_version));
+        self_data.hash = fnv::hash(&version, sizeof(toolchain_version));
     }
     runtime::runtime(const environment& env) : runtime()
     {
-        auto& data = self();
+        auto& self_data = self();
         auto& env_data = env.self();
 
         index_t lib_idx = 0;
@@ -64,7 +63,7 @@ namespace propane
         {
             auto& lib_data = *pair.second;
 
-            data.hash = fnv::append(data.hash, lib_data.hash);
+            self_data.hash = fnv::append(self_data.hash, lib_data.hash);
             
             library_info add_lib(lib_data.path, lib_data.preload_symbols, lib_data.calls);
 
@@ -72,15 +71,15 @@ namespace propane
             index_t call_idx = 0;
             for (auto& call : add_lib.calls)
             {
-                data.call_lookup.emplace(call.name, runtime_call_index(lib_name, call_idx++));
+                self_data.call_lookup.emplace(call.name, runtime_call_index(lib_name, call_idx++));
             }
             
             for (auto& type : lib_data.types)
             {
-                auto find_type = data.type_lookup.find(type.type);
-                if (find_type == data.type_lookup.end())
+                auto find_type = self_data.type_lookup.find(type.type);
+                if (find_type == self_data.type_lookup.end())
                 {
-                    data.type_lookup.emplace(type.type, type);
+                    self_data.type_lookup.emplace(type.type, type);
                 }
                 else
                 {
@@ -88,7 +87,7 @@ namespace propane
                 }
             }
 
-            data.libraries.push_back(std::move(add_lib));
+            self_data.libraries.push_back(std::move(add_lib));
         }
     }
     runtime::~runtime()

@@ -506,9 +506,9 @@ namespace propane
         {
             if (idx >= number_str.size())
             {
-                const size_t beg = number_str.size();
+                const size_t begin = number_str.size();
                 number_str.resize(idx + 1);
-                for (size_t i = beg; i < number_str.size(); i++)
+                for (size_t i = begin; i < number_str.size(); i++)
                 {
                     number_str[i] = num_conv.convert(i);
                 }
