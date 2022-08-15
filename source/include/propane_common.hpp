@@ -321,6 +321,14 @@ namespace propane
     {
         return std::span<const value_t>(init.begin(), init.size());
     }
+    template<typename value_t> inline std::span<const value_t> init_span(std::initializer_list<const value_t> init) noexcept
+    {
+        return std::span<const value_t>(init.begin(), init.size());
+    }
+    template<typename value_t> inline std::span<const value_t> init_span(value_t& init) noexcept
+    {
+        return std::span<const value_t>(&init, 1);
+    }
     template<typename value_t> inline std::span<const value_t> init_span(const value_t& init) noexcept
     {
         return std::span<const value_t>(&init, 1);

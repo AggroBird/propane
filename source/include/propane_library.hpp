@@ -81,11 +81,11 @@ namespace propane
         template<> class method_signature_param<>
         {
         public:
-            static inline void generate(parameter* result, size_t& offset) noexcept
+            static inline void generate_signature(parameter* result, size_t& offset) noexcept
             {
 
             }
-            template<size_t idx, typename... tuple_args> static inline void read_value(std::tuple<tuple_args...>& tup, const void*& data) noexcept
+            template<size_t idx, typename... tuple_args> static inline void read_argument(std::tuple<tuple_args...>& tup, const void*& data) noexcept
             {
 
             }
@@ -93,7 +93,7 @@ namespace propane
         template<typename value_t, typename... param_t> class method_signature_param<value_t, param_t...> : public method_signature_param<param_t...>
         {
         public:
-            static inline void generate(parameter* result, size_t& offset) noexcept
+            static inline void generate_signature(parameter* result, size_t& offset) noexcept
             {
                 typedef decay_base_t<value_t> param_type;
                 typedef pointer_info<param_type>::base_type base_type;
@@ -103,12 +103,12 @@ namespace propane
                 constexpr size_t pointer = pointer_info<param_type>::value;
                 *result++ = parameter(type, size, pointer, offset);
                 offset += (pointer == 0) ? size : sizeof(void*);
-                method_signature_param<param_t...>::generate(result, offset);
+                method_signature_param<param_t...>::generate_signature(result, offset);
             }
-            template<size_t idx, typename... tuple_args> static inline void read_value(std::tuple<tuple_args...>& tup, const void*& data) noexcept
+            template<size_t idx, typename... tuple_args> static inline void read_argument(std::tuple<tuple_args...>& tup, const void*& data) noexcept
             {
                 std::get<idx>(tup) = *reinterpret_cast<const value_t*&>(data)++;
-                method_signature_param<param_t...>::template read_value<idx + 1>(tup, data);
+                method_signature_param<param_t...>::template read_argument<idx + 1>(tup, data);
             }
         };
 
@@ -125,11 +125,11 @@ namespace propane
         template<typename retval_t, typename... param_t> class method_invoke
         {
         public:
-            static inline void invoke(void* ret_val, const void* param, retval_t(*call)(param_t...)) noexcept
+            static inline void invoke(void* ret_val, const void* param, retval_t(*call)(param_t...))
             {
                 std::tuple<std::decay_t<param_t>...> tup;
 
-                method_signature_param<param_t...>::template read_value<0>(tup, param);
+                method_signature_param<param_t...>::template read_argument<0>(tup, param);
 
                 *reinterpret_cast<retval_t*>(ret_val) = expand(call, tup);
             }
@@ -137,11 +137,11 @@ namespace propane
         template<typename... param_t> class method_invoke<void, param_t...>
         {
         public:
-            static inline void invoke(void* ret_val, const void* param, void(*call)(param_t...)) noexcept
+            static inline void invoke(void* ret_val, const void* param, void(*call)(param_t...))
             {
                 std::tuple<std::decay_t<param_t>...> tup;
 
-                method_signature_param<param_t...>::template read_value<0>(tup, param);
+                method_signature_param<param_t...>::template read_argument<0>(tup, param);
 
                 expand(call, tup);
             }
@@ -168,10 +168,10 @@ namespace propane
                 bind()
                 {
                     parameters_size = 0;
-                    native::method_signature_param<param_t...>::generate(parameters, parameters_size);
+                    native::method_signature_param<param_t...>::generate_signature(parameters, parameters_size);
                 }
 
-                static void forward_call(void* handle, void* ret_val, const void* param) noexcept
+                static void forward_call(void* handle, void* ret_val, const void* param)
                 {
                     const auto method_ptr = reinterpret_cast<retval_t(*)(param_t...)>(handle);
                     native::method_invoke<retval_t, param_t...>::invoke(ret_val, param, method_ptr);
