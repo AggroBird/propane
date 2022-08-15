@@ -298,14 +298,23 @@ namespace propane
             stack_end(stack_end),
             minf(minf) {}
 
+        // Start of the instructions
         const_pointer_t ibeg = nullptr;
+        // End of the instructions
         const_pointer_t iend = nullptr;
+        // Current instruction
         const_pointer_t iptr = nullptr;
+        // Offset on the previous stack frame where the return value should go
         size_t return_offset = 0;
+        // Offset of the pushed stackframe
         size_t frame_offset = 0;
+        // Offset of the method parameters
         size_t param_offset = 0;
+        // Offset of the method stackvars
         size_t stack_offset = 0;
+        // End of the fixed stack
         size_t stack_end = 0;
+        // Current executing method
         const method* minf = nullptr;
     };
 
