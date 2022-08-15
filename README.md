@@ -55,10 +55,10 @@ Assemblies can be fed into a translator to generate other programming languages 
 
 - [Propane intermediate language specification](LANGUAGE.md)
 - [Toolchain example](example.cpp) C++ example of generating an assembly out of intermediates, and translation to C.
-- [Generator header](include/propane_generator.hpp) Main header required for parsers and compilers.
-- [Runtime header](include/propane_runtime.hpp) Assembly data required for cross compilers and interpreters.
-- [Experimental C translator](src/translator_c.cpp) Experimental implementation of a Propane assembly to C code generator.
-- [Experimental interpreter](src/interpreter.cpp) Experimental implementation of a Propane assembly interpreter.
+- [Generator header](source/include/propane_generator.hpp) Main header required for parsers and compilers.
+- [Runtime header](source/include/propane_runtime.hpp) Assembly data required for cross compilers and interpreters.
+- [Experimental C translator](source/src/translator_c.cpp) Experimental implementation of a Propane assembly to C code generator.
+- [Experimental interpreter](source/src/interpreter.cpp) Experimental implementation of a Propane assembly interpreter.
 
 ## Current features
 
@@ -88,7 +88,7 @@ Propane has been conceived as a study project. Propane is intended to be used fo
 
 The Propane toolchain requires at least C++17 to build.
 
-The interpreter uses platform specific code to manage protected memory and load dynamic libraries. See the respective source files for implementation details ([Windows](src/host_win.cpp), [Posix](src/host_posix.cpp)).
+The interpreter uses platform specific code to manage protected memory and load dynamic libraries. See the respective source files for implementation details ([Windows](source/src/host_win.cpp), [Posix](source/src/host_posix.cpp)).
 
 ## License
 
