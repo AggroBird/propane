@@ -52,24 +52,6 @@ namespace propane
         return *reinterpret_cast<const const_pointer_t*>(addr);
     }
 
-    // Derivatives
-    template<typename value_t> constexpr type_idx derive_type_index_v = type_idx::invalid;
-    template<> constexpr type_idx derive_type_index_v<i8> = type_idx::i8;
-    template<> constexpr type_idx derive_type_index_v<u8> = type_idx::u8;
-    template<> constexpr type_idx derive_type_index_v<i16> = type_idx::i16;
-    template<> constexpr type_idx derive_type_index_v<u16> = type_idx::u16;
-    template<> constexpr type_idx derive_type_index_v<i32> = type_idx::i32;
-    template<> constexpr type_idx derive_type_index_v<u32> = type_idx::u32;
-    template<> constexpr type_idx derive_type_index_v<i64> = type_idx::i64;
-    template<> constexpr type_idx derive_type_index_v<u64> = type_idx::u64;
-    template<> constexpr type_idx derive_type_index_v<f32> = type_idx::f32;
-    template<> constexpr type_idx derive_type_index_v<f64> = type_idx::f64;
-    template<> constexpr type_idx derive_type_index_v<vptr> = type_idx::vptr;
-    template<> constexpr type_idx derive_type_index_v<void> = type_idx::voidtype;
-
-    template<typename value_t> constexpr size_t derive_base_size_v = sizeof(value_t);
-    template<> constexpr size_t derive_base_size_v<void> = 0;
-
     struct base_type_info
     {
         constexpr base_type_info(const char* name, type_idx type, size_t size) :

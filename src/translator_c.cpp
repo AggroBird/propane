@@ -693,7 +693,7 @@ namespace propane
 
             const type_idx ret_type = write_return_value(signature.return_type);
 
-            if (method_ptr.addr.starts_with('*'))
+            if (method_ptr.addr[0] == '*')
             {
                 instruction.write("(", method_ptr.addr, ")");
             }

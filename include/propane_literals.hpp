@@ -71,8 +71,7 @@ namespace propane
 
     // Parse the largest number readable (ulong), and then apply integer type and negate if provided
     // Cast the result to the specified type
-    template<typename value_t> concept literal_int = std::is_integral_v<value_t> || std::is_enum_v<value_t>;
-    template<literal_int value_t> parse_result<value_t> parse_int_literal_cast(const char*& beg, const char* end)
+    template<typename value_t> parse_result<value_t> parse_int_literal_cast(const char*& beg, const char* end)
     {
         parse_result<value_t> result;
         if (auto literal = parse_int_literal(beg, end))
@@ -94,7 +93,7 @@ namespace propane
         }
         return result;
     }
-    template<literal_int value_t> parse_result<value_t> parse_int_literal_cast(std::string_view str)
+    template<typename value_t> parse_result<value_t> parse_int_literal_cast(std::string_view str)
     {
         const char* beg = str.data();
         const char* end = beg + str.size();

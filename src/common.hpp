@@ -3,12 +3,11 @@
 
 #include "propane_common.hpp"
 
-#include <string>
+using std::span;
 using std::string;
-#include <string_view>
 using std::string_view;
-#include <initializer_list>
 using std::initializer_list;
+
 #include <vector>
 using std::vector;
 #include <set>
@@ -25,11 +24,8 @@ using std::tuple;
 using std::ifstream;
 #include <sstream>
 using std::stringstream;
-#include <span>
-using std::span;
 
 #include <iostream>
-#include <type_traits>
 #include <utility>
 #include <cstring>
 

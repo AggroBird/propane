@@ -88,7 +88,7 @@ Propane has been conceived as a study project. Propane is intended to be used fo
 
 ## Dependencies
 
-The Propane toolchain requires C++20 to build.
+The Propane toolchain requires at least C++17 to build.
 
 The interpreter uses platform specific code to manage protected memory and load dynamic libraries. See the respective source files for implementation details ([Windows](src/host_win.cpp), [Posix](src/host_posix.cpp)).
 

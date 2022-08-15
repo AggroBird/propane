@@ -2,8 +2,8 @@
 #define _HEADER_PROPANE_COMMON
 
 #include "propane_version.hpp"
+#include "propane_span.hpp"
 
-#include <span>
 #include <string>
 #include <string_view>
 #include <initializer_list>
@@ -42,6 +42,24 @@ namespace propane
 
         invalid = invalid_index,
     };
+
+    // Derivatives
+    template<typename value_t> constexpr type_idx derive_type_index_v = type_idx::invalid;
+    template<> constexpr type_idx derive_type_index_v<int8_t> = type_idx::i8;
+    template<> constexpr type_idx derive_type_index_v<uint8_t> = type_idx::u8;
+    template<> constexpr type_idx derive_type_index_v<int16_t> = type_idx::i16;
+    template<> constexpr type_idx derive_type_index_v<uint16_t> = type_idx::u16;
+    template<> constexpr type_idx derive_type_index_v<int32_t> = type_idx::i32;
+    template<> constexpr type_idx derive_type_index_v<uint32_t> = type_idx::u32;
+    template<> constexpr type_idx derive_type_index_v<int64_t> = type_idx::i64;
+    template<> constexpr type_idx derive_type_index_v<uint64_t> = type_idx::u64;
+    template<> constexpr type_idx derive_type_index_v<float> = type_idx::f32;
+    template<> constexpr type_idx derive_type_index_v<double> = type_idx::f64;
+    template<> constexpr type_idx derive_type_index_v<void*> = type_idx::vptr;
+    template<> constexpr type_idx derive_type_index_v<void> = type_idx::voidtype;
+
+    template<typename value_t> constexpr size_t derive_base_size_v = sizeof(value_t);
+    template<> constexpr size_t derive_base_size_v<void> = 0;
 
     constexpr bool is_integral(type_idx type) noexcept
     {

@@ -24,8 +24,7 @@ namespace propane
     // so they can be used as parameters in native library calls.
     // Since the runtime has no notion of padding, extra caution needs to be taken to ensure
     // the structs are properly packed have the same layout in both runtime and native environments.
-    template<typename value_t> concept standard_layout_t = std::is_standard_layout_v<value_t> || std::is_same_v<value_t, void>;
-    template<standard_layout_t value_t> constexpr std::string_view native_type_name_v = std::string_view();
+    template<typename value_t> constexpr std::string_view native_type_name_v = std::string_view();
     template<> constexpr std::string_view native_type_name_v<int8_t> = "byte";
     template<> constexpr std::string_view native_type_name_v<uint8_t> = "ubyte";
     template<> constexpr std::string_view native_type_name_v<int16_t> = "short";
