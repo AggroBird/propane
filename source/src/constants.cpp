@@ -12,6 +12,7 @@ namespace propane
         constexpr uint16_t major = PROPANE_VERSION_MAJOR;
         constexpr uint16_t minor = PROPANE_VERSION_MINOR;
         constexpr uint32_t changelist = PROPANE_VERSION_CHANGELIST;
+        constexpr uint32_t changelist_min = PROPANE_VERSION_CHANGELIST_MIN;
     }
 
     constexpr uint64_t major_bytecount = 2;
@@ -141,9 +142,7 @@ namespace propane
         return
             major() == version::major &&
             minor() == version::minor &&
-            // By default a different changelist does not invalidate previous binaries.
-            // Uncomment this to include changelist into the compatibility check:
-            //changelist() == version::changelist &&
+            changelist() >= version::changelist_min &&
             endianness() == get_endianness() &&
             architecture() == get_architecture();
     }
