@@ -239,6 +239,8 @@ namespace propane
             UNEXPECTED_EOF(current_scope == definition_type::none);
             UNTERMINATED_COMMENT(comment != comment_type::multi);
 
+            tokens.push_back(token(token_type::eof, "EOF", line_num));
+
             if (tokens.size() > 0) evaluate();
         }
 
@@ -254,8 +256,6 @@ namespace propane
 
         void evaluate()
         {
-            tokens.push_back(token(token_type::eof, "EOF", line_num));
-
             const token* ptr = tokens.data();
             const token* const end = ptr + (tokens.size() - 1);
             while (ptr < end)
