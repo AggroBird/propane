@@ -162,7 +162,7 @@ namespace propane
             }
         }
 
-        inline operator int32_t() const
+        inline operator int32_t() const noexcept
         {
             return return_code;
         }
