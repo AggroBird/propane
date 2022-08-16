@@ -188,7 +188,7 @@ namespace propane
                             for (; ptr < end;)
                             {
                                 const char n = *ptr;
-                                if (!((n >= 'a' && n <= 'z') || (n >= 'A' && n <= 'Z') || n == '.' || n == '-'))
+                                if (!((n >= '0' && n <= '9') || (n >= 'a' && n <= 'z') || (n >= 'A' && n <= 'Z') || n == '.' || n == '-'))
                                 {
                                     const auto len = ptr - beg;
                                     if (len > 0)
