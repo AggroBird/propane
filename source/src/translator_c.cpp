@@ -179,7 +179,7 @@ namespace propane
             if (meta.is_resolved) return meta;
             meta.is_resolved = true;
 
-            const auto& underlying_type = type.is_array() ? resolve_type(type.generated.array.underlying_type) : meta;
+            const auto& underlying_type = type.is_array() ? resolve_type(type.generated.array.underlying_type) : type.is_pointer() ? resolve_type(type.generated.pointer.underlying_type) : meta; resolve_type(type.generated.array.underlying_type);
 
             if (meta.declaration.empty())
             {
@@ -1085,7 +1085,30 @@ namespace propane
                 case type_idx::u32: buf.write(num_conv.convert(*reinterpret_cast<const u32*>(ptr))); break;
                 case type_idx::i64: buf.write(num_conv.convert(*reinterpret_cast<const i64*>(ptr))); break;
                 case type_idx::u64: buf.write(num_conv.convert(*reinterpret_cast<const u64*>(ptr))); break;
-                case type_idx::f32: buf.write(num_conv.convert(*reinterpret_cast<const f32*>(ptr)), "f"); break;
+                case type_idx::f32: 
+                {
+                    const string& f32str = num_conv.convert(*reinterpret_cast<const f32*>(ptr));
+                    bool contains_exp = false;
+                    bool contains_period = false;
+                    for (size_t i = 0; i < f32str.size(); i++)
+                    {
+                        const char c = f32str[i];
+                        switch (c)
+                        {
+                            case 'e':
+                                contains_exp = true;
+                                break;
+                            case '.':
+                                contains_period = true;
+                                break;
+                        }
+                    }
+                    if (contains_exp || contains_period)
+                        buf.write(f32str, "f");
+                    else
+                        buf.write(f32str, ".0f");
+                }
+                break;
                 case type_idx::f64: buf.write(num_conv.convert(*reinterpret_cast<const f64*>(ptr))); break;
                 case type_idx::vptr: write_hex(buf, *reinterpret_cast<const size_t*>(ptr)); break;
                 default: ASSERT(false, "Unknown constant type");
