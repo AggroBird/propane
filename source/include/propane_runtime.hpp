@@ -213,8 +213,10 @@ namespace propane
         static_block<aligned_size_t> labels;
         // Stack variables
         static_block<stackvar> stackvars;
-        // Total stack variable size
-        aligned_size_t stack_size;
+        // Total size in bytes of the method stack (parameters + variables)
+        aligned_size_t method_stack_size;
+        // Total size in bytes of the method stack (method_stack_size + extra space for return values)
+        aligned_size_t total_stack_size;
         // Metadata
         metadata meta;
 

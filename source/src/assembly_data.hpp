@@ -130,7 +130,7 @@ namespace propane
 
     SERIALIZABLE_PAIR(asm_type, type, name, index, flags, generated, fields, total_size, pointer_type, meta);
     SERIALIZABLE_PAIR(asm_signature, signature, index, return_type, parameters, parameters_size);
-    SERIALIZABLE_PAIR(asm_method, method, name, index, flags, signature, bytecode, labels, stackvars, stack_size, meta);
+    SERIALIZABLE_PAIR(asm_method, method, name, index, flags, signature, bytecode, labels, stackvars, method_stack_size, total_stack_size, meta);
     SERIALIZABLE_PAIR(asm_field_address, field_address, object_type, field_names);
     SERIALIZABLE_PAIR(asm_field_offset, field_offset, name, type, offset);
     SERIALIZABLE_PAIR(asm_data_table, data_table, info, data);

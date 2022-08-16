@@ -275,7 +275,8 @@ namespace propane
         vector<uint8_t> bytecode;
         vector<size_t> labels;
         vector<stackvar> stackvars;
-        size_t stack_size = 0;
+        size_t method_stack_size = 0;
+        size_t total_stack_size = 0;
 
         inline bool is_defined() const noexcept
         {

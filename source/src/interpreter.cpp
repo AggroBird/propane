@@ -142,6 +142,10 @@ namespace propane
                 libraries.push_back(std::move(lib));
             }
 
+            // Push space for the return value
+            constexpr size_t int_size = get_base_type_size(type_idx::i32);
+            stack_size = int_size;
+
             // Push return type and stack frame
             push_stack_frame(main, get_signature(main.signature));
 
@@ -149,7 +153,7 @@ namespace propane
             execute();
 
             // Fetch return code
-            ASSERT(stack_size >= get_base_type_size(type_idx::i32), "Invalid stack size: %", stack_size);
+            ASSERT(stack_size >= int_size, "Invalid stack size: %", stack_size);
             ASSERT(callstack_depth == 0, "Invalid callstack depth: %", callstack_depth);
             return_code = *reinterpret_cast<const int32_t*>(stack_data);
         }
@@ -2091,14 +2095,6 @@ namespace propane
             return method_handle < data.methods.size();
         }
 
-        // Runtime stack
-        inline void push_stack_bytes(size_t num)
-        {
-            const size_t target_size = stack_size + num;
-            VALIDATE_STACK_OVERFLOW(target_size <= stack_capacity, target_size, stack_capacity);
-            stack_size += num;
-        }
-
         size_t stack_size = 0;
         size_t stack_capacity = 0;
         pointer_t stack_data = nullptr;
@@ -2255,64 +2251,59 @@ namespace propane
             const signature& signature = get_signature(method.signature);
             ASSERT(signature.index == calling_signature.index, "Call signature mismatch");
 
-            // Push return value (if any)
-            const size_t current_return_value_size = stack_size - sf.stack_end;
-            const auto return_offset = sf.stack_end;
-            const auto& return_type = get_type(calling_signature.return_type);
-            const bool return_value = calling_signature.has_return_value();
-            if (return_value && return_type.total_size > current_return_value_size)
-            {
-                push_stack_bytes(return_type.total_size - current_return_value_size);
-            }
+            const size_t frame_offset = stack_size;
+            const size_t return_offset = sf.stack_end;
 
-            // Push stack frame
-            const bool is_external = method.is_external();
-            const auto frame_offset = stack_size;
-            if (!is_external)
-            {
-                push_stack_bytes(sizeof(stack_frame_t));
-            }
-
-            // Push parameters
-            const auto param_offset = stack_size;
-            push_stack_bytes(calling_signature.parameters_size);
-            // Push parameter values
-            pointer_t param_ptr = stack_data + param_offset;
-            for (auto& p : calling_signature.parameters)
-            {
-                const subcode sub = read_subcode();
-                const_address_t arg_addr = read_address(true);
-                address_t param_addr = address_t(&get_type(p.type), param_ptr + p.offset);
-                set(sub, param_addr, arg_addr);
-            }
-
-            if (!is_external)
+            if (!method.is_external())
             {
                 callstack_depth++;
                 VALIDATE_CALLSTACK_LIMIT(callstack_depth <= parameters.max_callstack_depth, parameters.max_callstack_depth);
 
-                // Push stack
-                const auto stack_offset = stack_size;
-                push_stack_bytes(method.stack_size);
+                const size_t param_offset = frame_offset + sizeof(stack_frame_t);
+                pointer_t param_ptr = stack_data + param_offset;
+                const size_t stack_offset = param_offset + calling_signature.parameters_size;
+
+                // Push method stack size
+                const size_t stack_end = stack_size + method.method_stack_size + sizeof(stack_frame_t);
+                const size_t new_stack_size = stack_size + method.total_stack_size + sizeof(stack_frame_t);
+                VALIDATE_STACK_OVERFLOW(new_stack_size <= stack_capacity, new_stack_size, stack_capacity);
+                stack_size = new_stack_size;
 
                 // Write stack frame
                 *reinterpret_cast<stack_frame_t*>(stack_data + frame_offset) = sf;
 
+                // Write parameters
+                const size_t parameter_count = calling_signature.parameters.size();
+                const size_t arg_count = sf.iptr ? size_t(read_bytecode<uint8_t>(sf.iptr)) : 0;
+                ASSERT(arg_count == parameter_count, "Invalid argument count");
+                if (parameter_count > 0)
+                {
+                    pointer_t param_ptr = stack_data + param_offset;
+                    for (size_t i = 0; i < parameter_count; i++)
+                    {
+                        const stackvar& parameter = calling_signature.parameters[i];
+                        const subcode sub = read_subcode();
+                        const_address_t arg_addr = read_address(true);
+                        address_t param_addr = address_t(&get_type(parameter.type), param_ptr + parameter.offset);
+                        set(sub, param_addr, arg_addr);
+                    }
+                }
+
                 // Call
                 const_pointer_t ibeg = method.bytecode.data();
                 const_pointer_t iend = ibeg + method.bytecode.size();
-                sf = stack_frame_t(ibeg, iend, ibeg, return_offset, frame_offset, param_offset, stack_offset, stack_size, &method);
+                sf = stack_frame_t(ibeg, iend, ibeg, return_offset, frame_offset, param_offset, stack_offset, stack_end, &method);
                 current_method = &method;
                 current_signature = &signature;
 
                 // Clear return value after a call
-                return_value_addr = address_t();
+                clear_return_value();
             }
             else
             {
                 ASSERT(method.bytecode.size() == sizeof(runtime_call_index), "Invalid external index");
                 const runtime_call_index cidx = *reinterpret_cast<const runtime_call_index*>(method.bytecode.data());
-
+                
                 // Ensure method handle
                 ASSERT(libraries.is_valid_index(cidx.library), "Invalid library index");
                 auto& lib = libraries[cidx.library];
@@ -2329,23 +2320,45 @@ namespace propane
                     ASSERT(call.handle, "Failed to find function");
                 }
 
+                // Push method stack size (parameters only for external methods)
+                const size_t param_offset = stack_size;
+                pointer_t param_ptr = stack_data + param_offset;
+                if (method.total_stack_size > 0)
+                {
+                    const size_t new_stack_size = stack_size + method.total_stack_size;
+                    VALIDATE_STACK_OVERFLOW(new_stack_size <= stack_capacity, new_stack_size, stack_capacity);
+                    stack_size = new_stack_size;
+                }
+
+                // Write parameters
+                const size_t parameter_count = calling_signature.parameters.size();
+                const size_t arg_count = sf.iptr ? size_t(read_bytecode<uint8_t>(sf.iptr)) : 0;
+                ASSERT(arg_count == parameter_count, "Invalid argument count");
+                if (parameter_count > 0)
+                {
+                    for (size_t i = 0; i < parameter_count; i++)
+                    {
+                        const stackvar& parameter = calling_signature.parameters[i];
+                        const subcode sub = read_subcode();
+                        const_address_t arg_addr = read_address(true);
+                        address_t param_addr = address_t(&get_type(parameter.type), param_ptr + parameter.offset);
+                        set(sub, param_addr, arg_addr);
+                    }
+                }
+
                 // Invoke external
                 call.forward(call.handle, stack_data + return_offset, stack_data + param_offset);
 
                 // Set return value here since we return immediately
-                return_value_addr = return_value ? address_t(&return_type, stack_data + return_offset) : address_t();
-
+                const type_idx return_type_idx = calling_signature.return_type;
+                return_value_addr = return_type_idx != type_idx::voidtype ? address_t(&get_type(return_type_idx), stack_data + return_offset) : address_t();
+                
                 // Pop stackframe
                 stack_size = frame_offset;
             }
         }
         void pop_stack_frame()
         {
-            // Restore the calling signature's return type (of the calling signature)
-            //return_value_addr.type = &get_type(sf.csig->return_type);
-            //return_value_addr.addr = stack_data + sf.return_offset;
-            //stack_size = sf.return_offset + return_value_addr.type->size;
-
             // Restore stackframe
             sf = *reinterpret_cast<stack_frame_t*>(stack_data + sf.frame_offset);
             if (sf.iptr != nullptr)
@@ -2366,23 +2379,13 @@ namespace propane
         // Return value
         address_t return_value_addr;
 
-        address_t push_return_value(const type& type)
+        inline address_t push_return_value(const type& type) noexcept
         {
-            if (type.index == type_idx::voidtype)
-            {
-                clear_return_value();
-            }
-            else
-            {
-                stack_size = sf.stack_end;
-                push_stack_bytes(type.total_size);
-                return_value_addr = address_t(&type, stack_data + sf.stack_end);
-            }
+            return_value_addr = address_t(&type, stack_data + sf.stack_end);
             return return_value_addr;
         }
-        void clear_return_value()
+        inline void clear_return_value() noexcept
         {
-            stack_size = sf.stack_end;
             return_value_addr = address_t();
         }
 

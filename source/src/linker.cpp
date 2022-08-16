@@ -347,18 +347,24 @@ namespace propane
             }
 
             // Stack variables
-            method.stack_size = 0;
-            for (auto& sv : method.stackvars)
+            asm_signature& method_signature = signatures[method.signature];
             {
-                sv.offset = method.stack_size;
-                method.stack_size += types[sv.type].total_size;
+                method.method_stack_size = method_signature.parameters_size;
+                size_t variable_stack_size = 0;
+                for (auto& sv : method.stackvars)
+                {
+                    sv.offset = variable_stack_size;
+                    variable_stack_size += types[sv.type].total_size;
+                }
+                method.method_stack_size += variable_stack_size;
             }
 
             // Recompile
+            max_return_value_size = 0;
             if (!method.is_external())
             {
                 current_method = &method;
-                current_signature = &signatures[method.signature];
+                current_signature = &method_signature;
                 return_value = type_idx::voidtype;
 
                 if (!method.bytecode.empty())
@@ -381,7 +387,7 @@ namespace propane
                             // Ensure labels are at the correct location
                             ASSERT(offset == labels[label_idx], "Invalid label offset");
                             label_idx++;
-                            return_value = type_idx::voidtype;
+                            clear_return_value();
                         }
 
                         if (iptr == iend)
@@ -469,7 +475,7 @@ namespace propane
                                 const type_idx rhs = resolve_operand(lhs);
                                 resolve_pdif(lhs, rhs);
                                 // Pointer dif return value
-                                return_value = offset_type;
+                                set_return_value(offset_type);
                             }
                             break;
 
@@ -486,7 +492,7 @@ namespace propane
                                 const type_idx rhs = resolve_operand(lhs);
                                 sub = resolve_cmp(current_op, lhs, rhs);
                                 // Comparison return value
-                                return_value = type_idx::i32;
+                                set_return_value(type_idx::i32);
                             }
                             break;
 
@@ -497,7 +503,7 @@ namespace propane
                                 const type_idx lhs = resolve_operand();
                                 sub = resolve_cmp(current_op, lhs, lhs);
                                 // Comparison return value
-                                return_value = type_idx::i32;
+                                set_return_value(type_idx::i32);
                             }
                             break;
 
@@ -505,7 +511,7 @@ namespace propane
                             {
                                 const size_t jump = read_bytecode<size_t>(iptr);
                                 // Reset return value after branch
-                                return_value = type_idx::voidtype;
+                                clear_return_value();
                             }
                             break;
 
@@ -522,7 +528,7 @@ namespace propane
                                 const type_idx rhs = resolve_operand(lhs);
                                 sub = resolve_cmp(current_op - (opcode::br - opcode::cmp), lhs, rhs);
                                 // Reset return value after branch
-                                return_value = type_idx::voidtype;
+                                clear_return_value();
                             }
                             break;
 
@@ -534,7 +540,7 @@ namespace propane
                                 const type_idx lhs = resolve_operand();
                                 sub = resolve_cmp(current_op - (opcode::br - opcode::cmp), lhs, lhs);
                                 // Reset return value after branch
-                                return_value = type_idx::voidtype;
+                                clear_return_value();
                             }
                             break;
 
@@ -545,7 +551,7 @@ namespace propane
                                 const uint32_t label_count = read_bytecode<uint32_t>(iptr);
                                 iptr += sizeof(size_t) * label_count;
                                 // Reset return value after branch
-                                return_value = type_idx::voidtype;
+                                clear_return_value();
                             }
                             break;
 
@@ -566,7 +572,7 @@ namespace propane
                                     sub = resolve_set(signature.parameters[i].type, arg_type);
                                 }
                                 // Set return value to method return type
-                                return_value = signature.return_type;
+                                set_return_value(signature.return_type);
                             }
                             break;
 
@@ -584,7 +590,7 @@ namespace propane
                                     sub = resolve_set(signature.parameters[i].type, arg_type);
                                 }
                                 // Set return value to method return type
-                                return_value = signature.return_type;
+                                set_return_value(signature.return_type);
                             }
                             break;
 
@@ -621,6 +627,7 @@ namespace propane
                     append_bytecode(current_method->bytecode, opcode::ret);
                 }
             }
+            method.total_stack_size = method.method_stack_size + max_return_value_size;
 
             // Clear lookup
             method.calls.clear();
@@ -1204,7 +1211,18 @@ namespace propane
 
         asm_method* current_method = nullptr;
         asm_signature* current_signature = nullptr;
+        inline void set_return_value(type_idx type)
+        {
+            const size_t size = data.types[type].total_size;
+            if (size > max_return_value_size) max_return_value_size = size;
+            return_value = type;
+        }
+        inline void clear_return_value()
+        {
+            return_value = type_idx::voidtype;
+        }
         type_idx return_value = type_idx::invalid;
+        size_t max_return_value_size = 0;
         pointer_t iptr = nullptr;
         size_t iidx = 0;
         opcode current_op = opcode::noop;

@@ -83,7 +83,7 @@ namespace propane
 
     SERIALIZABLE_PAIR(gen_type, im_type, name, index, flags, generated, fields, total_size, pointer_type, meta);
     SERIALIZABLE_PAIR(gen_signature, im_signature, index, return_type, parameters, parameters_size);
-    SERIALIZABLE_PAIR(gen_method, im_method, name, index, flags, signature, bytecode, labels, stackvars, stack_size, calls, globals, offsets, meta);
+    SERIALIZABLE_PAIR(gen_method, im_method, name, index, flags, signature, bytecode, labels, stackvars, method_stack_size, total_stack_size, calls, globals, offsets, meta);
     SERIALIZABLE_PAIR(gen_field_address, im_field_address, object_type, field_names);
     SERIALIZABLE_PAIR(gen_field_offset, im_field_offset, name, type, offset);
     SERIALIZABLE_PAIR(gen_data_table, im_data_table, info, data);

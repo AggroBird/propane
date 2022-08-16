@@ -312,7 +312,7 @@ namespace propane
         size_t param_offset = 0;
         // Offset of the method stackvars
         size_t stack_offset = 0;
-        // End of the fixed stack
+        // End of the method stack (excluding return values)
         size_t stack_end = 0;
         // Current executing method
         const method* minf = nullptr;
