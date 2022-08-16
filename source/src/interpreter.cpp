@@ -2277,7 +2277,6 @@ namespace propane
             const auto param_offset = stack_size;
             push_stack_bytes(calling_signature.parameters_size);
             // Push parameter values
-            const size_t arg_count = sf.iptr ? size_t(read_bytecode<uint8_t>(sf.iptr)) : 0;
             pointer_t param_ptr = stack_data + param_offset;
             for (auto& p : calling_signature.parameters)
             {
