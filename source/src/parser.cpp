@@ -94,7 +94,7 @@ namespace propane
                 ifstream file(file_path, std::ios::binary);
                 VALIDATE_FILE_OPEN(file.is_open(), file_path);
                 file.seekg(0, file.end);
-                const std::streamsize file_size = file.tellg();
+                const size_t file_size = size_t(file.tellg());
                 file.seekg(0, file.beg);
                 // Add one extra newline
                 file_text = block<char>(size_t(file_size) + 1);

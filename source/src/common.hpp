@@ -338,7 +338,7 @@ namespace propane
             num_converter << val;
             num_buffer.resize(buffer_size);
             num_converter.get(num_buffer.data(), std::streamsize(buffer_size));
-            num_buffer.resize(num_converter.gcount());
+            num_buffer.resize(size_t(num_converter.gcount()));
             num_converter.seekg(0, num_converter.beg);
             return num_buffer;
         }
