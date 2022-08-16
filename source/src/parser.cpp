@@ -343,6 +343,17 @@ namespace propane
                             case token_type::op_dump: write_dump(ptr); continue;
 
                             case token_type::kw_end: end_method(); continue;
+
+                            case token_type::identifier: 
+                            {
+                                if (ptr->type == token_type::colon)
+                                {
+                                    write_label(t.str);
+                                    ptr++;
+                                    continue;
+                                }
+                            }
+                            break;
                         }
                     }
                     break;
