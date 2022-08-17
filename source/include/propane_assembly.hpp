@@ -22,7 +22,10 @@ namespace propane
         bool is_valid() const noexcept;
         operator bool() const noexcept;
 
+        // Version of the toolchain this assembly was compiled with
         toolchain_version version() const noexcept;
+        // Returns true if this assembly is compatible with the
+        // version of the current executing toolchain
         bool is_compatible() const noexcept;
 
         // Direct reference to assembly data
@@ -32,6 +35,7 @@ namespace propane
         // All data (including validation header/footer)
         std::span<const uint8_t> data() const noexcept;
 
+        // Load assembly from binary
         bool load(std::span<const uint8_t> from_bytes);
 
     private:
