@@ -342,7 +342,7 @@ namespace propane
 
     // Environment object.
     // Contains a list of libraries with external function calls which can be invoked at runtime.
-    class environment : public handle<class environment_data, sizeof(size_t) * 30>
+    class environment : public handle<class environment_data, sizeof(size_t) * 8>
     {
     public:
         environment(std::span<const class library> libs = std::span<const class library>());
@@ -357,7 +357,7 @@ namespace propane
 
     // Runtime object.
     // When executing an assembly, make sure the assembly was linked with the same environment.
-    class runtime : public handle<class runtime_data, sizeof(size_t) * 44>
+    class runtime : public handle<class runtime_data, sizeof(size_t) * 32>
     {
     public:
         runtime();

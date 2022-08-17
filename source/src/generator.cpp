@@ -170,6 +170,7 @@ namespace propane
             }
         }
     };
+    constexpr size_t generator_impl_handle_size = approximate_handle_size(sizeof(generator_impl));
 
 
     class type_writer_impl final : public gen_type
@@ -185,6 +186,7 @@ namespace propane
             return gen.get_meta();
         }
     };
+    constexpr size_t type_writer_impl_handle_size = approximate_handle_size(sizeof(type_writer_impl));
 
     class method_writer_impl final : public gen_method
     {
@@ -603,6 +605,7 @@ namespace propane
             return gen.get_meta();
         }
     };
+    constexpr size_t method_writer_impl_handle_size = approximate_handle_size(sizeof(method_writer_impl));
 
 
     // Types

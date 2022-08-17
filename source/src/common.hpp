@@ -347,6 +347,11 @@ namespace propane
         stringstream num_converter;
         string num_buffer;
     };
+
+    static constexpr size_t approximate_handle_size(size_t class_size)
+    {
+        return (size_t)(class_size / sizeof(size_t));
+    }
 }
 
 #endif

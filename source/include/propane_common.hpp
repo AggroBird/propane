@@ -328,23 +328,43 @@ namespace propane
 
     template<typename value_t, size_t size> class handle
     {
-    public:
-        static constexpr size_t buffer_size = size;
+        handle(const handle&) = delete;
+        handle& operator=(const handle&) = delete;
 
+        /*
+            *** Experimental stack value pimpl ***
+            
+            All of propane's front-end headers hide the implementation.
+            Normal Pimpl patterns allocate the implementation on the heap and store a pointer in the
+            front-end class. This means that everytime the implementation is accessed, the pointer
+            has to be dereferenced.
+            
+            This (experimental) pattern adds a block of bytes to the front-end class big enough to
+            fit the implementation class. The implementation class is constructed in-place using
+            emplacement new, and destructed at the end of the front-end class lifetime.
+            
+            The risk is that depending on platform and architecture, the implementation class sizes may
+            vary greatly. Buffer sizes need to be big enough to fit most cases, but this adds additional
+            (potentially unused) space to the front-end class. It also may cause issues when compiling
+            across different ABI's. Generally, propane is included into projects by source and compiled
+            along with the software, this should not be a problem.
+            
+            Setting the following define to 0 disables this feature and replaces it a regular new-allocated pimpl:
+        */
+#define USE_STACK_VALUE_PIMPL 1
+
+#if USE_STACK_VALUE_PIMPL
     protected:
         template<typename... args> handle(args&... arg)
         {
             static_assert(sizeof(value_t) <= size, "Value type size greater than buffer size");
-            *new (reinterpret_cast<value_t*>(data.bytes)) value_t(arg...);
+            new (reinterpret_cast<value_t*>(data.bytes)) value_t(arg...);
         }
         ~handle()
         {
             reinterpret_cast<value_t*>(data.bytes)->~value_t();
             std::memset(data.bytes, 0, size);
         }
-
-        handle(const handle&) = delete;
-        handle& operator=(const handle&) = delete;
 
         inline value_t& self() noexcept
         {
@@ -356,10 +376,31 @@ namespace propane
         }
 
     private:
-        struct
+        struct { uint8_t bytes[size]; } data;
+#else
+    protected:
+        template<typename... args> handle(args&... arg)
         {
-            uint8_t bytes[size];
-        } data;
+            handle_ptr = new value_t(arg...);
+        }
+        ~handle()
+        {
+            delete handle_ptr;
+            handle_ptr = nullptr;
+        }
+
+        inline value_t& self() noexcept
+        {
+            return *handle_ptr;
+        }
+        inline const value_t& self() const noexcept
+        {
+            return *handle_ptr;
+        }
+
+    private:
+        value_t* handle_ptr;
+#endif
     };
 
     // Span utility

@@ -194,7 +194,7 @@ namespace propane
         generator(const generator&) = delete;
         generator& operator=(const generator&) = delete;
 
-        class type_writer final : public handle<class type_writer_impl, sizeof(size_t) * 32>
+        class type_writer final : public handle<class type_writer_impl, sizeof(size_t) * 20>
         {
         public:
             type_writer(const type_writer&) = delete;

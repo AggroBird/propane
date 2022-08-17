@@ -268,6 +268,7 @@ namespace propane
 
         map<string, const library_data*> libraries;
     };
+    constexpr size_t environment_data_handle_size = approximate_handle_size(sizeof(environment_data));
 
     // Runtime data
     class runtime_data
@@ -280,6 +281,7 @@ namespace propane
         unordered_map<string_view, native_type_info> type_lookup;
         size_t hash = 0;
     };
+    constexpr size_t runtime_data_handle_size = approximate_handle_size(sizeof(runtime_data));
 }
 
 #endif

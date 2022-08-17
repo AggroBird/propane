@@ -42,6 +42,7 @@ namespace propane
         block<native_type_info> types;
         size_t hash = 0;
     };
+    constexpr size_t library_data_handle_size = approximate_handle_size(sizeof(library_data));
 
     class host_library final
     {
