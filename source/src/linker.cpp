@@ -381,7 +381,7 @@ namespace propane
                     {
                         ASSERT(iptr >= ibeg && iptr <= iend, "Instruction pointer out of range");
 
-                        const size_t offset = static_cast<size_t>(iptr - ibeg);
+                        const index_t offset = static_cast<index_t>(iptr - ibeg);
                         while (label_idx < labels.size() && offset >= labels[label_idx])
                         {
                             // Ensure labels are at the correct location
@@ -1224,11 +1224,11 @@ namespace propane
         type_idx return_value = type_idx::invalid;
         size_t max_return_value_size = 0;
         pointer_t iptr = nullptr;
-        size_t iidx = 0;
+        index_t iidx = 0;
         opcode current_op = opcode::noop;
 
-        vector<size_t> labels;
-        size_t label_idx = 0;
+        vector<index_t> labels;
+        index_t label_idx = 0;
 
         string generated_name_buffers[2];
         size_t generated_name_index = 0;

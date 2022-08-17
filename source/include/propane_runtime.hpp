@@ -210,7 +210,7 @@ namespace propane
         // Actual instruction bytecode
         static_block<uint8_t> bytecode;
         // Label locations (byte offset relative to start of bytecode)
-        static_block<aligned_size_t> labels;
+        static_block<index_t> labels;
         // Stack variables
         static_block<stackvar> stackvars;
         // Total size in bytes of the method stack (parameters + variables)

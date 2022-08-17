@@ -273,7 +273,7 @@ namespace propane
         signature_idx signature = signature_idx::invalid;
 
         vector<uint8_t> bytecode;
-        vector<size_t> labels;
+        vector<index_t> labels;
         vector<stackvar> stackvars;
         size_t method_stack_size = 0;
         size_t total_stack_size = 0;

@@ -261,7 +261,7 @@ namespace propane
                     ibeg = iptr = bytecode.data();
                     iend = ibeg + bytecode.size();
 
-                    label_idx = m.labels.size();
+                    label_idx = static_cast<index_t>(m.labels.size());
                     label_queue.resize(label_idx);
                     label_indices.clear();
                     for (auto& label : m.labels)
@@ -415,7 +415,7 @@ namespace propane
             bool has_returned = false;
             while (true)
             {
-                const size_t offset = static_cast<size_t>(iptr - ibeg);
+                const index_t offset = static_cast<index_t>(iptr - ibeg);
                 while (!label_queue.empty() && offset >= label_queue.back())
                 {
                     method_body.write("$", get_number_str(label_idx), label_postfix, ":;\n");
@@ -638,14 +638,14 @@ namespace propane
 
         void br()
         {
-            const size_t branch_location = read_bytecode<size_t>(iptr);
+            const index_t branch_location = read_bytecode<index_t>(iptr);
             auto label_index = label_indices.find(branch_location);
 
             instruction.write("goto $", get_number_str(static_cast<size_t>(label_index->second)), label_postfix);
         }
         void br(opcode op)
         {
-            const size_t branch_location = read_bytecode<size_t>(iptr);
+            const index_t branch_location = read_bytecode<index_t>(iptr);
             auto label_index = label_indices.find(branch_location);
 
             instruction.write("if (");
@@ -659,8 +659,8 @@ namespace propane
 
             const uint32_t label_count = read_bytecode<uint32_t>(iptr);
 
-            const size_t* labels = reinterpret_cast<const size_t*>(iptr);
-            iptr += sizeof(size_t) * label_count;
+            const index_t* labels = reinterpret_cast<const index_t*>(iptr);
+            iptr += sizeof(index_t) * label_count;
 
             instruction.write("switch (", idx_addr.addr, ")\n\t{\n");
             for (uint32_t i = 0; i < label_count; i++)
@@ -999,9 +999,9 @@ namespace propane
         // Stack frame
         const method* current_method = nullptr;
         const signature* current_signature = nullptr;
-        vector<size_t> label_queue;
-        unordered_map<size_t, index_t> label_indices;
-        size_t label_idx = 0;
+        vector<index_t> label_queue;
+        unordered_map<index_t, index_t> label_indices;
+        index_t label_idx = 0;
         size_t ret_idx = 0;
         type_idx return_type = type_idx::voidtype;
         const_pointer_t iptr = nullptr;
@@ -1227,7 +1227,7 @@ namespace propane
 
                         ASSERT(return_type != type_idx::voidtype, "Return value address has not been set");
 
-                        buf.write("$", get_number_str(static_cast<size_t>(ret_idx)), retval_postfix);
+                        buf.write("$", get_number_str(ret_idx), retval_postfix);
 
                         result.type_ptr = &get_type(return_type);
                     }

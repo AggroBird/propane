@@ -118,13 +118,13 @@ namespace propane
 
                 // Evaluate bytecode
                 sv_count = m.stackvars.size();
-                label_idx = m.labels.size();
+                label_idx = static_cast<index_t>(m.labels.size());
                 label_queue.resize(label_idx);
                 label_indices.clear();
                 for (auto& label : m.labels)
                 {
                     label_queue[--label_idx] = label;
-                    label_indices.emplace(label, index_t(label_indices.size()));
+                    label_indices.emplace(label, static_cast<index_t>(label_indices.size()));
                 }
 
                 const auto& bytecode = m.bytecode;
@@ -141,7 +141,7 @@ namespace propane
         {
             while (true)
             {
-                const size_t offset = static_cast<size_t>(iptr - ibeg);
+                const index_t offset = static_cast<index_t>(iptr - ibeg);
                 while (!label_queue.empty() && offset >= label_queue.back())
                 {
                     file_writer.write("label_", get_number_str(label_idx), ":\n");
@@ -287,9 +287,9 @@ namespace propane
         }
 
         size_t sv_count = 0;
-        vector<size_t> label_queue;
-        unordered_map<size_t, index_t> label_indices;
-        size_t label_idx = 0;
+        vector<index_t> label_queue;
+        unordered_map<index_t, index_t> label_indices;
+        index_t label_idx = 0;
         const_pointer_t iptr;
         const_pointer_t ibeg;
         const_pointer_t iend;
@@ -386,7 +386,7 @@ namespace propane
         }
         void read_label()
         {
-            const size_t jump = read_bytecode<size_t>(iptr);
+            const index_t jump = read_bytecode<index_t>(iptr);
             auto find = label_indices.find(jump);
             ASSERT(find != label_indices.end(), "Invalid jump location");
             file_writer.write(" label_", get_number_str(find->second));

@@ -256,7 +256,7 @@ namespace propane
                     const auto label_name_index = label_declarations[branch.first];
                     if (label_name_index == invalid_index)
                     {
-                        VALIDATE_LABEL_DEF(false, static_cast<size_t>(branch.first));
+                        VALIDATE_LABEL_DEF(false, static_cast<index_t>(branch.first));
                     }
                     else
                     {
@@ -788,7 +788,7 @@ namespace propane
             const auto label_name_index = writer.label_declarations[label];
             if (label_name_index == invalid_index)
             {
-                VALIDATE_LABEL_DEC(false, static_cast<size_t>(label));
+                VALIDATE_LABEL_DEC(false, static_cast<index_t>(label));
             }
             else
             {
