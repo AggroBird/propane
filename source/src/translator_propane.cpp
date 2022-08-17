@@ -127,8 +127,9 @@ namespace propane
                     label_indices.emplace(label, index_t(label_indices.size()));
                 }
 
-                const auto& bc = m.bytecode;
-                sf = stack_frame_t(bc.data(), bc.data() + bc.size(), bc.data(), 0, 0, 0, 0, 0, nullptr);
+                const auto& bytecode = m.bytecode;
+                ibeg = iptr = bytecode.data();
+                iend = ibeg + bytecode.size();
                 evaluate();
 
                 file_writer.write("end\n\n");
@@ -140,7 +141,7 @@ namespace propane
         {
             while (true)
             {
-                const size_t offset = size_t(sf.iptr - sf.ibeg);
+                const size_t offset = size_t(iptr - ibeg);
                 while (!label_queue.empty() && offset >= label_queue.back())
                 {
                     file_writer.write("label_", get_number_str(label_idx), ":\n");
@@ -148,12 +149,12 @@ namespace propane
                     label_queue.pop_back();
                 }
 
-                if (sf.iptr >= sf.iend)
+                if (iptr >= iend)
                 {
                     return;
                 }
 
-                const opcode op = read_bytecode<opcode>(sf.iptr);
+                const opcode op = read_bytecode<opcode>(iptr);
                 file_writer.write("\t", opcode_str(op));
                 switch (op)
                 {
@@ -244,7 +245,7 @@ namespace propane
                     case opcode::sw:
                     {
                         read_address();
-                        const uint32_t label_count = read_bytecode<uint32_t>(sf.iptr);
+                        const uint32_t label_count = read_bytecode<uint32_t>(iptr);
 
                         for (uint32_t i = 0; i < label_count; i++)
                         {
@@ -255,9 +256,9 @@ namespace propane
 
                     case opcode::call:
                     {
-                        const method_idx idx = read_bytecode<method_idx>(sf.iptr);
+                        const method_idx idx = read_bytecode<method_idx>(iptr);
                         file_writer.write(" ", database[data.methods[idx].name]);
-                        const size_t arg_count = size_t(read_bytecode<uint8_t>(sf.iptr));
+                        const size_t arg_count = size_t(read_bytecode<uint8_t>(iptr));
                         for (size_t i = 0; i < arg_count; i++)
                         {
                             read_subcode();
@@ -269,7 +270,7 @@ namespace propane
                     case opcode::callv:
                     {
                         read_address();
-                        const size_t arg_count = read_bytecode<uint8_t>(sf.iptr);
+                        const size_t arg_count = read_bytecode<uint8_t>(iptr);
                         for (size_t i = 0; i < arg_count; i++)
                         {
                             read_subcode();
@@ -289,16 +290,18 @@ namespace propane
         vector<size_t> label_queue;
         unordered_map<size_t, index_t> label_indices;
         size_t label_idx = 0;
-        stack_frame_t sf;
+        const_pointer_t iptr;
+        const_pointer_t ibeg;
+        const_pointer_t iend;
 
 
         inline subcode read_subcode() noexcept
         {
-            return read_bytecode<subcode>(sf.iptr);
+            return read_bytecode<subcode>(iptr);
         }
         void read_address()
         {
-            const address_data_t& addr = *reinterpret_cast<const address_data_t*>(sf.iptr);
+            const address_data_t& addr = *reinterpret_cast<const address_data_t*>(iptr);
 
             file_writer.write_space();
 
@@ -346,11 +349,11 @@ namespace propane
                 case address_type::constant:
                 {
                     const type_idx btype_idx = type_idx(index);
-                    sf.iptr += sizeof(address_header);
-                    pointer_t ptr = (pointer_t)sf.iptr;
+                    iptr += sizeof(address_header);
+                    pointer_t ptr = (pointer_t)iptr;
                     const auto& type = data.types[btype_idx];
                     write_literal(ptr, type.index);
-                    sf.iptr += type.total_size;
+                    iptr += type.total_size;
                     return;
                 }
                 break;
@@ -379,11 +382,11 @@ namespace propane
                 break;
             }
 
-            sf.iptr += sizeof(address_data_t);
+            iptr += sizeof(address_data_t);
         }
         void read_label()
         {
-            const size_t jump = read_bytecode<size_t>(sf.iptr);
+            const size_t jump = read_bytecode<size_t>(iptr);
             auto find = label_indices.find(jump);
             ASSERT(find != label_indices.end(), "Invalid jump location");
             file_writer.write(" label_", get_number_str(find->second));

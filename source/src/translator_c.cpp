@@ -256,8 +256,10 @@ namespace propane
 
                     ret_idx = 0;
                     return_type = type_idx::invalid;
-                    const auto& bc = m.bytecode;
-                    sf = stack_frame_t(bc.data(), bc.data() + bc.size(), bc.data(), 0, 0, 0, 0, 0, nullptr);
+
+                    const auto& bytecode = m.bytecode;
+                    ibeg = iptr = bytecode.data();
+                    iend = ibeg + bytecode.size();
 
                     label_idx = m.labels.size();
                     label_queue.resize(label_idx);
@@ -413,7 +415,7 @@ namespace propane
             bool has_returned = false;
             while (true)
             {
-                const size_t offset = size_t(sf.iptr - sf.ibeg);
+                const size_t offset = size_t(iptr - ibeg);
                 while (!label_queue.empty() && offset >= label_queue.back())
                 {
                     method_body.write("$", get_number_str(label_idx), label_postfix, ":;\n");
@@ -421,7 +423,7 @@ namespace propane
                     label_queue.pop_back();
                 }
 
-                if (sf.iptr == sf.iend)
+                if (iptr == iend)
                 {
                     ASSERT(!current_signature->has_return_value() || has_returned, "Function expects a return value");
 
@@ -433,7 +435,7 @@ namespace propane
                 method_body.write(get_indent_str(1));
                 instruction.clear();
 
-                const opcode op = read_bytecode<opcode>(sf.iptr);
+                const opcode op = read_bytecode<opcode>(iptr);
                 switch (op)
                 {
                     case opcode::noop: noop(); break;
@@ -636,14 +638,14 @@ namespace propane
 
         void br()
         {
-            const size_t branch_location = read_bytecode<size_t>(sf.iptr);
+            const size_t branch_location = read_bytecode<size_t>(iptr);
             auto label_index = label_indices.find(branch_location);
 
             instruction.write("goto $", get_number_str(size_t(label_index->second)), label_postfix);
         }
         void br(opcode op)
         {
-            const size_t branch_location = read_bytecode<size_t>(sf.iptr);
+            const size_t branch_location = read_bytecode<size_t>(iptr);
             auto label_index = label_indices.find(branch_location);
 
             instruction.write("if (");
@@ -655,10 +657,10 @@ namespace propane
         {
             string_address_t idx_addr = read_address(true);
 
-            const uint32_t label_count = read_bytecode<uint32_t>(sf.iptr);
+            const uint32_t label_count = read_bytecode<uint32_t>(iptr);
 
-            const size_t* labels = reinterpret_cast<const size_t*>(sf.iptr);
-            sf.iptr += sizeof(size_t) * label_count;
+            const size_t* labels = reinterpret_cast<const size_t*>(iptr);
+            iptr += sizeof(size_t) * label_count;
 
             instruction.write("switch (", idx_addr.addr, ")\n\t{\n");
             for (uint32_t i = 0; i < label_count; i++)
@@ -671,7 +673,7 @@ namespace propane
 
         void call()
         {
-            const method_idx call_idx = read_bytecode<method_idx>(sf.iptr);
+            const method_idx call_idx = read_bytecode<method_idx>(iptr);
             method_metas[current_method->index].calls_made.emplace(call_idx);
 
             const auto& method = get_method(call_idx);
@@ -708,7 +710,7 @@ namespace propane
         }
         void write_param(const signature& signature)
         {
-            const size_t arg_count = size_t(read_bytecode<uint8_t>(sf.iptr));
+            const size_t arg_count = size_t(read_bytecode<uint8_t>(iptr));
 
             instruction.write('(');
             for (size_t i = 0; i < signature.parameters.size(); i++)
@@ -1002,7 +1004,9 @@ namespace propane
         size_t label_idx = 0;
         size_t ret_idx = 0;
         type_idx return_type = type_idx::voidtype;
-        stack_frame_t sf;
+        const_pointer_t iptr = nullptr;
+        const_pointer_t ibeg = nullptr;
+        const_pointer_t iend = nullptr;
 
         // String buffers
         static constexpr string_view stack_postfix = "s";
@@ -1189,7 +1193,7 @@ namespace propane
 
         inline subcode read_subcode() noexcept
         {
-            return read_bytecode<subcode>(sf.iptr);
+            return read_bytecode<subcode>(iptr);
         }
         string_address_t read_address(bool is_rhs)
         {
@@ -1197,7 +1201,7 @@ namespace propane
 
             string_address_t result;
 
-            const address_data_t& addr = *reinterpret_cast<const address_data_t*>(sf.iptr);
+            const address_data_t& addr = *reinterpret_cast<const address_data_t*>(iptr);
 
             const auto& minf = *current_method;
             const auto& csig = *current_signature;
@@ -1274,12 +1278,12 @@ namespace propane
                     ASSERT(is_rhs, "Constant cannot be a left-hand side operand");
                     const type_idx btype_idx = type_idx(index);
                     ASSERT(btype_idx <= type_idx::vptr, "Malformed constant opcode");
-                    sf.iptr += sizeof(address_header);
-                    pointer_t ptr = (pointer_t)sf.iptr;
+                    iptr += sizeof(address_header);
+                    pointer_t ptr = (pointer_t)iptr;
                     const auto& type = get_type(btype_idx);
                     string_writer& next_buf = get_next_buffer();
                     write_literal(next_buf, ptr, type.index);
-                    sf.iptr += type.total_size;
+                    iptr += type.total_size;
                     return string_address_t(&type, next_buf);
                 }
                 break;
@@ -1409,7 +1413,7 @@ namespace propane
                 }
             }
 
-            sf.iptr += sizeof(address_data_t);
+            iptr += sizeof(address_data_t);
 
             result.addr = buf;
             return result;

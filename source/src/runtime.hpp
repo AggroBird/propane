@@ -287,23 +287,17 @@ namespace propane
     struct stack_frame_t
     {
         stack_frame_t() = default;
-        stack_frame_t(const_pointer_t ibeg, const_pointer_t iend, const_pointer_t iptr, size_t return_offset, size_t frame_offset, size_t param_offset, size_t stack_offset, size_t stack_end, const method* minf) :
-            ibeg(ibeg),
-            iend(iend),
+        stack_frame_t(size_t iptr, size_t return_offset, size_t frame_offset, size_t param_offset, size_t stack_offset, size_t stack_end, method_idx method) :
             iptr(iptr),
             return_offset(return_offset),
             frame_offset(frame_offset),
             param_offset(param_offset),
             stack_offset(stack_offset),
             stack_end(stack_end),
-            minf(minf) {}
+            method(method) {}
 
-        // Start of the instructions
-        const_pointer_t ibeg = nullptr;
-        // End of the instructions
-        const_pointer_t iend = nullptr;
-        // Current instruction
-        const_pointer_t iptr = nullptr;
+        // Current instruction offset at the time of calling
+        size_t iptr = 0;
         // Offset on the previous stack frame where the return value should go
         size_t return_offset = 0;
         // Offset of the pushed stackframe
@@ -315,7 +309,7 @@ namespace propane
         // End of the method stack (excluding return values)
         size_t stack_end = 0;
         // Current executing method
-        const method* minf = nullptr;
+        method_idx method = method_idx::invalid;
     };
 
     // Serialization of generic types

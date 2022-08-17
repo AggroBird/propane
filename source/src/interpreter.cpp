@@ -174,11 +174,11 @@ namespace propane
     private:
         void execute()
         {
-            while (sf.iptr)
+            while (iptr)
             {
-                ASSERT(sf.iptr >= sf.ibeg && sf.iptr <= sf.iend, "Instruction pointer out of range");
+                ASSERT(iptr >= ibeg && iptr <= iend, "Instruction pointer out of range");
 
-                const opcode op = read_bytecode<opcode>(sf.iptr);
+                const opcode op = read_bytecode<opcode>(iptr);
                 switch (op)
                 {
                     case opcode::noop: break;
@@ -1794,55 +1794,55 @@ namespace propane
 
         inline void br() noexcept
         {
-            const size_t branch_location = read_bytecode<size_t>(sf.iptr);
+            const size_t branch_location = read_bytecode<size_t>(iptr);
 
             jump(branch_location);
         }
         inline void beq() noexcept
         {
-            const size_t branch_location = read_bytecode<size_t>(sf.iptr);
+            const size_t branch_location = read_bytecode<size_t>(iptr);
 
             if (ceq()) jump(branch_location);
         }
         inline void bne() noexcept
         {
-            const size_t branch_location = read_bytecode<size_t>(sf.iptr);
+            const size_t branch_location = read_bytecode<size_t>(iptr);
 
             if (cne()) jump(branch_location);
         }
         inline void bgt() noexcept
         {
-            const size_t branch_location = read_bytecode<size_t>(sf.iptr);
+            const size_t branch_location = read_bytecode<size_t>(iptr);
 
             if (cgt()) jump(branch_location);
         }
         inline void bge() noexcept
         {
-            const size_t branch_location = read_bytecode<size_t>(sf.iptr);
+            const size_t branch_location = read_bytecode<size_t>(iptr);
 
             if (cge()) jump(branch_location);
         }
         inline void blt() noexcept
         {
-            const size_t branch_location = read_bytecode<size_t>(sf.iptr);
+            const size_t branch_location = read_bytecode<size_t>(iptr);
 
             if (clt()) jump(branch_location);
         }
         inline void ble() noexcept
         {
-            const size_t branch_location = read_bytecode<size_t>(sf.iptr);
+            const size_t branch_location = read_bytecode<size_t>(iptr);
 
             if (cle()) jump(branch_location);
         }
         inline void bze() noexcept
         {
-            const size_t branch_location = read_bytecode<size_t>(sf.iptr);
+            const size_t branch_location = read_bytecode<size_t>(iptr);
 
             if (cze()) jump(branch_location);
         }
         inline void bnz() noexcept
         {
-            const size_t branch_location = read_bytecode<size_t>(sf.iptr);
+            const size_t branch_location = read_bytecode<size_t>(iptr);
 
             if (cnz()) jump(branch_location);
         }
@@ -1864,10 +1864,10 @@ namespace propane
                 case type_idx::u64: idx = (uint32_t)read<u64>(idx_addr.addr); break;
             }
 
-            const uint32_t label_count = read_bytecode<uint32_t>(sf.iptr);
+            const uint32_t label_count = read_bytecode<uint32_t>(iptr);
 
-            const size_t* labels = reinterpret_cast<const size_t*>(sf.iptr);
-            sf.iptr += sizeof(size_t) * label_count;
+            const size_t* labels = reinterpret_cast<const size_t*>(iptr);
+            iptr += sizeof(size_t) * label_count;
 
             if (idx < label_count)
             {
@@ -1877,14 +1877,14 @@ namespace propane
 
         inline void jump(size_t target) noexcept
         {
-            sf.iptr = sf.ibeg + target;
+            iptr = ibeg + target;
 
             clear_return_value();
         }
 
         inline void call()
         {
-            const method_idx call_idx = read_bytecode<method_idx>(sf.iptr);
+            const method_idx call_idx = read_bytecode<method_idx>(iptr);
             ASSERT(is_valid_method(call_idx), "Attempted to invoke an invalid method");
             const auto& call_method = get_method(call_idx);
             push_stack_frame(call_method, get_signature(call_method.signature));
@@ -2100,20 +2100,23 @@ namespace propane
         pointer_t stack_data = nullptr;
 
         // Stack frame
+        const_pointer_t iptr = nullptr;
+        const_pointer_t ibeg = nullptr;
+        const_pointer_t iend = nullptr;
         stack_frame_t sf;
         const method* current_method = nullptr;
         const signature* current_signature = nullptr;
-        size_t callstack_depth = 0;
+        uint32_t callstack_depth = 0;
 
         inline subcode read_subcode() noexcept
         {
-            return read_bytecode<subcode>(sf.iptr);
+            return read_bytecode<subcode>(iptr);
         }
         address_t read_address(bool is_rhs) noexcept
         {
             address_t result;
 
-            const address_data_t& addr = *reinterpret_cast<const address_data_t*>(sf.iptr);
+            const address_data_t& addr = *reinterpret_cast<const address_data_t*>(iptr);
 
             const auto& minf = *current_method;
             const auto& csig = *current_signature;
@@ -2162,10 +2165,10 @@ namespace propane
                 case address_type::constant:
                 {
                     const type_idx btype_idx = type_idx(index);
-                    sf.iptr += sizeof(address_header);
-                    pointer_t ptr = (pointer_t)sf.iptr;
+                    iptr += sizeof(address_header);
+                    pointer_t ptr = (pointer_t)iptr;
                     const auto& type = get_type(btype_idx);
-                    sf.iptr += type.total_size;
+                    iptr += type.total_size;
                     return address_t(&type, ptr);
                 }
                 break;
@@ -2241,7 +2244,7 @@ namespace propane
                 break;
             }
 
-            sf.iptr += sizeof(address_data_t);
+            iptr += sizeof(address_data_t);
 
             return result;
         }
@@ -2250,6 +2253,8 @@ namespace propane
         {
             const signature& signature = get_signature(method.signature);
             ASSERT(signature.index == calling_signature.index, "Call signature mismatch");
+
+            const auto& bytecode = method.bytecode;
 
             const size_t frame_offset = stack_size;
             const size_t return_offset = sf.stack_end;
@@ -2269,12 +2274,9 @@ namespace propane
                 VALIDATE_STACK_OVERFLOW(new_stack_size <= stack_capacity, new_stack_size, stack_capacity);
                 stack_size = new_stack_size;
 
-                // Write stack frame
-                *reinterpret_cast<stack_frame_t*>(stack_data + frame_offset) = sf;
-
                 // Write parameters
                 const size_t parameter_count = calling_signature.parameters.size();
-                const size_t arg_count = sf.iptr ? size_t(read_bytecode<uint8_t>(sf.iptr)) : 0;
+                const size_t arg_count = iptr ? size_t(read_bytecode<uint8_t>(iptr)) : 0;
                 ASSERT(arg_count == parameter_count, "Invalid argument count");
                 if (parameter_count > 0)
                 {
@@ -2289,10 +2291,14 @@ namespace propane
                     }
                 }
 
+                // Write stack frame
+                sf.iptr = iptr - ibeg;
+                *reinterpret_cast<stack_frame_t*>(stack_data + frame_offset) = sf;
+
                 // Call
-                const_pointer_t ibeg = method.bytecode.data();
-                const_pointer_t iend = ibeg + method.bytecode.size();
-                sf = stack_frame_t(ibeg, iend, ibeg, return_offset, frame_offset, param_offset, stack_offset, stack_end, &method);
+                sf = stack_frame_t(0, return_offset, frame_offset, param_offset, stack_offset, stack_end, method.index);
+                ibeg = iptr = bytecode.data();
+                iend = ibeg + bytecode.size();
                 current_method = &method;
                 current_signature = &signature;
 
@@ -2301,8 +2307,8 @@ namespace propane
             }
             else
             {
-                ASSERT(method.bytecode.size() == sizeof(runtime_call_index), "Invalid external index");
-                const runtime_call_index cidx = *reinterpret_cast<const runtime_call_index*>(method.bytecode.data());
+                ASSERT(bytecode.size() == sizeof(runtime_call_index), "Invalid external index");
+                const runtime_call_index cidx = *reinterpret_cast<const runtime_call_index*>(bytecode.data());
                 
                 // Ensure method handle
                 ASSERT(libraries.is_valid_index(cidx.library), "Invalid library index");
@@ -2325,14 +2331,14 @@ namespace propane
                 pointer_t param_ptr = stack_data + param_offset;
                 if (method.total_stack_size > 0)
                 {
-                    const size_t new_stack_size = stack_size + method.total_stack_size;
+                    const size_t new_stack_size = stack_size + (method.total_stack_size);
                     VALIDATE_STACK_OVERFLOW(new_stack_size <= stack_capacity, new_stack_size, stack_capacity);
                     stack_size = new_stack_size;
                 }
 
                 // Write parameters
                 const size_t parameter_count = calling_signature.parameters.size();
-                const size_t arg_count = sf.iptr ? size_t(read_bytecode<uint8_t>(sf.iptr)) : 0;
+                const size_t arg_count = iptr ? size_t(read_bytecode<uint8_t>(iptr)) : 0;
                 ASSERT(arg_count == parameter_count, "Invalid argument count");
                 if (parameter_count > 0)
                 {
@@ -2360,13 +2366,24 @@ namespace propane
         void pop_stack_frame()
         {
             // Restore stackframe
+            ASSERT(callstack_depth > 0, "Stack frame pop overflow");
             sf = *reinterpret_cast<stack_frame_t*>(stack_data + sf.frame_offset);
-            if (sf.iptr != nullptr)
+            if (sf.method != method_idx::invalid)
             {
-                current_method = sf.minf;
-                current_signature = &get_signature(sf.minf->signature);
+                const method& calling_method = get_method(sf.method);
+                current_method = &calling_method;
+                current_signature = &get_signature(calling_method.signature);
+                const auto& bytecode = calling_method.bytecode;
+                ibeg = bytecode.data();
+                iend = ibeg + bytecode.size();
+                iptr = ibeg + sf.iptr;
             }
-
+            else
+            {
+                current_method = nullptr;
+                current_signature = nullptr;
+                iptr = ibeg = iend = nullptr;
+            }
             callstack_depth--;
         }
 

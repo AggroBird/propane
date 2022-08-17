@@ -336,7 +336,7 @@ namespace propane
 
         size_t max_stack_size;
         size_t min_stack_size;
-        size_t max_callstack_depth;
+        uint32_t max_callstack_depth;
     };
 
 
