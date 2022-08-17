@@ -111,7 +111,7 @@ namespace propane
         }
         inline static void read(const void*& data, asm_database & value)
         {
-            throw 0;
+            abort();
         }
     };
 
@@ -124,7 +124,7 @@ namespace propane
         }
         inline static void read(const void*& data, asm_metatable & value)
         {
-            throw 0;
+            abort();
         }
     };
 
