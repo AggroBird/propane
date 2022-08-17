@@ -40,7 +40,7 @@ namespace propane
         uint64_t u64 = uint64_t(fold);
         for (uint64_t i = 0; i < bytecount; i++)
         {
-            vb.bytes[i + offset] = uint8_t(u64);
+            vb.bytes[i + offset] = static_cast<uint8_t>(u64);
             u64 >>= 8;
         }
     }
@@ -68,8 +68,8 @@ namespace propane
         fold<changelist_offset, changelist_bytecount>(value, changelist);
 
         uint8_t endian_arch = 0;
-        endian_arch |= uint8_t((int32_t(endianness) & 0xF) << 4);
-        endian_arch |= uint8_t(int32_t(architecture) & 0xF);
+        endian_arch |= static_cast<uint8_t>((static_cast<uint32_t>(endianness) & 0xFu) << 4u);
+        endian_arch |= static_cast<uint8_t>(static_cast<uint32_t>(architecture) & 0xFu);
         reinterpret_cast<version_bytes&>(value).bytes[endian_arch_offset] = endian_arch;
     }
 
@@ -120,10 +120,10 @@ namespace propane
 
         switch (u32.value)
         {
-            case uint32_t(0x04030201): return platform_endianness::little;
-            case uint32_t(0x01020304): return platform_endianness::big;
-            case uint32_t(0x02010403): return platform_endianness::little_word;
-            case uint32_t(0x03040102): return platform_endianness::big_word;
+            case 0x04030201u: return platform_endianness::little;
+            case 0x01020304u: return platform_endianness::big;
+            case 0x02010403u: return platform_endianness::little_word;
+            case 0x03040102u: return platform_endianness::big_word;
         }
         return platform_endianness::unknown;
     }

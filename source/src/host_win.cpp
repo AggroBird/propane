@@ -16,7 +16,7 @@ namespace propane
         // Get page size
         SYSTEM_INFO system_info = { 0 };
         GetSystemInfo(&system_info);
-        const size_t page_size = size_t(system_info.dwPageSize);
+        const size_t page_size = static_cast<size_t>(system_info.dwPageSize);
         ASSERT(page_size, "Page size is zero");
 
         // Round up to page size

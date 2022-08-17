@@ -49,7 +49,7 @@ namespace propane
     struct constant : public address
     {
     private:
-        constant(type_idx type) : address(index_t(type), address_type::constant) {}
+        constant(type_idx type) : address(static_cast<index_t>(type), address_type::constant) {}
 
     public:
         constant(int8_t val) : constant(type_idx::i8) { payload.i8 = val; }
@@ -173,7 +173,7 @@ namespace propane
     struct global : public modifyable_address
     {
         global(name_idx name) :
-            modifyable_address(index_t(name), address_type::global) {}
+            modifyable_address(static_cast<index_t>(name), address_type::global) {}
 
         inline name_idx name() const noexcept
         {

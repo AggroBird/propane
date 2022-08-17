@@ -60,14 +60,14 @@ namespace propane
 
     template<typename value_t> value_t get_value(const_pointer_t addr) { return *reinterpret_cast<const value_t*>(addr); }
     template<typename value_t> void dump_value(const_pointer_t addr) { std::cout << get_value<value_t>(addr); }
-    template<> inline void dump_value<int8_t>(const_pointer_t addr) { std::cout << int32_t(get_value<int8_t>(addr)); }
-    template<> inline void dump_value<uint8_t>(const_pointer_t addr) { std::cout << uint32_t(get_value<uint8_t>(addr)); }
+    template<> inline void dump_value<int8_t>(const_pointer_t addr) { std::cout << static_cast<int32_t>(get_value<int8_t>(addr)); }
+    template<> inline void dump_value<uint8_t>(const_pointer_t addr) { std::cout << static_cast<uint32_t>(get_value<uint8_t>(addr)); }
     template<> inline void dump_value<bool>(const_pointer_t addr)
     {
         const uint8_t b = get_value<uint8_t>(addr);
         if (b == 0) std::cout << "false";
         else if (b == 1) std::cout << "true";
-        else std::cout << uint32_t(b);
+        else std::cout << static_cast<uint32_t>(b);
     }
     template<typename value_t> void dump_var(const_pointer_t addr)
     {
@@ -140,7 +140,7 @@ namespace propane
             // Try and find a stack that fits
             for (size_t i = sizeof(size_t) * 8; i > 0; i--)
             {
-                stack_capacity = (size_t(1) << size_t(i - 1));
+                stack_capacity = (static_cast<size_t>(1) << static_cast<size_t>(i - 1));
                 if (stack_capacity >= parameters.min_stack_size && stack_capacity <= parameters.max_stack_size)
                 {
                     stack_data_ptr = (pointer_t)malloc(stack_capacity + interpreter_alignment);
@@ -277,7 +277,7 @@ namespace propane
 
                     case opcode::dump: dump(); break;
 
-                    default: ASSERT(false, "Malformed opcode: %", uint32_t(op));
+                    default: ASSERT(false, "Malformed opcode: %", static_cast<uint32_t>(op));
                 }
             }
         }
@@ -1838,55 +1838,55 @@ namespace propane
 
         inline void br() noexcept
         {
-            const size_t branch_location = read_bytecode<size_t>(iptr);
+            const index_t branch_location = read_bytecode<index_t>(iptr);
 
             jump(branch_location);
         }
         inline void beq() noexcept
         {
-            const size_t branch_location = read_bytecode<size_t>(iptr);
+            const index_t branch_location = read_bytecode<index_t>(iptr);
 
             if (ceq()) jump(branch_location);
         }
         inline void bne() noexcept
         {
-            const size_t branch_location = read_bytecode<size_t>(iptr);
+            const index_t branch_location = read_bytecode<index_t>(iptr);
 
             if (cne()) jump(branch_location);
         }
         inline void bgt() noexcept
         {
-            const size_t branch_location = read_bytecode<size_t>(iptr);
+            const index_t branch_location = read_bytecode<index_t>(iptr);
 
             if (cgt()) jump(branch_location);
         }
         inline void bge() noexcept
         {
-            const size_t branch_location = read_bytecode<size_t>(iptr);
+            const index_t branch_location = read_bytecode<index_t>(iptr);
 
             if (cge()) jump(branch_location);
         }
         inline void blt() noexcept
         {
-            const size_t branch_location = read_bytecode<size_t>(iptr);
+            const index_t branch_location = read_bytecode<index_t>(iptr);
 
             if (clt()) jump(branch_location);
         }
         inline void ble() noexcept
         {
-            const size_t branch_location = read_bytecode<size_t>(iptr);
+            const index_t branch_location = read_bytecode<index_t>(iptr);
 
             if (cle()) jump(branch_location);
         }
         inline void bze() noexcept
         {
-            const size_t branch_location = read_bytecode<size_t>(iptr);
+            const index_t branch_location = read_bytecode<index_t>(iptr);
 
             if (cze()) jump(branch_location);
         }
         inline void bnz() noexcept
         {
-            const size_t branch_location = read_bytecode<size_t>(iptr);
+            const index_t branch_location = read_bytecode<index_t>(iptr);
 
             if (cnz()) jump(branch_location);
         }
@@ -1910,8 +1910,8 @@ namespace propane
 
             const uint32_t label_count = read_bytecode<uint32_t>(iptr);
 
-            const size_t* labels = reinterpret_cast<const size_t*>(iptr);
-            iptr += sizeof(size_t) * label_count;
+            const index_t* labels = reinterpret_cast<const index_t*>(iptr);
+            iptr += sizeof(index_t) * label_count;
 
             if (idx < label_count)
             {
@@ -1919,7 +1919,7 @@ namespace propane
             }
         }
 
-        inline void jump(size_t target) noexcept
+        inline void jump(index_t target) noexcept
         {
             iptr = ibeg + target;
 
@@ -2064,7 +2064,7 @@ namespace propane
 
             inline const field& operator[](global_idx index) const noexcept
             {
-                return info[size_t(index)];
+                return info[static_cast<size_t>(index)];
             }
 
             const field* info;
@@ -2116,19 +2116,19 @@ namespace propane
 
         inline const type& get_type(type_idx type) const noexcept
         {
-            return types[size_t(type)];
+            return types[static_cast<size_t>(type)];
         }
         inline const method& get_method(method_idx method) const noexcept
         {
-            return methods[size_t(method)];
+            return methods[static_cast<size_t>(method)];
         }
         inline const signature& get_signature(signature_idx signature) const noexcept
         {
-            return signatures[size_t(signature)];
+            return signatures[static_cast<size_t>(signature)];
         }
         inline bool is_valid_method(method_idx method) const noexcept
         {
-            return size_t(method) < data.methods.size();
+            return static_cast<size_t>(method) < data.methods.size();
         }
         inline bool is_valid_method(size_t method_handle) const noexcept
         {
@@ -2230,7 +2230,7 @@ namespace propane
 
                 case address_modifier::direct_field:
                 {
-                    const auto& field = offsets[size_t(addr.field)];
+                    const auto& field = offsets[static_cast<size_t>(addr.field)];
                     result += field.offset;
                     addr_type[is_rhs] = field.type;
                 }
@@ -2238,7 +2238,7 @@ namespace propane
 
                 case address_modifier::indirect_field:
                 {
-                    const auto& field = offsets[size_t(addr.field)];
+                    const auto& field = offsets[static_cast<size_t>(addr.field)];
                     result = dereference(result) + field.offset;
                     addr_type[is_rhs] = field.type;
                 }
@@ -2328,7 +2328,7 @@ namespace propane
 
                 // Write parameters
                 const size_t parameter_count = calling_signature.parameters.size();
-                const size_t arg_count = iptr ? size_t(read_bytecode<uint8_t>(iptr)) : 0;
+                const size_t arg_count = iptr ? static_cast<size_t>(read_bytecode<uint8_t>(iptr)) : 0;
                 ASSERT(arg_count == parameter_count, "Invalid argument count");
                 if (parameter_count > 0)
                 {
@@ -2390,7 +2390,7 @@ namespace propane
 
                 // Write parameters
                 const size_t parameter_count = calling_signature.parameters.size();
-                const size_t arg_count = iptr ? size_t(read_bytecode<uint8_t>(iptr)) : 0;
+                const size_t arg_count = iptr ? static_cast<size_t>(read_bytecode<uint8_t>(iptr)) : 0;
                 ASSERT(arg_count == parameter_count, "Invalid argument count");
                 if (parameter_count > 0)
                 {

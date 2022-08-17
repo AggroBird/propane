@@ -98,7 +98,7 @@ enum class ERRC : uint32_t
 
 inline uint32_t errc_to_uint(ERRC errc) noexcept
 {
-    return uint32_t(errc);
+    return static_cast<uint32_t>(errc);
 }
 template<typename value_t> inline bool validate_expression(value_t expr) noexcept
 {

@@ -32,7 +32,7 @@ namespace propane
 
     template<size_t len> inline bool cmp_str(const char*& beg, const char* end, const char(&str)[len])
     {
-        const auto offset = size_t(end - beg);
+        const auto offset = static_cast<size_t>(end - beg);
         if (offset == (len - 1))
         {
             for (size_t i = 0; i < offset; i++)
@@ -141,8 +141,8 @@ namespace propane
         type_idx btype = parse_integer_suffix(beg, end);
         if (btype == type_idx::invalid)
         {
-            if (value <= uint64_t(std::numeric_limits<int32_t>::max())) btype = type_idx::i32;
-            else if (value <= uint64_t(std::numeric_limits<int64_t>::max())) btype = type_idx::i64;
+            if (value <= static_cast<uint64_t>(std::numeric_limits<int32_t>::max())) btype = type_idx::i32;
+            else if (value <= static_cast<uint64_t>(std::numeric_limits<int64_t>::max())) btype = type_idx::i64;
             else btype = type_idx::u64;
         }
         return btype;
@@ -168,7 +168,7 @@ namespace propane
         }
         if (beg >= end) return result;
 
-        const size_t len = size_t(end - beg);
+        const size_t len = static_cast<size_t>(end - beg);
         if (base == 16)
         {
             // Check overflow
@@ -179,9 +179,9 @@ namespace propane
             for (size_t i = 0; i < len; i++, ptr--)
             {
                 const char c = *ptr;
-                if (is_digit(c)) value += (uint64_t(c) - uint64_t('0')) * mul;
-                else if (is_lowercase_hex(c)) value += ((uint64_t(c) - uint64_t('a')) + 10) * mul;
-                else if (is_uppercase_hex(c)) value += ((uint64_t(c) - uint64_t('A')) + 10) * mul;
+                if (is_digit(c)) value += (static_cast<uint64_t>(c) - static_cast<uint64_t>('0')) * mul;
+                else if (is_lowercase_hex(c)) value += ((static_cast<uint64_t>(c) - static_cast<uint64_t>('a')) + 10) * mul;
+                else if (is_uppercase_hex(c)) value += ((static_cast<uint64_t>(c) - static_cast<uint64_t>('A')) + 10) * mul;
                 mul *= 16;
             }
         }
@@ -205,7 +205,7 @@ namespace propane
             for (size_t i = 0; i < len; i++, ptr--)
             {
                 const char c = *ptr;
-                value += (uint64_t(c) - uint64_t('0')) * mul;
+                value += (static_cast<uint64_t>(c) - static_cast<uint64_t>('0')) * mul;
                 mul *= 10;
             }
         }
@@ -219,7 +219,7 @@ namespace propane
             for (size_t i = 0; i < len; i++, ptr--)
             {
                 const char c = *ptr;
-                value += (uint64_t(c) - uint64_t('0')) * mul;
+                value += (static_cast<uint64_t>(c) - static_cast<uint64_t>('0')) * mul;
                 mul *= 2;
             }
         }

@@ -18,6 +18,7 @@ using std::ofstream;
 
 namespace propane
 {
+#if 0
     class translator_propane_impl final : ofstream
     {
     public:
@@ -141,7 +142,7 @@ namespace propane
         {
             while (true)
             {
-                const size_t offset = size_t(iptr - ibeg);
+                const size_t offset = static_cast<size_t>(iptr - ibeg);
                 while (!label_queue.empty() && offset >= label_queue.back())
                 {
                     file_writer.write("label_", get_number_str(label_idx), ":\n");
@@ -258,7 +259,7 @@ namespace propane
                     {
                         const method_idx idx = read_bytecode<method_idx>(iptr);
                         file_writer.write(" ", database[data.methods[idx].name]);
-                        const size_t arg_count = size_t(read_bytecode<uint8_t>(iptr));
+                        const size_t arg_count = static_cast<size_t>(read_bytecode<uint8_t>(iptr));
                         for (size_t i = 0; i < arg_count; i++)
                         {
                             read_subcode();
@@ -280,7 +281,7 @@ namespace propane
                     break;
 
 
-                    default: ASSERT(false, "Malformed opcode: %", uint32_t(op));
+                    default: ASSERT(false, "Malformed opcode: %", static_cast<uint32_t>(op));
                 }
                 file_writer.write_newline();
             }
@@ -396,8 +397,8 @@ namespace propane
         {
             switch (type)
             {
-                case type_idx::i8: file_writer.write(num_conv.convert((int32_t)*reinterpret_cast<const i8*>(ptr)), "i8"); break;
-                case type_idx::u8: file_writer.write(num_conv.convert((uint32_t)*reinterpret_cast<const u8*>(ptr)), "u8"); break;
+                case type_idx::i8: file_writer.write(num_conv.convert(static_cast<int32_t>(*reinterpret_cast<const i8*>(ptr))), "i8"); break;
+                case type_idx::u8: file_writer.write(num_conv.convert(static_cast<uint32_t>(*reinterpret_cast<const u8*>(ptr))), "u8"); break;
                 case type_idx::i16: file_writer.write(num_conv.convert(*reinterpret_cast<const i16*>(ptr)), "i16"); break;
                 case type_idx::u16: file_writer.write(num_conv.convert(*reinterpret_cast<const u16*>(ptr)), "u16"); break;
                 case type_idx::i32: file_writer.write(num_conv.convert(*reinterpret_cast<const i32*>(ptr)), "i32"); break;
@@ -416,7 +417,7 @@ namespace propane
             constexpr size_t nibble_count = sizeof(size_t) * 2;
             for (size_t i = 0; i < nibble_count; i++)
             {
-                const size_t nibble = (value >> ((nibble_count - 1) * 4)) & size_t(0xF);
+                const size_t nibble = (value >> ((nibble_count - 1) * 4)) & static_cast<size_t>(0xF);
                 if (nibble < 10)
                 {
                     file_writer.write('0' + char(nibble));
@@ -491,8 +492,8 @@ namespace propane
 
         string_view resolve_type_name(const type& type)
         {
-            string& str = type_names[size_t(type.index)];
-            if (type_names[size_t(type.index)].empty())
+            string& str = type_names[static_cast<size_t>(type.index)];
+            if (type_names[static_cast<size_t>(type.index)].empty())
             {
                 data.generate_name(type.index, str);
             }
@@ -533,14 +534,17 @@ namespace propane
 
         vector<string> type_names;
     };
+#endif
 
     void translator_propane::generate(const char* out_file, const assembly& linked_assembly)
     {
+#if 0
         VALIDATE_ASSEMBLY(linked_assembly.is_valid());
         VALIDATE_COMPATIBILITY(linked_assembly.is_compatible());
 
         const assembly_data& data = linked_assembly.assembly_ref();
 
         translator_propane_impl generator(out_file, data);
+#endif
     }
 }

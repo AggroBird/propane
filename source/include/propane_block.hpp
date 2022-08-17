@@ -316,7 +316,7 @@ namespace propane
             if (length != 0)
             {
                 compare_t c;
-                uint32_t first = 0, last = uint32_t(length), half;
+                uint32_t first = 0, last = static_cast<uint32_t>(length), half;
 
             iter:
                 half = first + ((last - first) >> 1);
@@ -489,12 +489,12 @@ namespace propane
 
         indexed_block(const block<value_t>& other) : block<value_t>(other) {}
 
-        inline value_t& operator[](key_t idx) noexcept { return block<value_t>::operator[](size_t(idx)); }
-        inline const value_t& operator[](key_t idx) const noexcept { return block<value_t>::operator[](size_t(idx)); }
+        inline value_t& operator[](key_t idx) noexcept { return block<value_t>::operator[](static_cast<size_t>(idx)); }
+        inline const value_t& operator[](key_t idx) const noexcept { return block<value_t>::operator[](static_cast<size_t>(idx)); }
 
         inline bool is_valid_index(key_t idx) const noexcept
         {
-            return size_t(idx) < block<value_t>::size();
+            return static_cast<size_t>(idx) < block<value_t>::size();
         }
     };
 
@@ -502,12 +502,12 @@ namespace propane
     template<typename key_t, typename value_t> class indexed_static_block : public static_block<value_t>
     {
     public:
-        inline value_t& operator[](key_t idx) noexcept { return static_block<value_t>::operator[](size_t(idx)); }
-        inline const value_t& operator[](key_t idx) const noexcept { return static_block<value_t>::operator[](size_t(idx)); }
+        inline value_t& operator[](key_t idx) noexcept { return static_block<value_t>::operator[](static_cast<size_t>(idx)); }
+        inline const value_t& operator[](key_t idx) const noexcept { return static_block<value_t>::operator[](static_cast<size_t>(idx)); }
 
         inline bool is_valid_index(key_t idx) const noexcept
         {
-            return size_t(idx) < static_block<value_t>::size();
+            return static_cast<size_t>(idx) < static_block<value_t>::size();
         }
     };
 }

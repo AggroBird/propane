@@ -78,12 +78,12 @@ namespace propane
 
     constexpr bool is_base_type(type_idx key) noexcept
     {
-        return size_t(key) < base_type_count;
+        return static_cast<size_t>(key) < base_type_count;
     }
 
     constexpr size_t get_base_type_size(type_idx btype) noexcept
     {
-        if (btype <= type_idx::vptr) return base_types[size_t(btype)].size;
+        if (btype <= type_idx::vptr) return base_types[static_cast<size_t>(btype)].size;
         return 0;
     }
 

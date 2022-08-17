@@ -70,11 +70,11 @@ namespace propane
         template<platform_architecture arch> constexpr size_t offset = 0;
         template<platform_architecture arch> constexpr size_t prime = 0;
 
-        template<> constexpr size_t offset<platform_architecture::x32> = size_t(2166136261u);
-        template<> constexpr size_t prime<platform_architecture::x32> = size_t(16777619u);
+        template<> constexpr size_t offset<platform_architecture::x32> = static_cast<size_t>(2166136261u);
+        template<> constexpr size_t prime<platform_architecture::x32> = static_cast<size_t>(16777619u);
 
-        template<> constexpr size_t offset<platform_architecture::x64> = size_t(14695981039346656037ull);
-        template<> constexpr size_t prime<platform_architecture::x64> = size_t(1099511628211ull);
+        template<> constexpr size_t offset<platform_architecture::x64> = static_cast<size_t>(14695981039346656037ull);
+        template<> constexpr size_t prime<platform_architecture::x64> = static_cast<size_t>(1099511628211ull);
 
 
         inline size_t append(size_t hash, const char* const ptr, const size_t len) noexcept
@@ -183,12 +183,12 @@ namespace propane
     public:
         using std::vector<value_t>::vector;
 
-        inline value_t& operator[](key_t idx) noexcept { return std::vector<value_t>::operator[](size_t(idx)); }
-        inline const value_t& operator[](key_t idx) const noexcept { return vector<value_t>::operator[](size_t(idx)); }
+        inline value_t& operator[](key_t idx) noexcept { return std::vector<value_t>::operator[](static_cast<size_t>(idx)); }
+        inline const value_t& operator[](key_t idx) const noexcept { return vector<value_t>::operator[](static_cast<size_t>(idx)); }
 
         inline bool is_valid_index(key_t idx) const noexcept
         {
-            return size_t(idx) < std::vector<value_t>::size();
+            return static_cast<size_t>(idx) < std::vector<value_t>::size();
         }
     };
 
@@ -213,7 +213,7 @@ namespace propane
     // Ensure value within range of size_t (size_t is smaller in 32 bit)
     static constexpr bool check_size_range(uint64_t val) noexcept
     {
-        return val <= uint64_t(~size_t(0));
+        return val <= static_cast<uint64_t>(~static_cast<size_t>(0));
     }
 
     // Bitcount
@@ -250,7 +250,7 @@ namespace propane
 
     template<typename key_t, typename value_t> inline bool is_valid_index(const vector<value_t>& vec, key_t idx) noexcept
     {
-        return size_t(idx) < vec.size();
+        return static_cast<size_t>(idx) < vec.size();
     }
 
     // String writer
@@ -338,7 +338,7 @@ namespace propane
             num_converter << val;
             num_buffer.resize(buffer_size);
             num_converter.get(num_buffer.data(), std::streamsize(buffer_size));
-            num_buffer.resize(size_t(num_converter.gcount()));
+            num_buffer.resize(static_cast<size_t>(num_converter.gcount()));
             num_converter.seekg(0, num_converter.beg);
             return num_buffer;
         }

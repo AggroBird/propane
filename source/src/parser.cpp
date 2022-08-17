@@ -94,10 +94,10 @@ namespace propane
                 ifstream file(file_path, std::ios::binary);
                 VALIDATE_FILE_OPEN(file.is_open(), file_path);
                 file.seekg(0, file.end);
-                const size_t file_size = size_t(file.tellg());
+                const size_t file_size = static_cast<size_t>(file.tellg());
                 file.seekg(0, file.beg);
                 // Add one extra newline
-                file_text = block<char>(size_t(file_size) + 1);
+                file_text = block<char>(static_cast<size_t>(file_size) + 1);
                 file_text[file_size] = '\n';
                 file.read((char*)file_text.data(), file_size);
             }
@@ -837,7 +837,7 @@ namespace propane
                     ptr++;
                     UNEXPECTED_END(ptr->type == token_type::rbracket);
                     ptr++;
-                    index = declare_array_type(index, size_t(size.value));
+                    index = declare_array_type(index, static_cast<size_t>(size.value));
                     goto parse_next_modifier;
                 }
 

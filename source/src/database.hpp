@@ -160,7 +160,7 @@ namespace propane
 
         inline const_name_pair_type operator[](key_t key) const
         {
-            const size_t idx = size_t(key);
+            const size_t idx = static_cast<size_t>(key);
             if (idx < entries.size())
             {
                 auto& val = entries[idx];
@@ -209,7 +209,7 @@ namespace propane
         {
             if (is_valid_index(key))
             {
-                auto& val = entries[size_t(key)];
+                auto& val = entries[static_cast<size_t>(key)];
                 string_view name_str = string_view(strings.data() + val.offset, val.length);
                 return name_pair_type(name_str, val.value.make_result());
             }
@@ -219,7 +219,7 @@ namespace propane
         {
             if (is_valid_index(key))
             {
-                auto& val = entries[size_t(key)];
+                auto& val = entries[static_cast<size_t>(key)];
                 string_view name_str = string_view(strings.data() + val.offset, val.length);
                 return const_name_pair_type(name_str, val.value.make_result());
             }
@@ -249,7 +249,7 @@ namespace propane
                 return entries.back().value.make_result();
             }
 
-            auto& replace = entries[size_t(find->second)];
+            auto& replace = entries[static_cast<size_t>(find->second)];
             replace = entry_type(replace.offset, replace.length, replace.value.key, std::forward<arg_t>(arg)...);
             return replace.value.make_result();
         }
@@ -265,7 +265,7 @@ namespace propane
                 return invalid_result<key_t, value_t, false>::make();
             }
 
-            return entries[size_t(find->second)].value.make_result();
+            return entries[static_cast<size_t>(find->second)].value.make_result();
         }
         inline const_find_result_type find(string_view name) const noexcept
         {
@@ -278,7 +278,7 @@ namespace propane
                 return invalid_result<key_t, value_t, true>::make();
             }
 
-            return entries[size_t(find->second)].value.make_result();
+            return entries[static_cast<size_t>(find->second)].value.make_result();
         }
 
         inline void clear() noexcept
@@ -298,7 +298,7 @@ namespace propane
         }
         inline bool is_valid_index(key_t key) const noexcept
         {
-            return size_t(key) < entries.size();
+            return static_cast<size_t>(key) < entries.size();
         }
 
         inline void serialize_database(block_writer& writer) const

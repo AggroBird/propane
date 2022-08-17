@@ -381,7 +381,7 @@ namespace propane
                     {
                         ASSERT(iptr >= ibeg && iptr <= iend, "Instruction pointer out of range");
 
-                        const size_t offset = size_t(iptr - ibeg);
+                        const size_t offset = static_cast<size_t>(iptr - ibeg);
                         while (label_idx < labels.size() && offset >= labels[label_idx])
                         {
                             // Ensure labels are at the correct location
@@ -509,7 +509,7 @@ namespace propane
 
                             case opcode::br:
                             {
-                                const size_t jump = read_bytecode<size_t>(iptr);
+                                const index_t jump = read_bytecode<index_t>(iptr);
                                 // Reset return value after branch
                                 clear_return_value();
                             }
@@ -522,7 +522,7 @@ namespace propane
                             case opcode::blt:
                             case opcode::ble:
                             {
-                                const size_t jump = read_bytecode<size_t>(iptr);
+                                const index_t jump = read_bytecode<index_t>(iptr);
                                 subcode& sub = read_subcode();
                                 const type_idx lhs = resolve_address();
                                 const type_idx rhs = resolve_operand(lhs);
@@ -535,7 +535,7 @@ namespace propane
                             case opcode::bze:
                             case opcode::bnz:
                             {
-                                const size_t jump = read_bytecode<size_t>(iptr);
+                                const index_t jump = read_bytecode<index_t>(iptr);
                                 subcode& sub = read_subcode();
                                 const type_idx lhs = resolve_operand();
                                 sub = resolve_cmp(current_op - (opcode::br - opcode::cmp), lhs, lhs);
@@ -549,7 +549,7 @@ namespace propane
                                 const type_idx type = resolve_operand();
                                 VALIDATE_SWITCH_TYPE(is_integral(type), type);
                                 const uint32_t label_count = read_bytecode<uint32_t>(iptr);
-                                iptr += sizeof(size_t) * label_count;
+                                iptr += sizeof(index_t) * label_count;
                                 // Reset return value after branch
                                 clear_return_value();
                             }
@@ -560,7 +560,7 @@ namespace propane
                                 // Translate method index
                                 index_t& idx = read_bytecode_ref<index_t>(iptr);
                                 idx = (index_t)method.calls[idx];
-                                const size_t arg_count = size_t(read_bytecode<uint8_t>(iptr));
+                                const size_t arg_count = static_cast<size_t>(read_bytecode<uint8_t>(iptr));
                                 const auto& call_method = methods[method_idx(idx)];
                                 VALIDATE_METHOD_DEFINITION(call_method.is_defined(), get_name(call_method));
                                 const auto& signature = signatures[call_method.signature];
@@ -580,7 +580,7 @@ namespace propane
                             {
                                 const type_idx type = resolve_operand();
                                 VALIDATE_SIGNATURE_TYPE_INVOCATION(types[type].is_signature(), type);
-                                const size_t arg_count = size_t(read_bytecode<uint8_t>(iptr));
+                                const size_t arg_count = static_cast<size_t>(read_bytecode<uint8_t>(iptr));
                                 const auto& signature = signatures[types[type].generated.signature.index];
                                 VALIDATE_ARGUMENT_COUNT(arg_count == signature.parameters.size(), arg_count, signature.parameters.size());
                                 for (size_t i = 0; i < arg_count; i++)
@@ -739,7 +739,7 @@ namespace propane
                 case address_modifier::direct_field:
                 {
                     // Translate field offset
-                    addr.field = minf.offsets[size_t(addr.field)];
+                    addr.field = minf.offsets[static_cast<size_t>(addr.field)];
 
                     const auto& field = offsets[addr.field];
 
@@ -754,7 +754,7 @@ namespace propane
                 case address_modifier::indirect_field:
                 {
                     // Translate field offset
-                    addr.field = minf.offsets[size_t(addr.field)];
+                    addr.field = minf.offsets[static_cast<size_t>(addr.field)];
 
                     const auto& field = offsets[addr.field];
 
@@ -777,7 +777,7 @@ namespace propane
                     else if (type.is_array())
                     {
                         last_type = type.generated.array.underlying_type;
-                        VALIDATE_ARRAY_INDEX(addr.offset >= 0 && size_t(addr.offset) < type.generated.array.array_size, addr.offset, get_name(type));
+                        VALIDATE_ARRAY_INDEX(addr.offset >= 0 && static_cast<size_t>(addr.offset) < type.generated.array.array_size, addr.offset, get_name(type));
                     }
                     else
                     {
@@ -1046,7 +1046,7 @@ namespace propane
                 constants.data.resize(current_size + sizeof(name_idx) + sizeof(uint16_t) + 1);
                 pointer_t addr = constants.data.data() + current_size;
                 write_bytecode<uint16_t>(addr, 1);
-                write_bytecode<uint8_t>(addr, uint8_t(type_idx::voidtype));
+                write_bytecode<uint8_t>(addr, static_cast<uint8_t>(type_idx::voidtype));
                 write_bytecode<name_idx>(addr, method.name);
                 constants.info.push_back(field(method.name, signature_type_idx, current_size));
                 method_ptr_lookup.emplace(method.name, global_index);
@@ -1141,7 +1141,7 @@ namespace propane
                         ASSERT(find, "Invalid identifier");
                         VALIDATE_METHOD_INITIALIZER_DEFINITION(find->lookup == lookup_type::method, get_name(name), find.name);
 
-                        write_bytecode<size_t>(lhs_addr, (size_t(find->method) ^ runtime_hash));
+                        write_bytecode<size_t>(lhs_addr, (static_cast<size_t>(find->method) ^ runtime_hash));
                     }
                     else
                     {

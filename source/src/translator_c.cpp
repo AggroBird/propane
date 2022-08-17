@@ -118,6 +118,7 @@ namespace propane
     }
 
 
+#if 0
     class translator_c_impl final : ofstream
     {
     public:
@@ -415,7 +416,7 @@ namespace propane
             bool has_returned = false;
             while (true)
             {
-                const size_t offset = size_t(iptr - ibeg);
+                const size_t offset = static_cast<size_t>(iptr - ibeg);
                 while (!label_queue.empty() && offset >= label_queue.back())
                 {
                     method_body.write("$", get_number_str(label_idx), label_postfix, ":;\n");
@@ -490,7 +491,7 @@ namespace propane
 
                     case opcode::dump: dump(); break;
 
-                    default: ASSERT(false, "Malformed opcode: %", uint32_t(op));
+                    default: ASSERT(false, "Malformed opcode: %", static_cast<uint32_t>(op));
                 }
 
                 method_body.write(instruction);
@@ -540,7 +541,7 @@ namespace propane
             auto lhs_addr = read_address(true);
             auto rhs_addr = unary ? lhs_addr : read_address(true);
 
-            const size_t op_idx = size_t(op - opcode::ari_not);
+            const size_t op_idx = static_cast<size_t>(op - opcode::ari_not);
 
             if (unary)
             {
@@ -600,7 +601,7 @@ namespace propane
             auto lhs_addr = read_address(true);
             auto rhs_addr = cmpzero ? lhs_addr : read_address(true);
 
-            const size_t op_idx = size_t(op - opcode::ceq);
+            const size_t op_idx = static_cast<size_t>(op - opcode::ceq);
 
             if (cmpzero)
             {
@@ -641,7 +642,7 @@ namespace propane
             const size_t branch_location = read_bytecode<size_t>(iptr);
             auto label_index = label_indices.find(branch_location);
 
-            instruction.write("goto $", get_number_str(size_t(label_index->second)), label_postfix);
+            instruction.write("goto $", get_number_str(static_cast<size_t>(label_index->second)), label_postfix);
         }
         void br(opcode op)
         {
@@ -650,7 +651,7 @@ namespace propane
 
             instruction.write("if (");
             do_cmp(op - (opcode::br - opcode::cmp));
-            instruction.write(") goto $", get_number_str(size_t(label_index->second)), label_postfix);
+            instruction.write(") goto $", get_number_str(static_cast<size_t>(label_index->second)), label_postfix);
         }
 
         void sw()
@@ -666,7 +667,7 @@ namespace propane
             for (uint32_t i = 0; i < label_count; i++)
             {
                 auto label_index = label_indices.find(labels[i]);
-                instruction.write(get_indent_str(2), "case ", get_number_str(i), ": goto $", get_number_str(size_t(label_index->second)), label_postfix, ";\n");
+                instruction.write(get_indent_str(2), "case ", get_number_str(i), ": goto $", get_number_str(static_cast<size_t>(label_index->second)), label_postfix, ";\n");
             }
             instruction.write("\t}");
         }
@@ -710,7 +711,7 @@ namespace propane
         }
         void write_param(const signature& signature)
         {
-            const size_t arg_count = size_t(read_bytecode<uint8_t>(iptr));
+            const size_t arg_count = static_cast<size_t>(read_bytecode<uint8_t>(iptr));
 
             instruction.write('(');
             for (size_t i = 0; i < signature.parameters.size(); i++)
@@ -1081,8 +1082,8 @@ namespace propane
         {
             switch (type)
             {
-                case type_idx::i8: buf.write(num_conv.convert((int32_t)*reinterpret_cast<const i8*>(ptr))); break;
-                case type_idx::u8: buf.write(num_conv.convert((uint32_t)*reinterpret_cast<const u8*>(ptr))); break;
+                case type_idx::i8: buf.write(num_conv.convert(static_cast<int32_t>(*reinterpret_cast<const i8*>(ptr)))); break;
+                case type_idx::u8: buf.write(num_conv.convert(static_cast<uint32_t>(*reinterpret_cast<const u8*>(ptr)))); break;
                 case type_idx::i16: buf.write(num_conv.convert(*reinterpret_cast<const i16*>(ptr))); break;
                 case type_idx::u16: buf.write(num_conv.convert(*reinterpret_cast<const u16*>(ptr))); break;
                 case type_idx::i32: buf.write(num_conv.convert(*reinterpret_cast<const i32*>(ptr))); break;
@@ -1124,7 +1125,7 @@ namespace propane
             constexpr size_t nibble_count = sizeof(size_t) * 2;
             for (size_t i = 0; i < nibble_count; i++)
             {
-                const size_t nibble = (value >> ((nibble_count - 1) * 4)) & size_t(0xF);
+                const size_t nibble = (value >> ((nibble_count - 1) * 4)) & static_cast<size_t>(0xF);
                 if (nibble < 10)
                 {
                     buf.write('0' + char(nibble));
@@ -1227,7 +1228,7 @@ namespace propane
 
                         ASSERT(return_type != type_idx::voidtype, "Return value address has not been set");
 
-                        buf.write("$", get_number_str(size_t(ret_idx)), retval_postfix);
+                        buf.write("$", get_number_str(static_cast<size_t>(ret_idx)), retval_postfix);
 
                         result.type_ptr = &get_type(return_type);
                     }
@@ -1237,7 +1238,7 @@ namespace propane
 
                         const auto& stack_var = minf.stackvars[index];
 
-                        buf.write("$", get_number_str(size_t(index)), stack_postfix);
+                        buf.write("$", get_number_str(static_cast<size_t>(index)), stack_postfix);
 
                         result.type_ptr = &get_type(stack_var.type);
                         sv_type = stack_var.type;
@@ -1249,7 +1250,7 @@ namespace propane
                 {
                     ASSERT(index < csig.parameters.size(), "Parameter index out of range");
 
-                    buf.write("$", get_number_str(size_t(index)), param_postfix);
+                    buf.write("$", get_number_str(static_cast<size_t>(index)), param_postfix);
 
                     const auto& param = csig.parameters[index];
                     result.type_ptr = &get_type(param.type);
@@ -1396,20 +1397,20 @@ namespace propane
 
             if (addr.header.type() == address_type::stackvar)
             {
-                if (size_t(index) < stack_vars_used.size() && !stack_vars_used[size_t(index)])
+                if (static_cast<size_t>(index) < stack_vars_used.size() && !stack_vars_used[static_cast<size_t>(index)])
                 {
                     if (addr.header.prefix() == address_prefix::none && addr.header.modifier() == address_modifier::none && !is_rhs)
                     {
                         buf.clear();
-                        declare_stackvar(buf, stack_postfix, size_t(index), sv_type);
+                        declare_stackvar(buf, stack_postfix, static_cast<size_t>(index), sv_type);
                     }
                     else
                     {
-                        declare_stackvar(method_body, stack_postfix, size_t(index), sv_type);
+                        declare_stackvar(method_body, stack_postfix, static_cast<size_t>(index), sv_type);
                         method_body.write(";\n", get_indent_str(1));
                     }
 
-                    stack_vars_used[size_t(index)] = true;
+                    stack_vars_used[static_cast<size_t>(index)] = true;
                 }
             }
 
@@ -1550,9 +1551,11 @@ namespace propane
         const type& size_type;
         const type& vptr_type;
     };
+#endif
 
     void translator_c::generate(const char* out_file, const assembly& linked_assembly)
     {
+#if 0
         VALIDATE_ASSEMBLY(linked_assembly.is_valid());
         VALIDATE_COMPATIBILITY(linked_assembly.is_compatible());
 
@@ -1560,5 +1563,6 @@ namespace propane
         VALIDATE_ENTRYPOINT(data.methods.is_valid_index(data.main));
 
         translator_c_impl generator(out_file, data);
+#endif
     }
 }

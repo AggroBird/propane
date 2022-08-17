@@ -117,8 +117,8 @@ std::ostream& operator<<(std::ostream& stream, const propane::parse_result<propa
 {
     switch (id.type)
     {
-        case propane::type_idx::i8: stream << int32_t(id.value.as_i8); break;
-        case propane::type_idx::u8: stream << int32_t(id.value.as_u8); break;
+        case propane::type_idx::i8: stream << static_cast<int32_t>(id.value.as_i8); break;
+        case propane::type_idx::u8: stream << static_cast<int32_t>(id.value.as_u8); break;
         case propane::type_idx::i16: stream << id.value.as_i16; break;
         case propane::type_idx::u16: stream << id.value.as_u16; break;
         case propane::type_idx::i32: stream << id.value.as_i32; break;

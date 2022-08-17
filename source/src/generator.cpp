@@ -7,15 +7,15 @@
 
 #define VALIDATE_IDENTIFIER(str) VALIDATE(ERRC::GNR_INVALID_IDENTIFIER, propane::is_identifier(str), \
     "Invalid identifier: '%'", str)
-#define VALIDATE_PARAM_COUNT(num) VALIDATE(ERRC::GNR_PARAMETER_OVERFLOW, size_t(num) <= method_parameter_max, \
+#define VALIDATE_PARAM_COUNT(num) VALIDATE(ERRC::GNR_PARAMETER_OVERFLOW, static_cast<size_t>(num) <= method_parameter_max, \
     "Method parameter count exceeds maximum (%/%)", num, method_parameter_max)
-#define VALIDATE_INIT_COUNT(num) VALIDATE(ERRC::GNR_INITIALIZER_OVERFLOW, size_t(num) <= global_initializer_max, \
+#define VALIDATE_INIT_COUNT(num) VALIDATE(ERRC::GNR_INITIALIZER_OVERFLOW, static_cast<size_t>(num) <= global_initializer_max, \
     "Constant initializer count exceeds maximum (%/%)", num, global_initializer_max)
-#define VALIDATE_INDEX_RANGE(idx, max) VALIDATE(ERRC::GNR_INDEX_OUT_OF_RANGE, size_t(idx) < size_t(max), \
-    "% out of range (%/%)", get_index_type_name(idx), size_t(idx), max)
+#define VALIDATE_INDEX_RANGE(idx, max) VALIDATE(ERRC::GNR_INDEX_OUT_OF_RANGE, static_cast<size_t>(idx) < static_cast<size_t>(max), \
+    "% out of range (%/%)", get_index_type_name(idx), static_cast<size_t>(idx), max)
 #define VALIDATE_ARRAY_LENGTH(len) VALIDATE(ERRC::GNR_ARRAY_LENGTH_ZERO, (len) != 0, \
     "Array length cannot be zero")
-#define VALIDATE_INDEX_VALUE(idx) VALIDATE(ERRC::GNR_INVALID_INDEX, size_t(idx) != size_t(invalid_index), \
+#define VALIDATE_INDEX_VALUE(idx) VALIDATE(ERRC::GNR_INVALID_INDEX, static_cast<size_t>(idx) != static_cast<size_t>(invalid_index), \
     "Invalid index provided")
 #define VALIDATE_OFFSET_VALUE(empty) VALIDATE(ERRC::GNR_EMPTY_OFFSET, empty, \
     "Empty offset sequence provided")
@@ -39,10 +39,10 @@
     "Undefined label '%'", label_name)
 #define VALIDATE_RET_VAL(expr, method_name, method_meta) VALIDATE(ERRC::GNR_INVALID_RET_VAL, expr, \
     "Method return value does not match declaration (see declaration for '%' at %)", method_name, method_meta)
-#define VALIDATE_STACK_INDEX(idx, max) VALIDATE(ERRC::GNR_STACK_OUT_OF_RANGE, size_t(idx) < size_t(max), \
-    "Stack index out of range (%/%)", size_t(idx), max)
-#define VALIDATE_PARAM_INDEX(idx, max) VALIDATE(ERRC::GNR_PARAM_OUT_OF_RANGE, size_t(idx) < size_t(max), \
-    "Parameter index out of range (%/%)", size_t(idx), max)
+#define VALIDATE_STACK_INDEX(idx, max) VALIDATE(ERRC::GNR_STACK_OUT_OF_RANGE, static_cast<size_t>(idx) < static_cast<size_t>(max), \
+    "Stack index out of range (%/%)", static_cast<size_t>(idx), max)
+#define VALIDATE_PARAM_INDEX(idx, max) VALIDATE(ERRC::GNR_PARAM_OUT_OF_RANGE, static_cast<size_t>(idx) < static_cast<size_t>(max), \
+    "Parameter index out of range (%/%)", static_cast<size_t>(idx), max)
 #define VALIDATE_NONCONST(expr) VALIDATE(ERRC::GNR_INVALID_CONSTANT, expr, \
     "Constant is not valid as left-hand side operand")
 #define VALIDATE_HAS_RETURNED(expr, method_name, method_meta) VALIDATE(ERRC::GNR_MISSING_RET_VAL, expr, \
@@ -105,12 +105,12 @@ namespace propane
             *find = lookup_idx(lookup, idx);
             table.info.push_back(field(name, type, table.data.size()));
 
-            append_bytecode(table.data, uint16_t(values.size()));
+            append_bytecode(table.data, static_cast<uint16_t>(values.size()));
             for (const auto& it : values)
             {
                 const type_idx init_type = type_idx(it.header.index());
 
-                append_bytecode(table.data, uint8_t(init_type));
+                append_bytecode(table.data, static_cast<uint8_t>(init_type));
                 if (init_type == type_idx::voidtype)
                 {
                     // Constant identifier
@@ -201,8 +201,8 @@ namespace propane
         unordered_map<offset_idx, index_t> offset_index_lookup;
 
         // Labels
-        unordered_map<label_idx, size_t> label_locations;
-        unordered_map<label_idx, vector<size_t>> unresolved_branches;
+        unordered_map<label_idx, index_t> label_locations;
+        unordered_map<label_idx, vector<index_t>> unresolved_branches;
         database<index_t, label_idx> named_labels;
         indexed_vector<label_idx, index_t> label_declarations; // Unnamed labels will be added to the declarations list as 'invalid_index'
 
@@ -246,7 +246,7 @@ namespace propane
         void resolve_labels()
         {
             // Fetch all labels that have been referenced by a branch
-            map<size_t, vector<label_idx>> write_labels;
+            map<index_t, vector<label_idx>> write_labels;
             for (auto& branch : unresolved_branches)
             {
                 auto label = label_locations.find(branch.first);
@@ -256,7 +256,7 @@ namespace propane
                     const auto label_name_index = label_declarations[branch.first];
                     if (label_name_index == invalid_index)
                     {
-                        VALIDATE_LABEL_DEF(false, size_t(branch.first));
+                        VALIDATE_LABEL_DEF(false, static_cast<size_t>(branch.first));
                     }
                     else
                     {
@@ -275,7 +275,7 @@ namespace propane
                     auto locations = unresolved_branches.find(branch_index);
                     for (auto& offset : locations->second)
                     {
-                        *reinterpret_cast<size_t*>(bytecode.data() + offset) = label.first;
+                        *reinterpret_cast<index_t*>(bytecode.data() + offset) = label.first;
                     }
                 }
                 if (label.first >= bytecode.size())
@@ -431,10 +431,10 @@ namespace propane
         void write_label(label_idx label)
         {
             auto branch = unresolved_branches.find(label);
-            vector<size_t>& list = branch == unresolved_branches.end() ? unresolved_branches.emplace(label, vector<size_t>()).first->second : branch->second;
-            list.push_back(bytecode.size());
+            vector<index_t>& list = branch == unresolved_branches.end() ? unresolved_branches.emplace(label, vector<index_t>()).first->second : branch->second;
+            list.push_back(index_t(bytecode.size()));
 
-            append_bytecode(size_t(0));
+            append_bytecode(index_t(0));
         }
 
         void write_expression(opcode op, address lhs)
@@ -515,7 +515,7 @@ namespace propane
                 append_bytecode(opcode::sw);
                 write_address(addr);
 
-                append_bytecode(uint32_t(switch_labels.size()));
+                append_bytecode(static_cast<uint32_t>(switch_labels.size()));
                 for (auto it : switch_labels)
                 {
                     write_label(it);
@@ -544,7 +544,7 @@ namespace propane
                 }
                 append_bytecode(idx);
 
-                append_bytecode(uint8_t(args.size()));
+                append_bytecode(static_cast<uint8_t>(args.size()));
                 for (const auto& it : args)
                 {
                     write_subcode_zero();
@@ -560,7 +560,7 @@ namespace propane
                 append_bytecode(opcode::callv);
                 write_address(addr);
 
-                append_bytecode(uint8_t(args.size()));
+                append_bytecode(static_cast<uint8_t>(args.size()));
                 for (const auto& it : args)
                 {
                     write_subcode_zero();
@@ -788,7 +788,7 @@ namespace propane
             const auto label_name_index = writer.label_declarations[label];
             if (label_name_index == invalid_index)
             {
-                VALIDATE_LABEL_DEC(false, size_t(label));
+                VALIDATE_LABEL_DEC(false, static_cast<size_t>(label));
             }
             else
             {
@@ -796,7 +796,7 @@ namespace propane
             }
         }
 
-        writer.label_locations.emplace(label, writer.bytecode.size());
+        writer.label_locations.emplace(label, index_t(writer.bytecode.size()));
     }
 
     void generator::method_writer::write_noop()
@@ -980,6 +980,8 @@ namespace propane
     {
         auto& writer = self();
         auto& gen = writer.gen;
+
+        ASSERT(writer.bytecode.size() <= static_cast<size_t>(~index_t(0)), "Method bytecode exceeds maximum supported value");
 
         // Ensure the method has returned a value
         if (writer.expects_return_value)

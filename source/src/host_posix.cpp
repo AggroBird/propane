@@ -17,7 +17,7 @@ namespace propane
         ASSERT(len, "Allocation length cannot be zero");
 
         // Get page size
-        const size_t page_size = size_t(sysconf(_SC_PAGESIZE));
+        const size_t page_size = static_cast<size_t>(sysconf(_SC_PAGESIZE));
         ASSERT(page_size, "Page size is zero");
 
         // Round up to page size

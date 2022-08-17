@@ -64,11 +64,11 @@ namespace propane
 
     constexpr opcode operator+(opcode lhs, opcode rhs) noexcept
     {
-        return opcode(uint32_t(lhs) + uint32_t(rhs));
+        return opcode(static_cast<uint32_t>(lhs) + static_cast<uint32_t>(rhs));
     }
     constexpr opcode operator-(opcode lhs, opcode rhs) noexcept
     {
-        return opcode(uint32_t(lhs) - uint32_t(rhs));
+        return opcode(static_cast<uint32_t>(lhs) - static_cast<uint32_t>(rhs));
     }
 }
 

@@ -32,23 +32,23 @@ namespace propane
         template<typename value_t> inline void write_direct(const value_t& value)
         {
             static_assert(std::is_trivially_copyable_v<value_t>, "Trivial type required");
-            append(reinterpret_cast<const uint8_t*>(&value), uint32_t(sizeof(value_t)));
+            append(reinterpret_cast<const uint8_t*>(&value), static_cast<uint32_t>(sizeof(value_t)));
         }
         template<typename value_t> inline void write_direct(const value_t* value_ptr, uint32_t count)
         {
             static_assert(std::is_trivially_copyable_v<value_t>, "Trivial type required");
-            append(reinterpret_cast<const uint8_t*>(value_ptr), uint32_t(sizeof(value_t)) * count);
+            append(reinterpret_cast<const uint8_t*>(value_ptr), static_cast<uint32_t>(sizeof(value_t)) * count);
         }
         inline void write_direct(string_view str)
         {
-            write_direct(str.data(), uint32_t(str.size()));
+            write_direct(str.data(), static_cast<uint32_t>(str.size()));
         }
 
         // Write deferred
         block_writer& write_deferred()
         {
-            const uint32_t offset = uint32_t(binary.size());
-            reserve(uint32_t(sizeof(uint32_t) * 2));
+            const uint32_t offset = static_cast<uint32_t>(binary.size());
+            reserve(static_cast<uint32_t>(sizeof(uint32_t) * 2));
             block_writer* ptr = new block_writer(offset);
             children.push_back(ptr);
             return *ptr;
@@ -61,7 +61,7 @@ namespace propane
         {
             for (auto& it : children)
             {
-                uint32_t write_offset = uint32_t(binary.size());
+                uint32_t write_offset = static_cast<uint32_t>(binary.size());
 
                 // Pad to ensure 32 bit alignment
                 constexpr size_t alignment = sizeof(uint32_t);
@@ -73,7 +73,7 @@ namespace propane
                 }
 
                 const vector<uint8_t> cb = it->finalize();
-                append(cb.data(), uint32_t(cb.size()));
+                append(cb.data(), static_cast<uint32_t>(cb.size()));
 
                 // Write header
                 uint32_t* write = reinterpret_cast<uint32_t*>(binary.data() + it->off);

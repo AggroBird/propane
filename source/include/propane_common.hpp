@@ -203,7 +203,7 @@ namespace propane
         static constexpr index_t type_offset = 30;
         static constexpr index_t prefix_offset = 28;
         static constexpr index_t modifier_offset = 26;
-        static constexpr index_t index_max = ~index_t(0) >> (32 - address_header_constants::index_bit_count);
+        static constexpr index_t index_max = ~0u >> (32 - address_header_constants::index_bit_count);
     }
 
     struct address_header
@@ -213,15 +213,15 @@ namespace propane
             value(init) {}
         address_header(address_type type, address_prefix prefix, address_modifier modifier, index_t index) noexcept
         {
-            value = (index_t(index) & address_header_constants::index_max);
-            value |= ((index_t(type) & address_header_constants::flag_mask) << address_header_constants::type_offset);
-            value |= ((index_t(prefix) & address_header_constants::flag_mask) << address_header_constants::prefix_offset);
-            value |= ((index_t(modifier) & address_header_constants::flag_mask) << address_header_constants::modifier_offset);
+            value = (static_cast<index_t>(index) & address_header_constants::index_max);
+            value |= ((static_cast<index_t>(type) & address_header_constants::flag_mask) << address_header_constants::type_offset);
+            value |= ((static_cast<index_t>(prefix) & address_header_constants::flag_mask) << address_header_constants::prefix_offset);
+            value |= ((static_cast<index_t>(modifier) & address_header_constants::flag_mask) << address_header_constants::modifier_offset);
         }
         address_header(type_idx constant_type) noexcept
         {
-            value = index_t(constant_type) & address_header_constants::index_max;
-            value |= ((index_t(address_type::constant) & address_header_constants::flag_mask) << address_header_constants::type_offset);
+            value = static_cast<index_t>(constant_type) & address_header_constants::index_max;
+            value |= ((static_cast<index_t>(address_type::constant) & address_header_constants::flag_mask) << address_header_constants::type_offset);
         }
 
         inline const address_type type() const noexcept
@@ -238,28 +238,28 @@ namespace propane
         }
         inline index_t index() const noexcept
         {
-            return index_t(value & address_header_constants::index_max);
+            return static_cast<index_t>(value & address_header_constants::index_max);
         }
 
         inline void set_type(address_type type) noexcept
         {
             value &= ~(address_header_constants::flag_mask << address_header_constants::type_offset);
-            value |= ((index_t(type) & address_header_constants::flag_mask) << address_header_constants::type_offset);
+            value |= ((static_cast<index_t>(type) & address_header_constants::flag_mask) << address_header_constants::type_offset);
         }
         inline void set_prefix(address_prefix prefix) noexcept
         {
             value &= ~(address_header_constants::flag_mask << address_header_constants::prefix_offset);
-            value |= ((index_t(prefix) & address_header_constants::flag_mask) << address_header_constants::prefix_offset);
+            value |= ((static_cast<index_t>(prefix) & address_header_constants::flag_mask) << address_header_constants::prefix_offset);
         }
         inline void set_modifier(address_modifier modifier) noexcept
         {
             value &= ~(address_header_constants::flag_mask << address_header_constants::modifier_offset);
-            value |= ((index_t(modifier) & address_header_constants::flag_mask) << address_header_constants::modifier_offset);
+            value |= ((static_cast<index_t>(modifier) & address_header_constants::flag_mask) << address_header_constants::modifier_offset);
         }
         inline void set_index(index_t index) noexcept
         {
             value &= ~address_header_constants::index_max;
-            value |= (index_t(index) & address_header_constants::index_max);
+            value |= (static_cast<index_t>(index) & address_header_constants::index_max);
         }
 
         inline bool operator==(const address_header& other) const noexcept
@@ -291,7 +291,7 @@ namespace propane
 
     constexpr type_flags operator|(type_flags lhs, type_flags rhs) noexcept
     {
-        return type_flags(index_t(lhs) | index_t(rhs));
+        return type_flags(static_cast<index_t>(lhs) | static_cast<index_t>(rhs));
     }
     constexpr type_flags& operator|=(type_flags& lhs, type_flags rhs) noexcept
     {
@@ -300,7 +300,7 @@ namespace propane
     }
     constexpr bool operator&(type_flags lhs, type_flags rhs) noexcept
     {
-        return type_flags(index_t(lhs) & index_t(rhs)) != type_flags::none;
+        return type_flags(static_cast<index_t>(lhs) & static_cast<index_t>(rhs)) != type_flags::none;
     }
 
 

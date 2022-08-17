@@ -162,12 +162,12 @@ namespace propane
         }
         else if (max_val <= (std::numeric_limits<uint32_t>::max() >> 2))
         {
-            const uint32_t u32 = static_cast<uint32_t>(max_val << 2) | uint32_t(2);
+            const uint32_t u32 = static_cast<uint32_t>(max_val << 2) | 2u;
             append_bytecode(out_key, u32);
         }
         else
         {
-            append_bytecode(out_key, uint8_t(3));
+            append_bytecode(out_key, static_cast<uint8_t>(3));
             append_bytecode(out_key, max_val);
         }
     }

@@ -8,7 +8,7 @@
     "Attempted to merge an invalid intermediate")
 #define VALIDATE_COMPATIBILITY(expr) VALIDATE(ERRC::MRG_INCOMPATIBLE_INTERMEDIATE, expr, \
     "Attempted to merge an intermediate that was build using an incompatible toolchain")
-#define VALIDATE_INDEX(idx, max) VALIDATE(ERRC::MRG_INDEX_OUT_OF_RANGE, size_t(idx) < size_t(max), \
+#define VALIDATE_INDEX(idx, max) VALIDATE(ERRC::MRG_INDEX_OUT_OF_RANGE, static_cast<size_t>(idx) < static_cast<size_t>(max), \
     "% out of range", get_index_type_name(idx))
 #define VALIDATE_TYPE_DEF(expr, name, lhs_meta, rhs_meta) VALIDATE(ERRC::MRG_TYPE_REDEFINITION, expr, \
     "Type '%' (%) has already been defined (see %)", name, lhs_meta, rhs_meta)
@@ -112,7 +112,7 @@ namespace propane
                 if (is_base_type(src.index)) continue;
                 if (src.is_generated()) continue;
 
-                if (size_t(src.index) == types.size())
+                if (static_cast<size_t>(src.index) == types.size())
                 {
                     if (src.is_defined()) untranslated_types.push_back(src.index);
 
@@ -292,7 +292,7 @@ namespace propane
             }
             for (auto& src : merge.methods)
             {
-                if (size_t(src.index) == methods.size())
+                if (static_cast<size_t>(src.index) == methods.size())
                 {
                     if (src.is_defined()) untranslated_methods.push_back(src.index);
 

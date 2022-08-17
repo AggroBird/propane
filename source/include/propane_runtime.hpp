@@ -276,14 +276,14 @@ namespace propane
         {
             if (is_valid_index(key))
             {
-                const auto& entry = entries[size_t(key)];
+                const auto& entry = entries[static_cast<size_t>(key)];
                 return std::string_view(strings.data() + entry.offset, entry.length);
             }
             return std::string_view();
         }
         inline bool is_valid_index(key_t key) const noexcept
         {
-            return size_t(key) < entries.size();
+            return static_cast<size_t>(key) < entries.size();
         }
     };
 

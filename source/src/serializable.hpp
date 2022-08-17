@@ -193,7 +193,7 @@ namespace propane
             {
                 static_assert(std::is_trivially_copyable_v<value_t>, "type is not trivially copyable");
 
-                writer.write_direct(ptr, uint32_t(count));
+                writer.write_direct(ptr, static_cast<uint32_t>(count));
             }
             inline static void read(const void*& data, value_t& value)
             {
@@ -232,7 +232,7 @@ namespace propane
             {
                 auto& w = writer.write_deferred();
                 serialize_binary<value_t, is_packed_v<value_t>>::write(w, value.data(), value.size());
-                w.increment_length(uint32_t(value.size()));
+                w.increment_length(static_cast<uint32_t>(value.size()));
             }
             inline static void read(const void*& data, std::vector<value_t>& value)
             {
@@ -250,7 +250,7 @@ namespace propane
             {
                 auto& w = writer.write_deferred();
                 serialize_binary<value_t, is_packed_v<value_t>>::write(w, value.data(), value.size());
-                w.increment_length(uint32_t(value.size()));
+                w.increment_length(static_cast<uint32_t>(value.size()));
             }
             inline static void read(const void*& data, block<value_t>& value)
             {
@@ -272,7 +272,7 @@ namespace propane
                     serializer<key_t>::write(w, it.first);
                     serializer<value_t>::write(w, it.second);
                 }
-                w.increment_length(uint32_t(value.size()));
+                w.increment_length(static_cast<uint32_t>(value.size()));
             }
             inline static void read(const void*& data, std::map<key_t, value_t>& value)
             {
@@ -287,7 +287,7 @@ namespace propane
             {
                 auto& w = writer.write_deferred();
                 serialize_binary<value_t, is_packed_v<value_t>>::write(w, value.data(), value.size());
-                w.increment_length(uint32_t(value.size()));
+                w.increment_length(static_cast<uint32_t>(value.size()));
             }
             inline static void read(const void*& data, indexed_vector<key_t, value_t>& value)
             {
