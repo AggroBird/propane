@@ -61,7 +61,17 @@ namespace propane
         {
             for (auto& it : children)
             {
-                const uint32_t write_offset = uint32_t(binary.size());
+                uint32_t write_offset = uint32_t(binary.size());
+
+                // Pad to ensure 32 bit alignment
+                constexpr size_t alignment = sizeof(uint32_t);
+                const uint32_t remaining = write_offset & (alignment - 1);
+                if (remaining != 0)
+                {
+                    write_offset += (alignment - remaining);
+                    binary.resize(write_offset);
+                }
+
                 const vector<uint8_t> cb = it->finalize();
                 append(cb.data(), uint32_t(cb.size()));
 
