@@ -118,7 +118,6 @@ namespace propane
     }
 
 
-#if 0
     class translator_c_impl final : ofstream
     {
     public:
@@ -1551,11 +1550,9 @@ namespace propane
         const type& size_type;
         const type& vptr_type;
     };
-#endif
 
     void translator_c::generate(const char* out_file, const assembly& linked_assembly)
     {
-#if 0
         VALIDATE_ASSEMBLY(linked_assembly.is_valid());
         VALIDATE_COMPATIBILITY(linked_assembly.is_compatible());
 
@@ -1563,6 +1560,5 @@ namespace propane
         VALIDATE_ENTRYPOINT(data.methods.is_valid_index(data.main));
 
         translator_c_impl generator(out_file, data);
-#endif
     }
 }

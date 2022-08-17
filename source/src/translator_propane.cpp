@@ -18,7 +18,6 @@ using std::ofstream;
 
 namespace propane
 {
-#if 0
     class translator_propane_impl final : ofstream
     {
     public:
@@ -534,17 +533,14 @@ namespace propane
 
         vector<string> type_names;
     };
-#endif
 
     void translator_propane::generate(const char* out_file, const assembly& linked_assembly)
     {
-#if 0
         VALIDATE_ASSEMBLY(linked_assembly.is_valid());
         VALIDATE_COMPATIBILITY(linked_assembly.is_compatible());
 
         const assembly_data& data = linked_assembly.assembly_ref();
 
         translator_propane_impl generator(out_file, data);
-#endif
     }
 }
