@@ -52,59 +52,33 @@ namespace propane
         return *reinterpret_cast<const const_pointer_t*>(addr);
     }
 
-    struct base_type_info
+    constexpr native_type_info_t base_types[] =
     {
-        constexpr base_type_info(const char* name, type_idx type, size_t size) :
-            name(name),
-            type(type),
-            size(size)
-        {
-
-        }
-
-        template<typename value_t> static constexpr base_type_info make(const char* name)
-        {
-            return base_type_info(name, derive_type_index_v<value_t>, derive_base_size_v<value_t>);
-        }
-
-        string_view name;
-        type_idx type;
-        size_t size;
+        native_type_info_v<i8>,
+        native_type_info_v<u8>,
+        native_type_info_v<i16>,
+        native_type_info_v<u16>,
+        native_type_info_v<i32>,
+        native_type_info_v<u32>,
+        native_type_info_v<i64>,
+        native_type_info_v<u64>,
+        native_type_info_v<f32>,
+        native_type_info_v<f64>,
+        native_type_info_v<vptr>,
+        native_type_info_v<void>,
     };
+    constexpr size_t base_type_count = sizeof(base_types) / sizeof(native_type_info_t);
 
-    constexpr base_type_info base_types[] =
+    constexpr native_type_info_t alias_types[] =
     {
-        base_type_info::make<i8>("byte"),
-        base_type_info::make<u8>("ubyte"),
-        base_type_info::make<i16>("short"),
-        base_type_info::make<u16>("ushort"),
-        base_type_info::make<i32>("int"),
-        base_type_info::make<u32>("uint"),
-        base_type_info::make<i64>("long"),
-        base_type_info::make<u64>("ulong"),
-        base_type_info::make<f32>("float"),
-        base_type_info::make<f64>("double"),
-        base_type_info::make<vptr>("void*"),
-        base_type_info::make<void>("void"),
+        native_type_info_t(native_alias_name_v<size_t>, derive_type_index_v<size_t>, native_type_size_v<size_t>),
+        native_type_info_t(native_alias_name_v<offset_t>, derive_type_index_v<offset_t>, native_type_size_v<offset_t>),
     };
-    constexpr size_t base_type_count() noexcept
-    {
-        return sizeof(base_types) / sizeof(base_type_info);
-    }
-
-    constexpr base_type_info alias_types[] =
-    {
-        base_type_info::make<offset_t>("offset"),
-        base_type_info::make<size_t>("size"),
-    };
-    constexpr size_t alias_type_count() noexcept
-    {
-        return sizeof(alias_types) / sizeof(base_type_info);
-    }
+    constexpr size_t alias_type_count = sizeof(alias_types) / sizeof(native_type_info_t);
 
     constexpr bool is_base_type(type_idx key) noexcept
     {
-        return size_t(key) < base_type_count();
+        return size_t(key) < base_type_count;
     }
 
     constexpr size_t get_base_type_size(type_idx btype) noexcept

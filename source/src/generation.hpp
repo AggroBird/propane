@@ -41,14 +41,14 @@ namespace propane
         gen_type(name_idx name, type_idx index) :
             name(name),
             index(index) {}
-        gen_type(name_idx name, const base_type_info& btype_info) :
-            gen_type(name, btype_info.type)
+        gen_type(name_idx name, const native_type_info_t& btype_info) :
+            gen_type(name, btype_info.index)
         {
-            if (btype_info.type == type_idx::voidtype)
+            if (btype_info.index == type_idx::voidtype)
             {
                 pointer_type = type_idx::vptr;
             }
-            else if (btype_info.type == type_idx::vptr)
+            else if (btype_info.index == type_idx::vptr)
             {
                 make_pointer(type_idx::voidtype);
             }

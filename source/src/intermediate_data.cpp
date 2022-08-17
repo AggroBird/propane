@@ -100,19 +100,19 @@ namespace propane
     void gen_intermediate_data::initialize_base_types()
     {
         // Initialize base types
-        for (size_t i = 0; i < base_type_count(); i++)
+        for (size_t i = 0; i < base_type_count; i++)
         {
             const auto& btype_info = base_types[i];
-            const name_idx name = database.emplace(btype_info.name, btype_info.type).key;
+            const name_idx name = database.emplace(btype_info.name, btype_info.index).key;
             gen_type type(name, btype_info);
             types.push_back(type);
         }
 
         // Aliases
-        for (size_t i = 0; i < alias_type_count(); i++)
+        for (size_t i = 0; i < alias_type_count; i++)
         {
             const auto& btype_info = alias_types[i];
-            database.emplace(btype_info.name, btype_info.type);
+            database.emplace(btype_info.name, btype_info.index);
         }
     }
 

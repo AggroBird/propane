@@ -468,7 +468,7 @@ namespace propane
 
     gen_intermediate_data gen_intermediate_data::merge(gen_intermediate_data&& lhs_data, gen_intermediate_data&& rhs_data)
     {
-        ASSERT(lhs_data.types.size() >= base_type_count(), "Merge destination does not have base types set up");
+        ASSERT(lhs_data.types.size() >= base_type_count, "Merge destination does not have base types set up");
 
         return merger(std::move(lhs_data), std::move(rhs_data));
     }

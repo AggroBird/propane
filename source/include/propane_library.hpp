@@ -20,23 +20,6 @@ namespace propane
         size_t pointer = 0;
     };
 
-    // Specializing this template allows for binding native structs to the runtime,
-    // so they can be used as parameters in native library calls.
-    // Since the runtime has no notion of padding, extra caution needs to be taken to ensure
-    // the structs are properly packed have the same layout in both runtime and native environments.
-    template<typename value_t> constexpr std::string_view native_type_name_v = std::string_view();
-    template<> constexpr std::string_view native_type_name_v<int8_t> = "byte";
-    template<> constexpr std::string_view native_type_name_v<uint8_t> = "ubyte";
-    template<> constexpr std::string_view native_type_name_v<int16_t> = "short";
-    template<> constexpr std::string_view native_type_name_v<uint16_t> = "ushort";
-    template<> constexpr std::string_view native_type_name_v<int32_t> = "int";
-    template<> constexpr std::string_view native_type_name_v<uint32_t> = "uint";
-    template<> constexpr std::string_view native_type_name_v<int64_t> = "long";
-    template<> constexpr std::string_view native_type_name_v<uint64_t> = "ulong";
-    template<> constexpr std::string_view native_type_name_v<float> = "float";
-    template<> constexpr std::string_view native_type_name_v<double> = "double";
-    template<> constexpr std::string_view native_type_name_v<void> = "void";
-
     namespace native
     {
         // Get type size
