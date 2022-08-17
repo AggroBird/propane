@@ -235,13 +235,13 @@ namespace propane
     }
 
     // Read/write bytes
-    template<typename src_t> src_t read(const_pointer_t ptr) noexcept
+    template<typename src_t> inline src_t read(const_pointer_t ptr) noexcept
     {
         static_assert(std::is_trivial_v<src_t>, "Type must be trivial");
         const src_t src = *reinterpret_cast<const src_t*>(ptr);
         return src;
     }
-    template<typename dst_t> dst_t& write(pointer_t ptr) noexcept
+    template<typename dst_t> inline dst_t& write(pointer_t ptr) noexcept
     {
         static_assert(std::is_trivial_v<dst_t>, "Type must be trivial");
         dst_t& dst = *reinterpret_cast<dst_t*>(ptr);

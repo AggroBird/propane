@@ -58,24 +58,52 @@ namespace propane
         hostmem handle;
     };
 
-    template<typename value_t> value_t get_value(const_address_t addr) { return *reinterpret_cast<const value_t*>(addr.addr); }
-    template<typename value_t> void dump_value(const_address_t addr) { std::cout << get_value<value_t>(addr); }
-    template<> inline void dump_value<int8_t>(const_address_t addr) { std::cout << int32_t(get_value<int8_t>(addr)); }
-    template<> inline void dump_value<uint8_t>(const_address_t addr) { std::cout << uint32_t(get_value<uint8_t>(addr)); }
-    template<> inline void dump_value<bool>(const_address_t addr)
+    template<typename value_t> value_t get_value(const_pointer_t addr) { return *reinterpret_cast<const value_t*>(addr); }
+    template<typename value_t> void dump_value(const_pointer_t addr) { std::cout << get_value<value_t>(addr); }
+    template<> inline void dump_value<int8_t>(const_pointer_t addr) { std::cout << int32_t(get_value<int8_t>(addr)); }
+    template<> inline void dump_value<uint8_t>(const_pointer_t addr) { std::cout << uint32_t(get_value<uint8_t>(addr)); }
+    template<> inline void dump_value<bool>(const_pointer_t addr)
     {
         const uint8_t b = get_value<uint8_t>(addr);
         if (b == 0) std::cout << "false";
         else if (b == 1) std::cout << "true";
         else std::cout << uint32_t(b);
     }
-    template<typename value_t> void dump_var(const_address_t addr)
+    template<typename value_t> void dump_var(const_pointer_t addr)
     {
         std::cout << '(';
         dump_value<value_t>(addr);
         std::cout << ')';
     }
 
+    // Stack frame
+    struct stack_frame_t
+    {
+        stack_frame_t() = default;
+        stack_frame_t(size_t iptr, size_t return_offset, size_t frame_offset, size_t param_offset, size_t stack_offset, size_t stack_end, method_idx method) :
+            iptr(iptr),
+            return_offset(return_offset),
+            frame_offset(frame_offset),
+            param_offset(param_offset),
+            stack_offset(stack_offset),
+            stack_end(stack_end),
+            method(method) {}
+
+        // Current instruction offset at the time of calling
+        size_t iptr = 0;
+        // Offset on the previous stack frame where the return value should go
+        size_t return_offset = 0;
+        // Offset of the pushed stackframe
+        size_t frame_offset = 0;
+        // Offset of the method parameters
+        size_t param_offset = 0;
+        // Offset of the method stackvars
+        size_t stack_offset = 0;
+        // End of the method stack (excluding return values)
+        size_t stack_end = 0;
+        // Current executing method
+        method_idx method = method_idx::invalid;
+    };
 
     class interpreter final
     {
@@ -203,15 +231,15 @@ namespace propane
                     case opcode::psub: psub(); break;
                     case opcode::pdif: pdif(); break;
 
-                    case opcode::cmp: write<int32_t>(push_return_value(int_type).addr) = cmp(); break;
-                    case opcode::ceq: write<int32_t>(push_return_value(int_type).addr) = ceq(); break;
-                    case opcode::cne: write<int32_t>(push_return_value(int_type).addr) = cne(); break;
-                    case opcode::cgt: write<int32_t>(push_return_value(int_type).addr) = cgt(); break;
-                    case opcode::cge: write<int32_t>(push_return_value(int_type).addr) = cge(); break;
-                    case opcode::clt: write<int32_t>(push_return_value(int_type).addr) = clt(); break;
-                    case opcode::cle: write<int32_t>(push_return_value(int_type).addr) = cle(); break;
-                    case opcode::cze: write<int32_t>(push_return_value(int_type).addr) = cze(); break;
-                    case opcode::cnz: write<int32_t>(push_return_value(int_type).addr) = cnz(); break;
+                    case opcode::cmp: write<int32_t>(push_return_value(int_type)) = cmp(); break;
+                    case opcode::ceq: write<int32_t>(push_return_value(int_type)) = ceq(); break;
+                    case opcode::cne: write<int32_t>(push_return_value(int_type)) = cne(); break;
+                    case opcode::cgt: write<int32_t>(push_return_value(int_type)) = cgt(); break;
+                    case opcode::cge: write<int32_t>(push_return_value(int_type)) = cge(); break;
+                    case opcode::clt: write<int32_t>(push_return_value(int_type)) = clt(); break;
+                    case opcode::cle: write<int32_t>(push_return_value(int_type)) = cle(); break;
+                    case opcode::cze: write<int32_t>(push_return_value(int_type)) = cze(); break;
+                    case opcode::cnz: write<int32_t>(push_return_value(int_type)) = cnz(); break;
 
                     case opcode::br: br(); break;
 
@@ -330,7 +358,7 @@ namespace propane
 
             set(sub, lhs_addr, rhs_addr);
         }
-        inline void set(subcode sub, address_t lhs_addr, const_address_t rhs_addr) noexcept
+        inline void set(subcode sub, pointer_t lhs_addr, const_pointer_t rhs_addr) noexcept
         {
             switch (sub)
             {
@@ -379,7 +407,7 @@ namespace propane
                 case subcode(42): write<double>(lhs_addr) = (double)read<uint64_t>(rhs_addr); return;
                 case subcode(43): write<double>(lhs_addr) = (double)read<float>(rhs_addr); return;
                 case subcode(44): write<double>(lhs_addr) = read<double>(rhs_addr); return;
-                case subcode(45): memcpy(lhs_addr.addr, rhs_addr.addr, rhs_addr.type_ptr->total_size); break;
+                case subcode(45): memcpy(lhs_addr, rhs_addr, get_addr_type(true).total_size); break;
             }
         }
         inline void conv() noexcept
@@ -987,7 +1015,7 @@ namespace propane
             auto lhs_addr = read_address(false);
             auto rhs_addr = read_address(true);
 
-            const size_t underlying_size = lhs_addr.type_ptr->generated.pointer.underlying_size;
+            const size_t underlying_size = get_addr_type(false).generated.pointer.underlying_size;
             switch (sub)
             {
                 case subcode(0): write<pointer_t>(lhs_addr) += ((size_t)underlying_size * (size_t)read<int8_t>(rhs_addr)); return;
@@ -1006,7 +1034,7 @@ namespace propane
             auto lhs_addr = read_address(false);
             auto rhs_addr = read_address(true);
 
-            const size_t underlying_size = lhs_addr.type_ptr->generated.pointer.underlying_size;
+            const size_t underlying_size = get_addr_type(false).generated.pointer.underlying_size;
             switch (sub)
             {
                 case subcode(0): write<pointer_t>(lhs_addr) -= ((size_t)underlying_size * (size_t)read<int8_t>(rhs_addr)); return;
@@ -1024,10 +1052,10 @@ namespace propane
             auto lhs_addr = read_address(false);
             auto rhs_addr = read_address(true);
 
-            const offset_t underlying_size = offset_t(lhs_addr.type_ptr->generated.pointer.underlying_size);
-            const offset_t lhs = reinterpret_cast<offset_t>(dereference(lhs_addr.addr));
-            const offset_t rhs = reinterpret_cast<offset_t>(dereference(rhs_addr.addr));
-            write<offset_t>(push_return_value(offset_type).addr) = (lhs - rhs) / underlying_size;
+            const offset_t underlying_size = offset_t(get_addr_type(false).generated.pointer.underlying_size);
+            const offset_t lhs = reinterpret_cast<offset_t>(dereference(lhs_addr));
+            const offset_t rhs = reinterpret_cast<offset_t>(dereference(rhs_addr));
+            write<offset_t>(push_return_value(offset_type)) = (lhs - rhs) / underlying_size;
         }
 
         inline int32_t cmp() noexcept
@@ -1849,19 +1877,19 @@ namespace propane
 
         inline void sw() noexcept
         {
-            const_address_t idx_addr = read_address(false);
+            const_pointer_t idx_addr = read_address(false);
 
             uint32_t idx = 0;
-            switch (idx_addr.type_ptr->index)
+            switch (addr_type[false])
             {
-                case type_idx::i8: idx = (uint32_t)read<i8>(idx_addr.addr); break;
-                case type_idx::u8: idx = (uint32_t)read<u8>(idx_addr.addr); break;
-                case type_idx::i16: idx = (uint32_t)read<i16>(idx_addr.addr); break;
-                case type_idx::u16: idx = (uint32_t)read<u16>(idx_addr.addr); break;
-                case type_idx::i32: idx = (uint32_t)read<i32>(idx_addr.addr); break;
-                case type_idx::u32: idx = (uint32_t)read<u32>(idx_addr.addr); break;
-                case type_idx::i64: idx = (uint32_t)read<i64>(idx_addr.addr); break;
-                case type_idx::u64: idx = (uint32_t)read<u64>(idx_addr.addr); break;
+                case type_idx::i8: idx = (uint32_t)read<i8>(idx_addr); break;
+                case type_idx::u8: idx = (uint32_t)read<u8>(idx_addr); break;
+                case type_idx::i16: idx = (uint32_t)read<i16>(idx_addr); break;
+                case type_idx::u16: idx = (uint32_t)read<u16>(idx_addr); break;
+                case type_idx::i32: idx = (uint32_t)read<i32>(idx_addr); break;
+                case type_idx::u32: idx = (uint32_t)read<u32>(idx_addr); break;
+                case type_idx::i64: idx = (uint32_t)read<i64>(idx_addr); break;
+                case type_idx::u64: idx = (uint32_t)read<u64>(idx_addr); break;
             }
 
             const uint32_t label_count = read_bytecode<uint32_t>(iptr);
@@ -1891,26 +1919,28 @@ namespace propane
         }
         inline void callv()
         {
-            const_address_t method_ptr = read_address(false);
-            size_t method_handle = *reinterpret_cast<const size_t*>(method_ptr.addr);
+            const_pointer_t method_ptr = read_address(false);
+            size_t method_handle = *reinterpret_cast<const size_t*>(method_ptr);
             ASSERT(method_handle != 0, "Attempted to invoke a null method pointer");
             method_handle ^= data.runtime_hash;
             ASSERT(is_valid_method(method_handle), "Attempted to invoke an invalid method pointer");
             const method& call_method = get_method(method_idx(method_handle));
-            push_stack_frame(call_method, get_signature(method_ptr.type_ptr->generated.signature.index));
+            push_stack_frame(call_method, get_signature(get_addr_type(false).generated.signature.index));
         }
         inline void ret()
         {
+            clear_return_value();
+
             pop_stack_frame();
         }
         inline void retv()
         {
             const subcode sub = read_subcode();
-            const_address_t ret_value = read_address(true);
+            const_pointer_t ret_value = read_address(true);
 
             // Set return value (of the current signature)
-            const auto& return_type = get_type(current_signature->return_type);
-            return_value_addr = address_t(&return_type, stack_data + sf.return_offset);
+            return_value_addr = stack_data + sf.return_offset;
+            return_value_type = current_signature->return_type;
 
             set(sub, return_value_addr, ret_value);
 
@@ -1919,17 +1949,16 @@ namespace propane
 
         inline void dump()
         {
-            const const_address_t src_addr = read_address(true);
+            const const_pointer_t src_addr = read_address(true);
 
-            dump_recursive(src_addr);
+            dump_recursive(src_addr, get_addr_type(true));
 
             std::cout << std::endl;
         }
 
 
-        void dump_recursive(const_address_t addr)
+        void dump_recursive(const_pointer_t addr, const type& type)
         {
-            const auto& type = *addr.type_ptr;
             std::cout << get_name(type);
             switch (type.index)
             {
@@ -1947,34 +1976,29 @@ namespace propane
                 {
                     if (type.is_pointer() || type.is_signature())
                     {
-                        std::cout << '(' << (void*)*reinterpret_cast<const const_pointer_t*>(addr.addr) << ')';
+                        std::cout << '(' << (void*)*reinterpret_cast<const const_pointer_t*>(addr) << ')';
                     }
                     else if (type.is_array())
                     {
                         std::cout << '{';
-                        const_pointer_t ptr = addr.addr;
+                        const_pointer_t ptr = addr;
                         const auto& underlying_type = get_type(type.generated.array.underlying_type);
                         for (size_t i = 0; i < type.generated.array.array_size; i++)
                         {
-                            addr.addr = ptr + underlying_type.total_size * i;
-                            addr.type_ptr = &get_type(underlying_type.index);
                             std::cout << (i == 0 ? " " : ", ");
-                            dump_recursive(addr);
+                            dump_recursive(ptr + underlying_type.total_size * i, get_type(underlying_type.index));
                         }
                         std::cout << " }";
                     }
                     else if (!type.fields.empty())
                     {
                         std::cout << '{';
-                        const_pointer_t ptr = addr.addr;
                         for (size_t i = 0; i < type.fields.size(); i++)
                         {
                             auto& field = type.fields[i];
-                            addr.addr = ptr + field.offset;
-                            addr.type_ptr = &get_type(field.type);
                             std::cout << (i == 0 ? " " : ", ");
                             std::cout << database[field.name] << " = ";
-                            dump_recursive(addr);
+                            dump_recursive(addr + field.offset, get_type(field.type));
                         }
                         std::cout << " }";
                     }
@@ -2112,9 +2136,9 @@ namespace propane
         {
             return read_bytecode<subcode>(iptr);
         }
-        address_t read_address(bool is_rhs) noexcept
+        pointer_t read_address(bool is_rhs) noexcept
         {
-            address_t result;
+            pointer_t result = nullptr;
 
             const address_data_t& addr = *reinterpret_cast<const address_data_t*>(iptr);
 
@@ -2129,13 +2153,15 @@ namespace propane
                     if (index == address_header_constants::index_max)
                     {
                         result = return_value_addr;
+                        addr_type[is_rhs] = return_value_type;
                     }
                     else
                     {
                         const auto& stack_var = minf.stackvars[index];
                         const size_t offset = sf.stack_offset + stack_var.offset;
 
-                        result = address_t(&get_type(stack_var.type), stack_data + offset);
+                        result = stack_data + offset;
+                        addr_type[is_rhs] = stack_var.type;
                     }
                 }
                 break;
@@ -2145,7 +2171,8 @@ namespace propane
                     const auto& param = csig.parameters[index];
                     const size_t offset = sf.param_offset + param.offset;
 
-                    result = address_t(&get_type(param.type), stack_data + offset);
+                    result = stack_data + offset;
+                    addr_type[is_rhs] = param.type;
                 }
                 break;
 
@@ -2158,7 +2185,8 @@ namespace propane
                     global &= global_flags::constant_mask;
 
                     const auto& global_info = table[global];
-                    result = address_t(&get_type(global_info.type), pointer_t(table.data + global_info.offset));
+                    result = table.data + global_info.offset;
+                    addr_type[is_rhs] = global_info.type;
                 }
                 break;
 
@@ -2169,7 +2197,8 @@ namespace propane
                     pointer_t ptr = (pointer_t)iptr;
                     const auto& type = get_type(btype_idx);
                     iptr += type.total_size;
-                    return address_t(&type, ptr);
+                    addr_type[is_rhs] = type.index;
+                    return ptr;
                 }
                 break;
             }
@@ -2181,31 +2210,33 @@ namespace propane
                 case address_modifier::direct_field:
                 {
                     const auto& field = offsets[size_t(addr.field)];
-                    result.addr += field.offset;
-                    result.type_ptr = &get_type(field.type);
+                    result += field.offset;
+                    addr_type[is_rhs] = field.type;
                 }
                 break;
 
                 case address_modifier::indirect_field:
                 {
                     const auto& field = offsets[size_t(addr.field)];
-                    result.addr = dereference(result.addr) + field.offset;
-                    result.type_ptr = &get_type(field.type);
+                    result = dereference(result) + field.offset;
+                    addr_type[is_rhs] = field.type;
                 }
                 break;
 
                 case address_modifier::offset:
                 {
-                    const auto& type = *result.type_ptr;
-                    if (type.is_pointer())
+                    const auto& current_type = get_addr_type(is_rhs);
+                    if (current_type.is_pointer())
                     {
-                        result.type_ptr = &get_type(type.generated.pointer.underlying_type);
-                        result.addr = dereference(result.addr) + result.type_ptr->total_size * addr.offset;
+                        const type& underlying_type = get_type(current_type.generated.pointer.underlying_type);
+                        result = dereference(result) + underlying_type.total_size * addr.offset;
+                        addr_type[is_rhs] = underlying_type.index;
                     }
-                    else if (type.is_array())
+                    else if (current_type.is_array())
                     {
-                        result.type_ptr = &get_type(type.generated.array.underlying_type);
-                        result.addr = result.addr + result.type_ptr->total_size * addr.offset;
+                        const type& underlying_type = get_type(current_type.generated.array.underlying_type);
+                        result = result + underlying_type.total_size * addr.offset;
+                        addr_type[is_rhs] = underlying_type.index;
                     }
                 }
                 break;
@@ -2217,29 +2248,29 @@ namespace propane
 
                 case address_prefix::indirection:
                 {
-                    const auto& type = *result.type_ptr;
-
-                    result.type_ptr = &get_type(type.generated.pointer.underlying_type);
-                    result.addr = dereference(result.addr);
+                    const auto& current_type = get_addr_type(is_rhs);
+                    result = dereference(result);
+                    addr_type[is_rhs] = current_type.generated.pointer.underlying_type;
                 }
                 break;
 
                 case address_prefix::address_of:
                 {
-                    tmp_var[is_rhs] = reinterpret_cast<size_t>(result.addr);
-                    result.addr = reinterpret_cast<pointer_t>(&tmp_var[is_rhs]);
+                    tmp_var[is_rhs] = reinterpret_cast<size_t>(result);
+                    result = reinterpret_cast<pointer_t>(&tmp_var[is_rhs]);
 
-                    const type_idx dst_type = result.type_ptr->pointer_type;
-                    result.type_ptr = dst_type == type_idx::invalid ? &vptr_type : &get_type(dst_type);
+                    const auto& current_type = get_addr_type(is_rhs);
+                    const type_idx dst_type = current_type.pointer_type;
+                    addr_type[is_rhs] = dst_type == type_idx::invalid ? vptr_type.index : dst_type;
                 }
                 break;
 
                 case address_prefix::size_of:
                 {
-                    tmp_var[is_rhs] = result.type_ptr->total_size;
-                    result.addr = reinterpret_cast<pointer_t>(&tmp_var[is_rhs]);
+                    tmp_var[is_rhs] = get_addr_type(is_rhs).total_size;
+                    result = reinterpret_cast<pointer_t>(&tmp_var[is_rhs]);
 
-                    result.type_ptr = &size_type;
+                    addr_type[is_rhs] = size_type.index;
                 }
                 break;
             }
@@ -2285,8 +2316,8 @@ namespace propane
                     {
                         const stackvar& parameter = calling_signature.parameters[i];
                         const subcode sub = read_subcode();
-                        const_address_t arg_addr = read_address(true);
-                        address_t param_addr = address_t(&get_type(parameter.type), param_ptr + parameter.offset);
+                        const_pointer_t arg_addr = read_address(true);
+                        pointer_t param_addr = param_ptr + parameter.offset;
                         set(sub, param_addr, arg_addr);
                     }
                 }
@@ -2346,8 +2377,8 @@ namespace propane
                     {
                         const stackvar& parameter = calling_signature.parameters[i];
                         const subcode sub = read_subcode();
-                        const_address_t arg_addr = read_address(true);
-                        address_t param_addr = address_t(&get_type(parameter.type), param_ptr + parameter.offset);
+                        const_pointer_t arg_addr = read_address(true);
+                        pointer_t param_addr = param_ptr + parameter.offset;
                         set(sub, param_addr, arg_addr);
                     }
                 }
@@ -2357,7 +2388,8 @@ namespace propane
 
                 // Set return value here since we return immediately
                 const type_idx return_type_idx = calling_signature.return_type;
-                return_value_addr = return_type_idx != type_idx::voidtype ? address_t(&get_type(return_type_idx), stack_data + return_offset) : address_t();
+                return_value_addr = stack_data + return_offset;
+                return_value_type = return_type_idx;
                 
                 // Pop stackframe
                 stack_size = frame_offset;
@@ -2394,21 +2426,29 @@ namespace propane
         const type& vptr_type;
 
         // Return value
-        address_t return_value_addr;
+        pointer_t return_value_addr;
+        type_idx return_value_type;
 
-        inline address_t push_return_value(const type& type) noexcept
+        inline pointer_t push_return_value(const type& type) noexcept
         {
-            return_value_addr = address_t(&type, stack_data + sf.stack_end);
+            return_value_addr = stack_data + sf.stack_end;
+            return_value_type = type.index;
             return return_value_addr;
         }
         inline void clear_return_value() noexcept
         {
-            return_value_addr = address_t();
+            return_value_addr = nullptr;
+            return_value_type = type_idx::voidtype;
         }
 
         // Temporary variables
         size_t tmp_var[2];
         int32_t return_code = 0;
+        type_idx addr_type[2];
+        inline const type& get_addr_type(bool is_rhs) noexcept
+        {
+            return get_type(addr_type[is_rhs]);
+        }
     };
 
 

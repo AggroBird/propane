@@ -197,43 +197,6 @@ namespace propane
         global_idx index;
     };
 
-    // Address
-    struct address_t
-    {
-        address_t(const type* type = nullptr, pointer_t addr = nullptr) :
-            type_ptr(type),
-            addr(addr) {}
-
-        const type* type_ptr;
-        pointer_t addr;
-    };
-
-    struct const_address_t
-    {
-        const_address_t(const type* type = nullptr, const_pointer_t addr = nullptr) :
-            type_ptr(type),
-            addr(addr) {}
-        const_address_t(const address_t& addr) :
-            type_ptr(addr.type_ptr),
-            addr(addr.addr) {}
-
-        const type* type_ptr;
-        const_pointer_t addr;
-    };
-
-    template<typename src_t> src_t read(const_address_t addr) noexcept
-    {
-        static_assert(std::is_trivial<src_t>::value, "Type must be trivial");
-        const src_t src = *reinterpret_cast<const src_t*>(addr.addr);
-        return src;
-    }
-    template<typename dst_t> dst_t& write(address_t addr) noexcept
-    {
-        static_assert(std::is_trivial_v<dst_t>, "Type must be trivial");
-        dst_t& dst = *reinterpret_cast<dst_t*>(addr.addr);
-        return dst;
-    }
-
     struct address_data_t
     {
         address_data_t() = default;
@@ -282,35 +245,6 @@ namespace propane
         const uint8_t* ptr = reinterpret_cast<const uint8_t*>(str.data());
         buf.insert(buf.end(), ptr, ptr + str.size());
     }
-
-    // Stack frame
-    struct stack_frame_t
-    {
-        stack_frame_t() = default;
-        stack_frame_t(size_t iptr, size_t return_offset, size_t frame_offset, size_t param_offset, size_t stack_offset, size_t stack_end, method_idx method) :
-            iptr(iptr),
-            return_offset(return_offset),
-            frame_offset(frame_offset),
-            param_offset(param_offset),
-            stack_offset(stack_offset),
-            stack_end(stack_end),
-            method(method) {}
-
-        // Current instruction offset at the time of calling
-        size_t iptr = 0;
-        // Offset on the previous stack frame where the return value should go
-        size_t return_offset = 0;
-        // Offset of the pushed stackframe
-        size_t frame_offset = 0;
-        // Offset of the method parameters
-        size_t param_offset = 0;
-        // Offset of the method stackvars
-        size_t stack_offset = 0;
-        // End of the method stack (excluding return values)
-        size_t stack_end = 0;
-        // Current executing method
-        method_idx method = method_idx::invalid;
-    };
 
     // Serialization of generic types
     template<typename value_t> struct propane::serialization::is_packed<aligned_t<value_t, alignof(index_t)>> { static constexpr bool value = true; };
