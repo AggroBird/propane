@@ -79,7 +79,11 @@ namespace propane
             static constexpr size_t object_size = sizeof(value_t);
             static constexpr bool value = member_size == object_size;
         };
-        template<typename value_t, typename... rest_t> constexpr size_t serializable_size_check_v = serializable_size_check<value_t, rest_t...>::value;
+        template<typename value_t, typename... rest_t> constexpr bool serializable_size_check_v = serializable_size_check<value_t, rest_t...>::value;
+
+        // Serializable alignment check
+        constexpr size_t serializable_alignment = sizeof(uint32_t);
+        template<typename value_t> constexpr bool serializable_alignment_check_v = (sizeof(value_t) & (serializable_alignment - 1)) == 0;
 
         // Get type at idx
         template<typename> constexpr bool false_condition = false;
@@ -367,6 +371,7 @@ namespace propane
 #define SERIALIZABLE_CHECK(src_t, ...) \
 static_assert(std::is_trivially_default_constructible_v<src_t>, #src_t " is not serializable: type is not trivially default constructible"); \
 static_assert(propane::serialization::serializable_size_check_v<src_t, _SER_MAKE_PARAMS(src_t, __VA_ARGS__)>, #src_t " is not serializable: object contains padding"); \
+static_assert(propane::serialization::serializable_alignment_check_v<src_t>, #src_t " is not serializable: object is not 32 bit aligned"); \
 template<> struct propane::serialization::is_packed<src_t> { static constexpr bool value = true; }; \
 template<> struct propane::serialization::is_serializable<src_t> { static constexpr bool value = true; }
 

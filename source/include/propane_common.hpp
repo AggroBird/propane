@@ -28,8 +28,6 @@ namespace propane
     // Index types
     using index_t = uint32_t;
     enum : index_t { invalid_index = 0xFFFFFFFF };
-    using size32_t = index_t;
-    constexpr size_t size32_max = ~size32_t(0);
 
     enum class type_idx : index_t
     {
