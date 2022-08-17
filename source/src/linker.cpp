@@ -310,7 +310,8 @@ namespace propane
                         // Ensure that size matches native declaration
                         ASSERT(current_size == 0 || current_size == type.total_size, "Native type size mismatch");
                     }
-                    VALIDATE_TYPE_SIZE(type.total_size > 0, get_name(type), make_meta(type.index));
+                    if (type.total_size == 0) type.total_size = 1;
+                    //VALIDATE_TYPE_SIZE(type.total_size > 0, get_name(type), make_meta(type.index));
                     type.flags |= extended_flags::is_resolved;
                 }
             }
