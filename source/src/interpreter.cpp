@@ -105,19 +105,6 @@ namespace propane
         method_idx method = method_idx::invalid;
     };
 
-    constexpr size_t interpreter_alignment = sizeof(uint32_t);
-
-    template<typename value_t> constexpr inline value_t* align_pointer(value_t* ptr, size_t alignment)
-    {
-        size_t addr = reinterpret_cast<size_t>(ptr);
-        const size_t remaining = addr & (alignment - 1);
-        if (remaining != 0)
-        {
-            return reinterpret_cast<value_t*>(addr + (alignment - remaining));
-        }
-        return ptr;
-    }
-
     class interpreter final
     {
     public:
@@ -143,14 +130,11 @@ namespace propane
                 stack_capacity = (static_cast<size_t>(1) << static_cast<size_t>(i - 1));
                 if (stack_capacity >= parameters.min_stack_size && stack_capacity <= parameters.max_stack_size)
                 {
-                    stack_data_ptr = (pointer_t)malloc(stack_capacity + interpreter_alignment);
-                    if (stack_data_ptr) break;
+                    stack_data = (pointer_t)malloc(stack_capacity);
+                    if (stack_data) break;
                 }
             }
-            VALIDATE_STACK_ALLOCATION(stack_data_ptr != nullptr);
-
-            // Align on 32 bit
-            stack_data = align_pointer(stack_data_ptr, interpreter_alignment);
+            VALIDATE_STACK_ALLOCATION(stack_data != nullptr);
 
             // Initialize externals
             for (size_t i = 0; i < runtime.libraries.size(); i++)
@@ -203,10 +187,10 @@ namespace propane
         }
         ~interpreter()
         {
-            if (stack_data_ptr != nullptr)
+            if (stack_data != nullptr)
             {
-                free(stack_data_ptr);
-                stack_data_ptr = nullptr;
+                free(stack_data);
+                stack_data = nullptr;
             }
         }
 
@@ -2139,9 +2123,7 @@ namespace propane
         size_t stack_size = 0;
         // Total stack capacity
         size_t stack_capacity = 0;
-        // (Possibly) 32 bit unaligned
-        pointer_t stack_data_ptr = nullptr;
-        // 32 bit aligned
+        // Stack data
         pointer_t stack_data = nullptr;
 
         // Stack frame
@@ -2488,15 +2470,14 @@ namespace propane
 
         // Copy assembly binary into a protected memory area
         const auto asm_binary = linked_assembly.assembly_binary();
-        host_memory host_mem(asm_binary.size() + interpreter_alignment);
-        pointer_t host_mem_aligned = align_pointer((pointer_t)host_mem.data(), interpreter_alignment);
+        host_memory host_mem(asm_binary.size());
         ASSERT(host_mem, "Failed to allocate memory pages from host");
-        memcpy(host_mem_aligned, asm_binary.data(), asm_binary.size());
+        memcpy(host_mem.data(), asm_binary.data(), asm_binary.size());
         const bool protect = host_mem.protect();
         ASSERT(protect, "Failed to switch host memory pages to protected");
 
         // Execute
-        assembly_data& protected_data = *reinterpret_cast<assembly_data*>(host_mem_aligned);
+        assembly_data& protected_data = *reinterpret_cast<assembly_data*>(host_mem.data());
         return interpreter(protected_data, protected_data.methods[protected_data.main], rt_data, parameters);
     }
 }
