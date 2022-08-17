@@ -15,70 +15,68 @@ namespace std
     template<typename value_t> class span
     {
     public:
-        inline span() : ptr(nullptr), len(0)
+        inline constexpr span() : ptr(nullptr), len(0)
         {
 
         }
-        inline span(value_t* ptr, size_t len) : ptr(ptr), len(len)
+        inline constexpr span(value_t* ptr, size_t len) : ptr(ptr), len(len)
         {
 
         }
 
-        template<size_t length> inline span(value_t(&arr)[length])
+        template<size_t length> inline constexpr span(value_t(&arr)[length]) : ptr(arr), len(length)
         {
-            ptr = arr;
-            len = length;
+
         }
-        template<typename other_t> span(other_t& other)
+        template<typename other_t> constexpr span(other_t& other) : ptr(other.data()), len(other.size())
         {
-            ptr = other.data();
-            len = other.size();
+
         }
 
-        span(const span&) = default;
-        span& operator=(const span&) = default;
+        constexpr span(const span&) = default;
+        constexpr span& operator=(const span&) = default;
 
 
-        inline value_t* begin()
+        inline constexpr value_t* begin()
         {
             return ptr;
         }
-        inline value_t* end()
+        inline constexpr value_t* end()
         {
             return ptr + len;
         }
-        inline const value_t* begin() const
+        inline constexpr const value_t* begin() const
         {
             return ptr;
         }
-        inline const value_t* end() const
+        inline constexpr const value_t* end() const
         {
             return ptr + len;
         }
 
-        inline value_t& operator[](size_t idx)
+        inline constexpr value_t& operator[](size_t idx)
         {
             return ptr[idx];
         }
-        inline const value_t& operator[](size_t idx) const
+        inline constexpr const value_t& operator[](size_t idx) const
         {
             return ptr[idx];
         }
 
-        inline value_t* data()
+        inline constexpr value_t* data()
         {
             return ptr;
         }
-        inline const value_t* data() const
+        inline constexpr const value_t* data() const
         {
             return ptr;
         }
 
-        inline size_t size() const
+        inline constexpr size_t size() const
         {
             return len;
         }
-        inline bool empty() const
+        inline constexpr bool empty() const
         {
             return len == 0;
         }
