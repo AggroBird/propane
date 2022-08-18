@@ -1977,7 +1977,7 @@ namespace propane
 
             // Set return value (of the current signature)
             return_value_addr = stack.data + sf.return_offset;
-            return_value_type = current_signature->return_type;
+            return_value_type = method_return_type;
 
             set(sub, return_value_addr, ret_value);
 
@@ -2095,9 +2095,6 @@ namespace propane
 
             const address_data_t& addr = *reinterpret_cast<const address_data_t*>(iptr);
 
-            const auto& minf = *current_method;
-            const auto& csig = *current_signature;
-
             const uint32_t index = addr.header.index();
             switch (addr.header.type())
             {
@@ -2110,7 +2107,7 @@ namespace propane
                     }
                     else
                     {
-                        const auto& stack_var = minf.stackvars[index];
+                        const auto& stack_var = method_stackvars[index];
                         const size_t offset = sf.stack_offset + stack_var.offset;
 
                         result = stack.data + offset;
@@ -2121,7 +2118,7 @@ namespace propane
 
                 case address_type::parameter:
                 {
-                    const auto& param = csig.parameters[index];
+                    const auto& param = method_parameters[index];
                     const size_t offset = sf.param_offset + param.offset;
 
                     result = stack.data + offset;
@@ -2282,8 +2279,10 @@ namespace propane
                 sf = stack_frame_t(0, return_offset, frame_offset, param_offset, stack_offset, stack_end, method.index);
                 ibeg = iptr = bytecode.data();
                 iend = ibeg + bytecode.size();
-                current_method = &method;
-                current_signature = &signature;
+                
+                method_return_type = signature.return_type;
+                method_stackvars = method.stackvars.data();
+                method_parameters = signature.parameters.data();
 
                 // Clear return value after a call
                 clear_return_value();
@@ -2355,8 +2354,11 @@ namespace propane
             if (sf.method != method_idx::invalid)
             {
                 const method& calling_method = get_method(sf.method);
-                current_method = &calling_method;
-                current_signature = &get_signature(calling_method.signature);
+                const signature& calling_signature = get_signature(calling_method.signature);
+                method_stackvars = calling_method.stackvars.data();
+                method_parameters = calling_signature.parameters.data();
+                method_return_type = calling_signature.return_type;
+
                 const auto& bytecode = calling_method.bytecode;
                 ibeg = bytecode.data();
                 iend = ibeg + bytecode.size();
@@ -2364,8 +2366,9 @@ namespace propane
             }
             else
             {
-                current_method = nullptr;
-                current_signature = nullptr;
+                method_return_type = type_idx::voidtype;
+                method_stackvars = nullptr;
+                method_parameters = nullptr;
                 iptr = ibeg = iend = nullptr;
             }
             callstack_depth--;
@@ -2426,9 +2429,10 @@ namespace propane
         const uint8_t* ibeg = nullptr;
         const uint8_t* iend = nullptr;
 
-        // Current method
-        const method* current_method = nullptr;
-        const signature* current_signature = nullptr;
+        // Current method lookup info
+        type_idx method_return_type = type_idx::voidtype;
+        const stackvar* method_stackvars;
+        const stackvar* method_parameters;
 
         // Stack frame
         stack_frame_t sf;
