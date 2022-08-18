@@ -76,6 +76,64 @@ namespace propane
         std::cout << ')';
     }
 
+    struct stack_data_t
+    {
+        stack_data_t(uint8_t* data, size_t capacity) :
+            data(data), capacity(capacity) {}
+
+        ~stack_data_t()
+        {
+            if (data != nullptr)
+            {
+                free(data);
+            }
+        }
+
+        uint8_t* const data;
+        const size_t capacity;
+        size_t size = 0;
+    };
+
+    class runtime_library
+    {
+    public:
+        struct call
+        {
+            call() = default;
+            call(const external_call_info& cinf) :
+                name(cinf.name),
+                forward(cinf.forward),
+                handle(cinf.handle) {}
+
+            string_view name;
+            external_call::forward_method forward = nullptr;
+            void(*handle)() = nullptr;
+        };
+
+        runtime_library() = default;
+        runtime_library(string_view path) :
+            handle(path) {}
+
+        host_library handle;
+        indexed_block<uint32_t, call> calls;
+    };
+
+    struct data_table_view
+    {
+        data_table_view() : info(nullptr), data(nullptr) {}
+        data_table_view(const field* info, uint8_t* data) :
+            info(info),
+            data(data) {}
+
+        inline const field& operator[](global_idx index) const noexcept
+        {
+            return info[static_cast<size_t>(index)];
+        }
+
+        const field* info;
+        uint8_t* data;
+    };
+
     // Stack frame
     struct stack_frame_t
     {
@@ -108,34 +166,18 @@ namespace propane
     class interpreter final
     {
     public:
-        NOCOPY_CLASS_DEFAULT(interpreter, assembly_data& asm_data, method& main, const runtime_data& runtime, runtime_parameters parameters) :
+        NOCOPY_CLASS_DEFAULT(interpreter, const assembly_data& asm_data, const method& main, const runtime_data& runtime, runtime_parameters parameters) :
+            stack(allocate_stack(parameters)),
             parameters(parameters),
             data(asm_data),
             types(asm_data.types.data()),
             methods(asm_data.methods.data()),
             signatures(asm_data.signatures.data()),
             offsets(asm_data.offsets.data()),
-            global_data(asm_data.globals),
-            globals(asm_data.globals.info.data(), global_data.data.data()),
-            constants(asm_data.constants.info.data(), asm_data.constants.data.data()),
-            database(asm_data.database),
-            int_type(get_type(type_idx::i32)),
-            offset_type(get_type(derive_type_index_v<offset_t>)),
-            size_type(get_type(derive_type_index_v<size_t>)),
-            vptr_type(get_type(type_idx::vptr))
+            global_data(asm_data.globals.data.data(), asm_data.globals.data.size()),
+            global_tables(),
+            database(asm_data.database)
         {
-            // Try and find a stack that fits
-            for (size_t i = sizeof(size_t) * 8; i > 0; i--)
-            {
-                stack_capacity = (static_cast<size_t>(1) << static_cast<size_t>(i - 1));
-                if (stack_capacity >= parameters.min_stack_size && stack_capacity <= parameters.max_stack_size)
-                {
-                    stack_data = (uint8_t*)malloc(stack_capacity);
-                    if (stack_data) break;
-                }
-            }
-            VALIDATE_STACK_ALLOCATION(stack_data != nullptr);
-
             // Initialize externals
             for (size_t i = 0; i < runtime.libraries.size(); i++)
             {
@@ -170,9 +212,12 @@ namespace propane
                 libraries.push_back(std::move(lib));
             }
 
+            global_tables[0] = data_table_view(asm_data.globals.info.data(), global_data.data());
+            global_tables[1] = data_table_view(asm_data.constants.info.data(), const_cast<uint8_t*>(asm_data.constants.data.data()));
+
             // Push space for the return value
             constexpr size_t int_size = get_base_type_size(type_idx::i32);
-            stack_size = int_size;
+            stack.size = int_size;
 
             // Push return type and stack frame
             push_stack_frame(main, get_signature(main.signature));
@@ -181,17 +226,9 @@ namespace propane
             execute();
 
             // Fetch return code
-            ASSERT(stack_size >= int_size, "Invalid stack size: %", stack_size);
+            ASSERT(stack.size >= int_size, "Invalid stack size: %", stack.size);
             ASSERT(callstack_depth == 0, "Invalid callstack depth: %", callstack_depth);
-            return_code = *reinterpret_cast<const int32_t*>(stack_data);
-        }
-        ~interpreter()
-        {
-            if (stack_data != nullptr)
-            {
-                free(stack_data);
-                stack_data = nullptr;
-            }
+            return_code = *reinterpret_cast<const int32_t*>(stack.data);
         }
 
         inline operator int32_t() const noexcept
@@ -231,15 +268,15 @@ namespace propane
                     case opcode::psub: psub(); break;
                     case opcode::pdif: pdif(); break;
 
-                    case opcode::cmp: write<int32_t>(push_return_value(int_type)) = cmp(); break;
-                    case opcode::ceq: write<int32_t>(push_return_value(int_type)) = ceq(); break;
-                    case opcode::cne: write<int32_t>(push_return_value(int_type)) = cne(); break;
-                    case opcode::cgt: write<int32_t>(push_return_value(int_type)) = cgt(); break;
-                    case opcode::cge: write<int32_t>(push_return_value(int_type)) = cge(); break;
-                    case opcode::clt: write<int32_t>(push_return_value(int_type)) = clt(); break;
-                    case opcode::cle: write<int32_t>(push_return_value(int_type)) = cle(); break;
-                    case opcode::cze: write<int32_t>(push_return_value(int_type)) = cze(); break;
-                    case opcode::cnz: write<int32_t>(push_return_value(int_type)) = cnz(); break;
+                    case opcode::cmp: write<int32_t>(push_return_value(type_idx::i32)) = cmp(); break;
+                    case opcode::ceq: write<int32_t>(push_return_value(type_idx::i32)) = ceq(); break;
+                    case opcode::cne: write<int32_t>(push_return_value(type_idx::i32)) = cne(); break;
+                    case opcode::cgt: write<int32_t>(push_return_value(type_idx::i32)) = cgt(); break;
+                    case opcode::cge: write<int32_t>(push_return_value(type_idx::i32)) = cge(); break;
+                    case opcode::clt: write<int32_t>(push_return_value(type_idx::i32)) = clt(); break;
+                    case opcode::cle: write<int32_t>(push_return_value(type_idx::i32)) = cle(); break;
+                    case opcode::cze: write<int32_t>(push_return_value(type_idx::i32)) = cze(); break;
+                    case opcode::cnz: write<int32_t>(push_return_value(type_idx::i32)) = cnz(); break;
 
                     case opcode::br: br(); break;
 
@@ -1055,7 +1092,7 @@ namespace propane
             const offset_t underlying_size = offset_t(get_addr_type(false).generated.pointer.underlying_size);
             const offset_t lhs = reinterpret_cast<offset_t>(dereference(lhs_addr));
             const offset_t rhs = reinterpret_cast<offset_t>(dereference(rhs_addr));
-            write<offset_t>(push_return_value(offset_type)) = (lhs - rhs) / underlying_size;
+            write<offset_t>(push_return_value(derive_type_index_v<offset_t>)) = (lhs - rhs) / underlying_size;
         }
 
         inline int32_t cmp() noexcept
@@ -1939,7 +1976,7 @@ namespace propane
             const uint8_t* ret_value = read_address(true);
 
             // Set return value (of the current signature)
-            return_value_addr = stack_data + sf.return_offset;
+            return_value_addr = stack.data + sf.return_offset;
             return_value_type = current_signature->return_type;
 
             set(sub, return_value_addr, ret_value);
@@ -2027,77 +2064,6 @@ namespace propane
         }
 
 
-        class runtime_data_table
-        {
-        public:
-            runtime_data_table(const data_table& copy_from) :
-                data(copy_from.data.data(), copy_from.data.size())
-            {
-
-            }
-
-            block<uint8_t> data;
-        };
-
-        class data_table_view
-        {
-        public:
-            data_table_view(const field* info, uint8_t* data) :
-                info(info),
-                data(data) {}
-
-            inline const field& operator[](global_idx index) const noexcept
-            {
-                return info[static_cast<size_t>(index)];
-            }
-
-            const field* info;
-            uint8_t* data;
-        };
-
-        const runtime_parameters parameters;
-
-        // Data
-        const assembly_data& data;
-        // Lookup
-        const type* const types;
-        const method* const methods;
-        const signature* const signatures;
-        const field_offset* const offsets;
-        // Globals/constants
-        runtime_data_table global_data;
-        data_table_view globals;
-        data_table_view constants;
-        // Strings
-        const string_table<name_idx>& database;
-        string generated_name_buffers[2];
-        size_t generated_name_index = 0;
-        // Externals
-        class runtime_library
-        {
-        public:
-            struct call
-            {
-                call() = default;
-                call(const external_call_info& cinf) :
-                    name(cinf.name),
-                    forward(cinf.forward),
-                    handle(cinf.handle) {}
-
-                string_view name;
-                external_call::forward_method forward = nullptr;
-                void(*handle)() = nullptr;
-            };
-
-            runtime_library() = default;
-            runtime_library(string_view path) :
-                handle(path) {}
-
-            host_library handle;
-            indexed_block<uint32_t, call> calls;
-        };
-        indexed_vector<name_idx, runtime_library> libraries;
-
         inline const type& get_type(type_idx type) const noexcept
         {
             return types[static_cast<size_t>(type)];
@@ -2118,22 +2084,6 @@ namespace propane
         {
             return method_handle < data.methods.size();
         }
-
-        // Current stack size
-        size_t stack_size = 0;
-        // Total stack capacity
-        size_t stack_capacity = 0;
-        // Stack data
-        uint8_t* stack_data = nullptr;
-
-        // Stack frame
-        const uint8_t* iptr = nullptr;
-        const uint8_t* ibeg = nullptr;
-        const uint8_t* iend = nullptr;
-        stack_frame_t sf;
-        const method* current_method = nullptr;
-        const signature* current_signature = nullptr;
-        uint32_t callstack_depth = 0;
 
         inline subcode read_subcode() noexcept
         {
@@ -2163,7 +2113,7 @@ namespace propane
                         const auto& stack_var = minf.stackvars[index];
                         const size_t offset = sf.stack_offset + stack_var.offset;
 
-                        result = stack_data + offset;
+                        result = stack.data + offset;
                         addr_type[is_rhs] = stack_var.type;
                     }
                 }
@@ -2174,7 +2124,7 @@ namespace propane
                     const auto& param = csig.parameters[index];
                     const size_t offset = sf.param_offset + param.offset;
 
-                    result = stack_data + offset;
+                    result = stack.data + offset;
                     addr_type[is_rhs] = param.type;
                 }
                 break;
@@ -2183,8 +2133,7 @@ namespace propane
                 {
                     global_idx global = (global_idx)index;
 
-                    const bool is_constant = is_constant_flag_set(global);
-                    const auto& table = is_constant ? constants : globals;
+                    const data_table_view& table = global_tables[is_constant_flag_set(global)];
                     global &= global_flags::constant_mask;
 
                     const auto& global_info = table[global];
@@ -2264,7 +2213,7 @@ namespace propane
 
                     const auto& current_type = get_addr_type(is_rhs);
                     const type_idx dst_type = current_type.pointer_type;
-                    addr_type[is_rhs] = dst_type == type_idx::invalid ? vptr_type.index : dst_type;
+                    addr_type[is_rhs] = dst_type == type_idx::invalid ? type_idx::vptr : dst_type;
                 }
                 break;
 
@@ -2273,7 +2222,7 @@ namespace propane
                     tmp_var[is_rhs] = get_addr_type(is_rhs).total_size;
                     result = reinterpret_cast<uint8_t*>(&tmp_var[is_rhs]);
 
-                    addr_type[is_rhs] = size_type.index;
+                    addr_type[is_rhs] = derive_type_index_v<size_t>;
                 }
                 break;
             }
@@ -2290,7 +2239,7 @@ namespace propane
 
             const auto& bytecode = method.bytecode;
 
-            const size_t frame_offset = stack_size;
+            const size_t frame_offset = stack.size;
             const size_t return_offset = sf.stack_end;
 
             if (!method.is_external())
@@ -2299,14 +2248,14 @@ namespace propane
                 VALIDATE_CALLSTACK_LIMIT(callstack_depth <= parameters.max_callstack_depth, parameters.max_callstack_depth);
 
                 const size_t param_offset = frame_offset + sizeof(stack_frame_t);
-                uint8_t* param_ptr = stack_data + param_offset;
+                uint8_t* param_ptr = stack.data + param_offset;
                 const size_t stack_offset = param_offset + calling_signature.parameters_size;
 
                 // Push method stack size
-                const size_t stack_end = stack_size + method.method_stack_size + sizeof(stack_frame_t);
-                const size_t new_stack_size = stack_size + method.total_stack_size + sizeof(stack_frame_t);
-                VALIDATE_STACK_OVERFLOW(new_stack_size <= stack_capacity, new_stack_size, stack_capacity);
-                stack_size = new_stack_size;
+                const size_t stack_end = stack.size + method.method_stack_size + sizeof(stack_frame_t);
+                const size_t new_stack_size = stack.size + method.total_stack_size + sizeof(stack_frame_t);
+                VALIDATE_STACK_OVERFLOW(new_stack_size <= stack.capacity, new_stack_size, stack.capacity);
+                stack.size = new_stack_size;
 
                 // Write parameters
                 const size_t parameter_count = calling_signature.parameters.size();
@@ -2314,7 +2263,7 @@ namespace propane
                 ASSERT(arg_count == parameter_count, "Invalid argument count");
                 if (parameter_count > 0)
                 {
-                    uint8_t* param_ptr = stack_data + param_offset;
+                    uint8_t* param_ptr = stack.data + param_offset;
                     for (size_t i = 0; i < parameter_count; i++)
                     {
                         const stackvar& parameter = calling_signature.parameters[i];
@@ -2327,7 +2276,7 @@ namespace propane
 
                 // Write stack frame
                 sf.iptr = iptr - ibeg;
-                *reinterpret_cast<stack_frame_t*>(stack_data + frame_offset) = sf;
+                *reinterpret_cast<stack_frame_t*>(stack.data + frame_offset) = sf;
 
                 // Call
                 sf = stack_frame_t(0, return_offset, frame_offset, param_offset, stack_offset, stack_end, method.index);
@@ -2361,13 +2310,13 @@ namespace propane
                 }
 
                 // Push method stack size (parameters only for external methods)
-                const size_t param_offset = stack_size;
-                uint8_t* param_ptr = stack_data + param_offset;
+                const size_t param_offset = stack.size;
+                uint8_t* param_ptr = stack.data + param_offset;
                 if (method.total_stack_size > 0)
                 {
-                    const size_t new_stack_size = stack_size + (method.total_stack_size);
-                    VALIDATE_STACK_OVERFLOW(new_stack_size <= stack_capacity, new_stack_size, stack_capacity);
-                    stack_size = new_stack_size;
+                    const size_t new_stack_size = stack.size + (method.total_stack_size);
+                    VALIDATE_STACK_OVERFLOW(new_stack_size <= stack.capacity, new_stack_size, stack.capacity);
+                    stack.size = new_stack_size;
                 }
 
                 // Write parameters
@@ -2387,22 +2336,22 @@ namespace propane
                 }
 
                 // Invoke external
-                call.forward(call.handle, stack_data + return_offset, stack_data + param_offset);
+                call.forward(call.handle, stack.data + return_offset, stack.data + param_offset);
 
                 // Set return value here since we return immediately
                 const type_idx return_type_idx = calling_signature.return_type;
-                return_value_addr = stack_data + return_offset;
+                return_value_addr = stack.data + return_offset;
                 return_value_type = return_type_idx;
                 
                 // Pop stackframe
-                stack_size = frame_offset;
+                stack.size = frame_offset;
             }
         }
         void pop_stack_frame()
         {
             // Restore stackframe
             ASSERT(callstack_depth > 0, "Stack frame pop overflow");
-            sf = *reinterpret_cast<stack_frame_t*>(stack_data + sf.frame_offset);
+            sf = *reinterpret_cast<stack_frame_t*>(stack.data + sf.frame_offset);
             if (sf.method != method_idx::invalid)
             {
                 const method& calling_method = get_method(sf.method);
@@ -2422,20 +2371,10 @@ namespace propane
             callstack_depth--;
         }
 
-        // Type constant
-        const type& int_type;
-        const type& offset_type;
-        const type& size_type;
-        const type& vptr_type;
-
-        // Return value
-        uint8_t* return_value_addr;
-        type_idx return_value_type;
-
-        inline uint8_t* push_return_value(const type& type) noexcept
+        inline uint8_t* push_return_value(type_idx type) noexcept
         {
-            return_value_addr = stack_data + sf.stack_end;
-            return_value_type = type.index;
+            return_value_addr = stack.data + sf.stack_end;
+            return_value_type = type;
             return return_value_addr;
         }
         inline void clear_return_value() noexcept
@@ -2444,14 +2383,80 @@ namespace propane
             return_value_type = type_idx::voidtype;
         }
 
+
+        inline stack_data_t allocate_stack(const runtime_parameters& parameters)
+        {
+            uint8_t* data = nullptr;
+            size_t capacity = 0;
+
+            // Try and find a stack that fits
+            for (size_t i = sizeof(size_t) * 8; i > 0; i--)
+            {
+                capacity = (static_cast<size_t>(1) << static_cast<size_t>(i - 1));
+                if (capacity >= parameters.min_stack_size && capacity <= parameters.max_stack_size)
+                {
+                    data = (uint8_t*)malloc(capacity);
+                    if (data) break;
+                }
+            }
+
+            VALIDATE_STACK_ALLOCATION(data != nullptr);
+
+            return stack_data_t(data, capacity);
+        }
+
+
+        // Stack data
+        stack_data_t stack;
+
         // Temporary variables
         size_t tmp_var[2];
-        int32_t return_code = 0;
         type_idx addr_type[2];
         inline const type& get_addr_type(bool is_rhs) noexcept
         {
             return get_type(addr_type[is_rhs]);
         }
+
+        // Return value
+        uint8_t* return_value_addr;
+        type_idx return_value_type;
+
+        // Instruction pointer
+        const uint8_t* iptr = nullptr;
+        const uint8_t* ibeg = nullptr;
+        const uint8_t* iend = nullptr;
+
+        // Current method
+        const method* current_method = nullptr;
+        const signature* current_signature = nullptr;
+
+        // Stack frame
+        stack_frame_t sf;
+        uint32_t callstack_depth = 0;
+
+        // Lookup
+        const type* const types;
+        const method* const methods;
+        const signature* const signatures;
+        const field_offset* const offsets;
+
+        // Globals/constants
+        block<uint8_t> global_data;
+        data_table_view global_tables[2];
+
+        // Externals
+        indexed_vector<name_idx, runtime_library> libraries;
+
+        // Strings
+        const string_table<name_idx>& database;
+        string generated_name_buffers[2];
+        size_t generated_name_index = 0;
+
+        // Input data
+        const assembly_data& data;
+        const runtime_parameters parameters;
+
+        int32_t return_code = 0;
     };
 
 
@@ -2477,7 +2482,7 @@ namespace propane
         ASSERT(protect, "Failed to switch host memory pages to protected");
 
         // Execute
-        assembly_data& protected_data = *reinterpret_cast<assembly_data*>(host_mem.data());
+        const assembly_data& protected_data = *reinterpret_cast<assembly_data*>(host_mem.data());
         return interpreter(protected_data, protected_data.methods[protected_data.main], rt_data, parameters);
     }
 }
