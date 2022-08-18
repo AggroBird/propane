@@ -80,15 +80,9 @@ namespace propane
             name(name),
             size(size),
             fields(fields) {}
-        constexpr native_type_info_t(const native_type_info_t& copy, size_t pointer_depth) :
-            name(copy.name),
-            size(copy.size),
-            pointer_depth(pointer_depth),
-            fields(copy.fields) {}
 
         std::string_view name;
         size_t size;
-        size_t pointer_depth = 0;
         std::span<std::string_view> fields;
 
         template<typename value_t> static constexpr native_type_info_t make(std::string_view name)

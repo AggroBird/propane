@@ -21,7 +21,7 @@ namespace propane
             name(name) {}
 
         string name;
-        native_type_info_t return_type;
+        native::typedecl return_type;
         std::span<const native::parameter> parameters;
         size_t parameters_size = 0;
 
@@ -39,7 +39,7 @@ namespace propane
         string path;
         bool preload_symbols;
         block<external_call_info> calls;
-        block<native_type_info_t> types;
+        block<native::typedecl> types;
         size_t hash = 0;
     };
     constexpr size_t library_data_handle_size = approximate_handle_size(sizeof(library_data));

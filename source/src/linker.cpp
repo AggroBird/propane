@@ -197,7 +197,7 @@ namespace propane
                 return find->second;
             }
         }
-        type_idx resolve_native_type(const native_type_info_t& native_type)
+        type_idx resolve_native_type(const native::typedecl& native_type)
         {
             type_idx result_idx;
 

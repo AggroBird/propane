@@ -13,12 +13,22 @@ namespace propane
         template<typename value_t> constexpr size_t type_size_v = sizeof(value_t);
         template<> constexpr size_t type_size_v<void> = 0;
 
+        struct typedecl : public native_type_info_t
+        {
+            constexpr typedecl() = default;
+            constexpr typedecl(const native_type_info_t& info, size_t pointer_depth) :
+                native_type_info_t(info),
+                pointer_depth(pointer_depth) {}
+            
+            size_t pointer_depth = 0;
+        };
+
         // Parameter info
-        struct parameter : native_type_info_t
+        struct parameter : public typedecl
         {
             parameter() = default;
             parameter(const native_type_info_t& info, size_t offset, size_t pointer_depth) :
-                native_type_info_t(info, pointer_depth),
+                typedecl(info, pointer_depth),
                 offset(offset) {}
 
             size_t offset = 0;
@@ -149,7 +159,7 @@ namespace propane
             constexpr size_t pointer_depth = derive_pointer_depth_v<return_type>;
 
             call.forward = bind::forward_call;
-            call.return_type = native_type_info_t(type_info, pointer_depth);
+            call.return_type = native::typedecl(type_info, pointer_depth);
             call.parameters = std::span<const native::parameter>(instance.parameters, sizeof...(param_t));
             call.parameters_size = instance.parameters_size;
             call.handle = (void(*)())(method);
@@ -159,7 +169,7 @@ namespace propane
 
         std::string_view name;
         forward_method forward = nullptr;
-        native_type_info_t return_type;
+        native::typedecl return_type;
         std::span<const native::parameter> parameters;
         size_t parameters_size = 0;
         void(*handle)() = nullptr;

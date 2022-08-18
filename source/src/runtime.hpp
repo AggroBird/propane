@@ -278,7 +278,7 @@ namespace propane
 
         indexed_vector<name_idx, library_info> libraries;
         unordered_map<string_view, runtime_call_index> call_lookup;
-        unordered_map<string_view, native_type_info_t> type_lookup;
+        unordered_map<string_view, native::typedecl> type_lookup;
         size_t hash = 0;
     };
     constexpr size_t runtime_data_handle_size = approximate_handle_size(sizeof(runtime_data));

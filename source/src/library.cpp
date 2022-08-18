@@ -13,7 +13,7 @@ namespace propane
 
         self_data.calls = block<external_call_info>(calls.size());
         external_call_info* write_call = self_data.calls.data();
-        unordered_map<string_view, native_type_info_t> declared_types;
+        unordered_map<string_view, native::typedecl> declared_types;
         for (auto& call : calls)
         {
             ASSERT(is_identifier(call.name), "Invalid name");
@@ -38,8 +38,8 @@ namespace propane
             *write_call++ = std::move(info);
         }
 
-        self_data.types = block<native_type_info_t>(declared_types.size());
-        native_type_info_t* write_type = self_data.types.data();
+        self_data.types = block<native::typedecl>(declared_types.size());
+        auto* write_type = self_data.types.data();
         for (auto& it : declared_types)
         {
             *write_type++ = it.second;
