@@ -179,7 +179,7 @@ namespace propane
             if (meta.is_resolved) return meta;
             meta.is_resolved = true;
 
-            const auto& underlying_type = type.is_array() ? resolve_type(type.generated.array.underlying_type) : type.is_pointer() ? resolve_type(type.generated.pointer.underlying_type) : meta; resolve_type(type.generated.array.underlying_type);
+            const auto& underlying_type = type.is_array() ? resolve_type(type.generated.array.underlying_type) : type.is_pointer() ? resolve_type(type.generated.pointer.underlying_type) : meta;
 
             if (meta.declaration.empty())
             {
@@ -188,34 +188,37 @@ namespace propane
 
             if (!is_base_type(type.index))
             {
-                for (auto& field : type.fields)
+                if (type.is_generated() || !type.fields.empty())
                 {
-                    resolve_type(field.type);
-                }
-
-                if (type.is_array() || !type.is_generated())
-                {
-                    type_fields.clear();
-                    type_fields.write("\n\n");
-
-                    type_fields.write(meta.declaration);
-                    type_fields.write("\n{\n");
-                    if (type.is_array())
+                    for (auto& field : type.fields)
                     {
-                        declare_array_field(type_fields, type.generated.array.underlying_type, type.generated.array.array_size);
+                        resolve_type(field.type);
                     }
-                    else
+
+                    if (type.is_array() || !type.is_generated())
                     {
-                        for (size_t i = 0; i < type.fields.size(); i++)
+                        type_fields.clear();
+                        type_fields.write("\n\n");
+
+                        type_fields.write(meta.declaration);
+                        type_fields.write("\n{\n");
+                        if (type.is_array())
                         {
-                            if (i != 0) type_fields.write("\n");
-                            const auto& f = type.fields[i];
-                            declare_field(type_fields, database[f.name], f.type);
+                            declare_array_field(type_fields, type.generated.array.underlying_type, type.generated.array.array_size);
                         }
-                    }
-                    type_fields.write("\n};");
+                        else
+                        {
+                            for (size_t i = 0; i < type.fields.size(); i++)
+                            {
+                                if (i != 0) type_fields.write("\n");
+                                const auto& f = type.fields[i];
+                                declare_field(type_fields, database[f.name], f.type);
+                            }
+                        }
+                        type_fields.write("\n};");
 
-                    type_definitions.write(type_fields);
+                        type_definitions.write(type_fields);
+                    }
                 }
             }
 
