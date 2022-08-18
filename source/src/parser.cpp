@@ -49,14 +49,14 @@ namespace propane
     struct token
     {
     public:
-        token(token_type type, string_view str, index_t line_num) : type(type), str(str), line_num(line_num)
+        token(token_type type, string_view str, uint32_t line_num) : type(type), str(str), line_num(line_num)
         {
 
         }
 
         const token_type type;
         const string_view str;
-        const index_t line_num;
+        const uint32_t line_num;
 
         inline operator string_view() const
         {
@@ -890,7 +890,7 @@ namespace propane
                     const auto parse = parse_ulong(ptr->str);
                     LITERAL_PARSE_FAILURE(parse.is_valid(), ptr->str);
                     VALIDATE_STACK_INDEX(parse.value);
-                    const index_t index = (index_t)parse.value;
+                    const uint32_t index = (uint32_t)parse.value;
                     ptr++;
                     UNEXPECTED_EXPRESSION(ptr->type == token_type::colon, ptr->str);
                     ptr++;
@@ -969,7 +969,7 @@ namespace propane
 
                     // Global
                     result.header.set_type(address_type::global);
-                    result.header.set_index((index_t)make_identifier(name));
+                    result.header.set_index((uint32_t)make_identifier(name));
                 }
                 break;
 
@@ -985,7 +985,7 @@ namespace propane
                     }
                     else
                     {
-                        const index_t parse_idx = parse_offset_num<index_t>(ptr);
+                        const uint32_t parse_idx = parse_offset_num<uint32_t>(ptr);
                         const auto find = stackvar_lookup.indices.find(parse_idx);
                         UNDEFINED_STACK_IDX(find != stackvar_lookup.indices.end(), parse_idx);
                         result.header.set_type(address_type::stackvar);
@@ -999,7 +999,7 @@ namespace propane
                 case token_type::lparen:
                 {
                     ptr++;
-                    const index_t parse_idx = parse_offset_num<index_t>(ptr);
+                    const uint32_t parse_idx = parse_offset_num<uint32_t>(ptr);
                     const auto find = parameter_lookup.indices.find(parse_idx);
                     UNDEFINED_STACK_IDX(find != parameter_lookup.indices.end(), parse_idx);
                     UNEXPECTED_EXPRESSION(ptr->type == token_type::rparen, ptr->str);
@@ -1089,15 +1089,15 @@ namespace propane
         // Parser state
         definition_type current_scope = definition_type::none;
         vector<token> tokens;
-        index_t line_num;
+        uint32_t line_num;
 
         // Locals
         class variable_lookup
         {
         public:
-            unordered_map<index_t, index_t> indices;
-            database<name_idx, index_t> names;
-            index_t count = 0;
+            unordered_map<uint32_t, uint32_t> indices;
+            database<name_idx, uint32_t> names;
+            uint32_t count = 0;
 
             inline void clear() noexcept
             {

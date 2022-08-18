@@ -5,7 +5,7 @@ namespace propane
 {
     subcode translate::set(type_idx lhs, type_idx rhs)
     {
-        const index_t lookup = ((index_t)lhs << 4) | ((index_t)rhs);
+        const uint32_t lookup = ((uint32_t)lhs << 4) | ((uint32_t)rhs);
         switch (lookup)
         {
             case 0: return subcode(0);
@@ -60,7 +60,7 @@ namespace propane
 
     subcode translate::conv(type_idx lhs, type_idx rhs)
     {
-        const index_t lookup = ((index_t)lhs << 4) | ((index_t)rhs);
+        const uint32_t lookup = ((uint32_t)lhs << 4) | ((uint32_t)rhs);
         switch (lookup)
         {
             case 0: return subcode(0);
@@ -171,7 +171,7 @@ namespace propane
     subcode translate::ari(opcode op, type_idx lhs, type_idx rhs)
     {
         op = opcode(op - opcode::ari_not);
-        const index_t lookup = ((index_t)lhs << 8) | ((index_t)rhs << 4) | ((index_t)op);
+        const uint32_t lookup = ((uint32_t)lhs << 8) | ((uint32_t)rhs << 4) | ((uint32_t)op);
         switch (lookup)
         {
             case 0: return subcode(0);
@@ -551,7 +551,7 @@ namespace propane
     subcode translate::cmp(opcode op, type_idx lhs, type_idx rhs)
     {
         op = opcode(op - opcode::cmp);
-        const index_t lookup = ((index_t)lhs << 8) | ((index_t)rhs << 4) | ((index_t)op);
+        const uint32_t lookup = ((uint32_t)lhs << 8) | ((uint32_t)rhs << 4) | ((uint32_t)op);
         switch (lookup)
         {
             case 0: return subcode(0);
@@ -1226,7 +1226,7 @@ namespace propane
     subcode translate::ptr(opcode op, type_idx lhs, type_idx rhs)
     {
         op = opcode(op - opcode::padd);
-        const index_t lookup = ((index_t)op << 4) | ((index_t)rhs);
+        const uint32_t lookup = ((uint32_t)op << 4) | ((uint32_t)rhs);
         switch (lookup)
         {
             case 0: return subcode(0);
@@ -1251,9 +1251,9 @@ namespace propane
     }
 
 
-    void operations::conv(pointer_t lhs_addr, type_idx lhs_type, const_pointer_t rhs_addr, type_idx rhs_type)
+    void operations::conv(uint8_t* lhs_addr, type_idx lhs_type, const uint8_t* rhs_addr, type_idx rhs_type)
     {
-        const index_t lookup = ((index_t)lhs_type << 4) | ((index_t)rhs_type);
+        const uint32_t lookup = ((uint32_t)lhs_type << 4) | ((uint32_t)rhs_type);
         switch (lookup)
         {
             case 0: write<int8_t>(lhs_addr) = read<int8_t>(rhs_addr); return;

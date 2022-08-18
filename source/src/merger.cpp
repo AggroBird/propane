@@ -409,13 +409,13 @@ namespace propane
                 auto find = lookup(global.name, type);
                 VALIDATE_GLOBAL_DEF(!find, merge.database[global.name].name);
 
-                const index_t global_idx = index_t(dst.info.size());
+                const uint32_t global_idx = uint32_t(dst.info.size());
 
                 global.name = name_translations[global.name];
                 *database[global.name] = lookup_idx(type, global_idx);
 
                 // Translate identifier if any
-                pointer_t addr = src.data.data() + global.offset;
+                uint8_t* addr = src.data.data() + global.offset;
                 const uint16_t init_count = read_bytecode<uint16_t>(addr);
                 for (uint16_t i = 0; i < init_count; i++)
                 {

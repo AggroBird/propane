@@ -8,7 +8,7 @@ namespace propane
 {
     struct address
     {
-        address(index_t index, address_type type,
+        address(uint32_t index, address_type type,
             address_modifier modifier = address_modifier::none,
             address_prefix prefix = address_prefix::none) :
             header(type, prefix, modifier, index),
@@ -49,7 +49,7 @@ namespace propane
     struct constant : public address
     {
     private:
-        constant(type_idx type) : address(static_cast<index_t>(type), address_type::constant) {}
+        constant(type_idx type) : address(static_cast<uint32_t>(type), address_type::constant) {}
 
     public:
         constant(int8_t val) : constant(type_idx::i8) { payload.i8 = val; }
@@ -80,7 +80,7 @@ namespace propane
     struct prefixable_address : public address
     {
     protected:
-        prefixable_address(index_t index, address_type type) :
+        prefixable_address(uint32_t index, address_type type) :
             address(index, type) {}
 
     public:
@@ -118,7 +118,7 @@ namespace propane
     struct modifyable_address : public prefixable_address
     {
     protected:
-        modifyable_address(index_t index, address_type type) :
+        modifyable_address(uint32_t index, address_type type) :
             prefixable_address(index, type) {}
 
     public:
@@ -144,10 +144,10 @@ namespace propane
 
     struct stack : public modifyable_address
     {
-        stack(index_t index) :
+        stack(uint32_t index) :
             modifyable_address(index, address_type::stackvar) {}
 
-        inline index_t index() const noexcept
+        inline uint32_t index() const noexcept
         {
             return header.index();
         }
@@ -155,10 +155,10 @@ namespace propane
 
     struct param : public modifyable_address
     {
-        param(index_t index) :
+        param(uint32_t index) :
             modifyable_address(index, address_type::parameter) {}
 
-        inline index_t index() const noexcept
+        inline uint32_t index() const noexcept
         {
             return header.index();
         }
@@ -173,7 +173,7 @@ namespace propane
     struct global : public modifyable_address
     {
         global(name_idx name) :
-            modifyable_address(static_cast<index_t>(name), address_type::global) {}
+            modifyable_address(static_cast<uint32_t>(name), address_type::global) {}
 
         inline name_idx name() const noexcept
         {
@@ -420,7 +420,7 @@ namespace propane
         }
 
         // Set a line number to be included in type/method metadata
-        void set_line_number(index_t line_number) noexcept;
+        void set_line_number(uint32_t line_number) noexcept;
 
         // Finalize
         // This method finishes up all the writers and releases all the resources.

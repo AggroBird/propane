@@ -58,18 +58,18 @@ namespace propane
         hostmem handle;
     };
 
-    template<typename value_t> value_t get_value(const_pointer_t addr) { return *reinterpret_cast<const value_t*>(addr); }
-    template<typename value_t> void dump_value(const_pointer_t addr) { std::cout << get_value<value_t>(addr); }
-    template<> inline void dump_value<int8_t>(const_pointer_t addr) { std::cout << static_cast<int32_t>(get_value<int8_t>(addr)); }
-    template<> inline void dump_value<uint8_t>(const_pointer_t addr) { std::cout << static_cast<uint32_t>(get_value<uint8_t>(addr)); }
-    template<> inline void dump_value<bool>(const_pointer_t addr)
+    template<typename value_t> value_t get_value(const uint8_t* addr) { return *reinterpret_cast<const value_t*>(addr); }
+    template<typename value_t> void dump_value(const uint8_t* addr) { std::cout << get_value<value_t>(addr); }
+    template<> inline void dump_value<int8_t>(const uint8_t* addr) { std::cout << static_cast<int32_t>(get_value<int8_t>(addr)); }
+    template<> inline void dump_value<uint8_t>(const uint8_t* addr) { std::cout << static_cast<uint32_t>(get_value<uint8_t>(addr)); }
+    template<> inline void dump_value<bool>(const uint8_t* addr)
     {
         const uint8_t b = get_value<uint8_t>(addr);
         if (b == 0) std::cout << "false";
         else if (b == 1) std::cout << "true";
         else std::cout << static_cast<uint32_t>(b);
     }
-    template<typename value_t> void dump_var(const_pointer_t addr)
+    template<typename value_t> void dump_var(const uint8_t* addr)
     {
         std::cout << '(';
         dump_value<value_t>(addr);
@@ -130,7 +130,7 @@ namespace propane
                 stack_capacity = (static_cast<size_t>(1) << static_cast<size_t>(i - 1));
                 if (stack_capacity >= parameters.min_stack_size && stack_capacity <= parameters.max_stack_size)
                 {
-                    stack_data = (pointer_t)malloc(stack_capacity);
+                    stack_data = (uint8_t*)malloc(stack_capacity);
                     if (stack_data) break;
                 }
             }
@@ -143,7 +143,7 @@ namespace propane
 
                 runtime_library lib(init_lib.name);
 
-                lib.calls = indexed_block<index_t, runtime_library::call>(init_lib.calls.size());
+                lib.calls = indexed_block<uint32_t, runtime_library::call>(init_lib.calls.size());
                 auto src = init_lib.calls.data();
                 for (auto& it : lib.calls)
                 {
@@ -358,7 +358,7 @@ namespace propane
 
             set(sub, lhs_addr, rhs_addr);
         }
-        inline void set(subcode sub, pointer_t lhs_addr, const_pointer_t rhs_addr) noexcept
+        inline void set(subcode sub, uint8_t* lhs_addr, const uint8_t* rhs_addr) noexcept
         {
             switch (sub)
             {
@@ -1018,14 +1018,14 @@ namespace propane
             const size_t underlying_size = get_addr_type(false).generated.pointer.underlying_size;
             switch (sub)
             {
-                case subcode(0): write<pointer_t>(lhs_addr) += ((size_t)underlying_size * (size_t)read<int8_t>(rhs_addr)); return;
-                case subcode(1): write<pointer_t>(lhs_addr) += ((size_t)underlying_size * (size_t)read<uint8_t>(rhs_addr)); return;
-                case subcode(2): write<pointer_t>(lhs_addr) += ((size_t)underlying_size * (size_t)read<int16_t>(rhs_addr)); return;
-                case subcode(3): write<pointer_t>(lhs_addr) += ((size_t)underlying_size * (size_t)read<uint16_t>(rhs_addr)); return;
-                case subcode(4): write<pointer_t>(lhs_addr) += ((size_t)underlying_size * (size_t)read<int32_t>(rhs_addr)); return;
-                case subcode(5): write<pointer_t>(lhs_addr) += ((size_t)underlying_size * (size_t)read<uint32_t>(rhs_addr)); return;
-                case subcode(6): write<pointer_t>(lhs_addr) += ((size_t)underlying_size * read<size_t>(rhs_addr)); return;
-                case subcode(7): write<pointer_t>(lhs_addr) += ((size_t)underlying_size * (size_t)read<uint64_t>(rhs_addr)); return;
+                case subcode(0): write<uint8_t*>(lhs_addr) += ((size_t)underlying_size * (size_t)read<int8_t>(rhs_addr)); return;
+                case subcode(1): write<uint8_t*>(lhs_addr) += ((size_t)underlying_size * (size_t)read<uint8_t>(rhs_addr)); return;
+                case subcode(2): write<uint8_t*>(lhs_addr) += ((size_t)underlying_size * (size_t)read<int16_t>(rhs_addr)); return;
+                case subcode(3): write<uint8_t*>(lhs_addr) += ((size_t)underlying_size * (size_t)read<uint16_t>(rhs_addr)); return;
+                case subcode(4): write<uint8_t*>(lhs_addr) += ((size_t)underlying_size * (size_t)read<int32_t>(rhs_addr)); return;
+                case subcode(5): write<uint8_t*>(lhs_addr) += ((size_t)underlying_size * (size_t)read<uint32_t>(rhs_addr)); return;
+                case subcode(6): write<uint8_t*>(lhs_addr) += ((size_t)underlying_size * read<size_t>(rhs_addr)); return;
+                case subcode(7): write<uint8_t*>(lhs_addr) += ((size_t)underlying_size * (size_t)read<uint64_t>(rhs_addr)); return;
             }
         }
         inline void psub() noexcept
@@ -1037,14 +1037,14 @@ namespace propane
             const size_t underlying_size = get_addr_type(false).generated.pointer.underlying_size;
             switch (sub)
             {
-                case subcode(0): write<pointer_t>(lhs_addr) -= ((size_t)underlying_size * (size_t)read<int8_t>(rhs_addr)); return;
-                case subcode(1): write<pointer_t>(lhs_addr) -= ((size_t)underlying_size * (size_t)read<uint8_t>(rhs_addr)); return;
-                case subcode(2): write<pointer_t>(lhs_addr) -= ((size_t)underlying_size * (size_t)read<int16_t>(rhs_addr)); return;
-                case subcode(3): write<pointer_t>(lhs_addr) -= ((size_t)underlying_size * (size_t)read<uint16_t>(rhs_addr)); return;
-                case subcode(4): write<pointer_t>(lhs_addr) -= ((size_t)underlying_size * (size_t)read<int32_t>(rhs_addr)); return;
-                case subcode(5): write<pointer_t>(lhs_addr) -= ((size_t)underlying_size * (size_t)read<uint32_t>(rhs_addr)); return;
-                case subcode(6): write<pointer_t>(lhs_addr) -= ((size_t)underlying_size * read<size_t>(rhs_addr)); return;
-                case subcode(7): write<pointer_t>(lhs_addr) -= ((size_t)underlying_size * (size_t)read<uint64_t>(rhs_addr)); return;
+                case subcode(0): write<uint8_t*>(lhs_addr) -= ((size_t)underlying_size * (size_t)read<int8_t>(rhs_addr)); return;
+                case subcode(1): write<uint8_t*>(lhs_addr) -= ((size_t)underlying_size * (size_t)read<uint8_t>(rhs_addr)); return;
+                case subcode(2): write<uint8_t*>(lhs_addr) -= ((size_t)underlying_size * (size_t)read<int16_t>(rhs_addr)); return;
+                case subcode(3): write<uint8_t*>(lhs_addr) -= ((size_t)underlying_size * (size_t)read<uint16_t>(rhs_addr)); return;
+                case subcode(4): write<uint8_t*>(lhs_addr) -= ((size_t)underlying_size * (size_t)read<int32_t>(rhs_addr)); return;
+                case subcode(5): write<uint8_t*>(lhs_addr) -= ((size_t)underlying_size * (size_t)read<uint32_t>(rhs_addr)); return;
+                case subcode(6): write<uint8_t*>(lhs_addr) -= ((size_t)underlying_size * read<size_t>(rhs_addr)); return;
+                case subcode(7): write<uint8_t*>(lhs_addr) -= ((size_t)underlying_size * (size_t)read<uint64_t>(rhs_addr)); return;
             }
         }
         inline void pdif() noexcept
@@ -1822,62 +1822,62 @@ namespace propane
 
         inline void br() noexcept
         {
-            const index_t branch_location = read_bytecode<index_t>(iptr);
+            const uint32_t branch_location = read_bytecode<uint32_t>(iptr);
 
             jump(branch_location);
         }
         inline void beq() noexcept
         {
-            const index_t branch_location = read_bytecode<index_t>(iptr);
+            const uint32_t branch_location = read_bytecode<uint32_t>(iptr);
 
             if (ceq()) jump(branch_location);
         }
         inline void bne() noexcept
         {
-            const index_t branch_location = read_bytecode<index_t>(iptr);
+            const uint32_t branch_location = read_bytecode<uint32_t>(iptr);
 
             if (cne()) jump(branch_location);
         }
         inline void bgt() noexcept
         {
-            const index_t branch_location = read_bytecode<index_t>(iptr);
+            const uint32_t branch_location = read_bytecode<uint32_t>(iptr);
 
             if (cgt()) jump(branch_location);
         }
         inline void bge() noexcept
         {
-            const index_t branch_location = read_bytecode<index_t>(iptr);
+            const uint32_t branch_location = read_bytecode<uint32_t>(iptr);
 
             if (cge()) jump(branch_location);
         }
         inline void blt() noexcept
         {
-            const index_t branch_location = read_bytecode<index_t>(iptr);
+            const uint32_t branch_location = read_bytecode<uint32_t>(iptr);
 
             if (clt()) jump(branch_location);
         }
         inline void ble() noexcept
         {
-            const index_t branch_location = read_bytecode<index_t>(iptr);
+            const uint32_t branch_location = read_bytecode<uint32_t>(iptr);
 
             if (cle()) jump(branch_location);
         }
         inline void bze() noexcept
         {
-            const index_t branch_location = read_bytecode<index_t>(iptr);
+            const uint32_t branch_location = read_bytecode<uint32_t>(iptr);
 
             if (cze()) jump(branch_location);
         }
         inline void bnz() noexcept
         {
-            const index_t branch_location = read_bytecode<index_t>(iptr);
+            const uint32_t branch_location = read_bytecode<uint32_t>(iptr);
 
             if (cnz()) jump(branch_location);
         }
 
         inline void sw() noexcept
         {
-            const_pointer_t idx_addr = read_address(false);
+            const uint8_t* idx_addr = read_address(false);
 
             uint32_t idx = 0;
             switch (addr_type[false])
@@ -1894,8 +1894,8 @@ namespace propane
 
             const uint32_t label_count = read_bytecode<uint32_t>(iptr);
 
-            const index_t* labels = reinterpret_cast<const index_t*>(iptr);
-            iptr += sizeof(index_t) * label_count;
+            const uint32_t* labels = reinterpret_cast<const uint32_t*>(iptr);
+            iptr += sizeof(uint32_t) * label_count;
 
             if (idx < label_count)
             {
@@ -1903,7 +1903,7 @@ namespace propane
             }
         }
 
-        inline void jump(index_t target) noexcept
+        inline void jump(uint32_t target) noexcept
         {
             iptr = ibeg + target;
 
@@ -1919,7 +1919,7 @@ namespace propane
         }
         inline void callv()
         {
-            const_pointer_t method_ptr = read_address(false);
+            const uint8_t* method_ptr = read_address(false);
             size_t method_handle = *reinterpret_cast<const size_t*>(method_ptr);
             ASSERT(method_handle != 0, "Attempted to invoke a null method pointer");
             method_handle ^= data.runtime_hash;
@@ -1936,7 +1936,7 @@ namespace propane
         inline void retv()
         {
             const subcode sub = read_subcode();
-            const_pointer_t ret_value = read_address(true);
+            const uint8_t* ret_value = read_address(true);
 
             // Set return value (of the current signature)
             return_value_addr = stack_data + sf.return_offset;
@@ -1949,7 +1949,7 @@ namespace propane
 
         inline void dump()
         {
-            const const_pointer_t src_addr = read_address(true);
+            const uint8_t* src_addr = read_address(true);
 
             dump_recursive(src_addr, get_addr_type(true));
 
@@ -1957,7 +1957,7 @@ namespace propane
         }
 
 
-        void dump_recursive(const_pointer_t addr, const type& type)
+        void dump_recursive(const uint8_t* addr, const type& type)
         {
             std::cout << get_name(type);
             switch (type.index)
@@ -1976,12 +1976,12 @@ namespace propane
                 {
                     if (type.is_pointer() || type.is_signature())
                     {
-                        std::cout << '(' << (void*)*reinterpret_cast<const const_pointer_t*>(addr) << ')';
+                        std::cout << '(' << (void*)*reinterpret_cast<const uint8_t* const*>(addr) << ')';
                     }
                     else if (type.is_array())
                     {
                         std::cout << '{';
-                        const_pointer_t ptr = addr;
+                        const uint8_t* ptr = addr;
                         const auto& underlying_type = get_type(type.generated.array.underlying_type);
                         for (size_t i = 0; i < type.generated.array.array_size; i++)
                         {
@@ -2094,7 +2094,7 @@ namespace propane
                 handle(path) {}
 
             host_library handle;
-            indexed_block<index_t, call> calls;
+            indexed_block<uint32_t, call> calls;
         };
         indexed_vector<name_idx, runtime_library> libraries;
 
@@ -2124,12 +2124,12 @@ namespace propane
         // Total stack capacity
         size_t stack_capacity = 0;
         // Stack data
-        pointer_t stack_data = nullptr;
+        uint8_t* stack_data = nullptr;
 
         // Stack frame
-        const_pointer_t iptr = nullptr;
-        const_pointer_t ibeg = nullptr;
-        const_pointer_t iend = nullptr;
+        const uint8_t* iptr = nullptr;
+        const uint8_t* ibeg = nullptr;
+        const uint8_t* iend = nullptr;
         stack_frame_t sf;
         const method* current_method = nullptr;
         const signature* current_signature = nullptr;
@@ -2139,16 +2139,16 @@ namespace propane
         {
             return read_bytecode<subcode>(iptr);
         }
-        pointer_t read_address(bool is_rhs) noexcept
+        uint8_t* read_address(bool is_rhs) noexcept
         {
-            pointer_t result = nullptr;
+            uint8_t* result = nullptr;
 
             const address_data_t& addr = *reinterpret_cast<const address_data_t*>(iptr);
 
             const auto& minf = *current_method;
             const auto& csig = *current_signature;
 
-            const index_t index = addr.header.index();
+            const uint32_t index = addr.header.index();
             switch (addr.header.type())
             {
                 case address_type::stackvar:
@@ -2197,7 +2197,7 @@ namespace propane
                 {
                     const type_idx btype_idx = type_idx(index);
                     iptr += sizeof(address_header);
-                    pointer_t ptr = (pointer_t)iptr;
+                    uint8_t* ptr = (uint8_t*)iptr;
                     const auto& type = get_type(btype_idx);
                     iptr += type.total_size;
                     addr_type[is_rhs] = type.index;
@@ -2260,7 +2260,7 @@ namespace propane
                 case address_prefix::address_of:
                 {
                     tmp_var[is_rhs] = reinterpret_cast<size_t>(result);
-                    result = reinterpret_cast<pointer_t>(&tmp_var[is_rhs]);
+                    result = reinterpret_cast<uint8_t*>(&tmp_var[is_rhs]);
 
                     const auto& current_type = get_addr_type(is_rhs);
                     const type_idx dst_type = current_type.pointer_type;
@@ -2271,7 +2271,7 @@ namespace propane
                 case address_prefix::size_of:
                 {
                     tmp_var[is_rhs] = get_addr_type(is_rhs).total_size;
-                    result = reinterpret_cast<pointer_t>(&tmp_var[is_rhs]);
+                    result = reinterpret_cast<uint8_t*>(&tmp_var[is_rhs]);
 
                     addr_type[is_rhs] = size_type.index;
                 }
@@ -2299,7 +2299,7 @@ namespace propane
                 VALIDATE_CALLSTACK_LIMIT(callstack_depth <= parameters.max_callstack_depth, parameters.max_callstack_depth);
 
                 const size_t param_offset = frame_offset + sizeof(stack_frame_t);
-                pointer_t param_ptr = stack_data + param_offset;
+                uint8_t* param_ptr = stack_data + param_offset;
                 const size_t stack_offset = param_offset + calling_signature.parameters_size;
 
                 // Push method stack size
@@ -2314,13 +2314,13 @@ namespace propane
                 ASSERT(arg_count == parameter_count, "Invalid argument count");
                 if (parameter_count > 0)
                 {
-                    pointer_t param_ptr = stack_data + param_offset;
+                    uint8_t* param_ptr = stack_data + param_offset;
                     for (size_t i = 0; i < parameter_count; i++)
                     {
                         const stackvar& parameter = calling_signature.parameters[i];
                         const subcode sub = read_subcode();
-                        const_pointer_t arg_addr = read_address(true);
-                        pointer_t param_addr = param_ptr + parameter.offset;
+                        const uint8_t* arg_addr = read_address(true);
+                        uint8_t* param_addr = param_ptr + parameter.offset;
                         set(sub, param_addr, arg_addr);
                     }
                 }
@@ -2362,7 +2362,7 @@ namespace propane
 
                 // Push method stack size (parameters only for external methods)
                 const size_t param_offset = stack_size;
-                pointer_t param_ptr = stack_data + param_offset;
+                uint8_t* param_ptr = stack_data + param_offset;
                 if (method.total_stack_size > 0)
                 {
                     const size_t new_stack_size = stack_size + (method.total_stack_size);
@@ -2380,8 +2380,8 @@ namespace propane
                     {
                         const stackvar& parameter = calling_signature.parameters[i];
                         const subcode sub = read_subcode();
-                        const_pointer_t arg_addr = read_address(true);
-                        pointer_t param_addr = param_ptr + parameter.offset;
+                        const uint8_t* arg_addr = read_address(true);
+                        uint8_t* param_addr = param_ptr + parameter.offset;
                         set(sub, param_addr, arg_addr);
                     }
                 }
@@ -2429,10 +2429,10 @@ namespace propane
         const type& vptr_type;
 
         // Return value
-        pointer_t return_value_addr;
+        uint8_t* return_value_addr;
         type_idx return_value_type;
 
-        inline pointer_t push_return_value(const type& type) noexcept
+        inline uint8_t* push_return_value(const type& type) noexcept
         {
             return_value_addr = stack_data + sf.stack_end;
             return_value_type = type.index;

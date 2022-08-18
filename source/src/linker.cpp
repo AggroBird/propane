@@ -372,8 +372,8 @@ namespace propane
                     labels = method.labels;
                     label_idx = 0;
 
-                    const pointer_t ibeg = method.bytecode.data();
-                    const pointer_t iend = ibeg + method.bytecode.size();
+                    uint8_t* const ibeg = method.bytecode.data();
+                    uint8_t* const iend = ibeg + method.bytecode.size();
                     iptr = ibeg;
                     iidx = 0;
                     bool has_returned = false;
@@ -381,7 +381,7 @@ namespace propane
                     {
                         ASSERT(iptr >= ibeg && iptr <= iend, "Instruction pointer out of range");
 
-                        const index_t offset = static_cast<index_t>(iptr - ibeg);
+                        const uint32_t offset = static_cast<uint32_t>(iptr - ibeg);
                         while (label_idx < labels.size() && offset >= labels[label_idx])
                         {
                             // Ensure labels are at the correct location
@@ -509,7 +509,7 @@ namespace propane
 
                             case opcode::br:
                             {
-                                const index_t jump = read_bytecode<index_t>(iptr);
+                                const uint32_t jump = read_bytecode<uint32_t>(iptr);
                                 // Reset return value after branch
                                 clear_return_value();
                             }
@@ -522,7 +522,7 @@ namespace propane
                             case opcode::blt:
                             case opcode::ble:
                             {
-                                const index_t jump = read_bytecode<index_t>(iptr);
+                                const uint32_t jump = read_bytecode<uint32_t>(iptr);
                                 subcode& sub = read_subcode();
                                 const type_idx lhs = resolve_address();
                                 const type_idx rhs = resolve_operand(lhs);
@@ -535,7 +535,7 @@ namespace propane
                             case opcode::bze:
                             case opcode::bnz:
                             {
-                                const index_t jump = read_bytecode<index_t>(iptr);
+                                const uint32_t jump = read_bytecode<uint32_t>(iptr);
                                 subcode& sub = read_subcode();
                                 const type_idx lhs = resolve_operand();
                                 sub = resolve_cmp(current_op - (opcode::br - opcode::cmp), lhs, lhs);
@@ -549,7 +549,7 @@ namespace propane
                                 const type_idx type = resolve_operand();
                                 VALIDATE_SWITCH_TYPE(is_integral(type), type);
                                 const uint32_t label_count = read_bytecode<uint32_t>(iptr);
-                                iptr += sizeof(index_t) * label_count;
+                                iptr += sizeof(uint32_t) * label_count;
                                 // Reset return value after branch
                                 clear_return_value();
                             }
@@ -558,8 +558,8 @@ namespace propane
                             case opcode::call:
                             {
                                 // Translate method index
-                                index_t& idx = read_bytecode_ref<index_t>(iptr);
-                                idx = (index_t)method.calls[idx];
+                                uint32_t& idx = read_bytecode_ref<uint32_t>(iptr);
+                                idx = (uint32_t)method.calls[idx];
                                 const size_t arg_count = static_cast<size_t>(read_bytecode<uint8_t>(iptr));
                                 const auto& call_method = methods[method_idx(idx)];
                                 VALIDATE_METHOD_DEFINITION(call_method.is_defined(), get_name(call_method));
@@ -662,7 +662,7 @@ namespace propane
 
             address_data_t& addr = *reinterpret_cast<address_data_t*>(iptr);
 
-            const index_t index = addr.header.index();
+            const uint32_t index = addr.header.index();
             switch (addr.header.type())
             {
                 case address_type::stackvar:
@@ -693,7 +693,7 @@ namespace propane
                 case address_type::global:
                 {
                     // Translate global index
-                    addr.header.set_index((index_t)minf.globals[index].index);
+                    addr.header.set_index((uint32_t)minf.globals[index].index);
 
                     global_idx global = (global_idx)addr.header.index();
 
@@ -1044,7 +1044,7 @@ namespace propane
                 // Create global from method address
                 const size_t current_size = constants.data.size();
                 constants.data.resize(current_size + sizeof(name_idx) + sizeof(uint16_t) + 1);
-                pointer_t addr = constants.data.data() + current_size;
+                uint8_t* addr = constants.data.data() + current_size;
                 write_bytecode<uint16_t>(addr, 1);
                 write_bytecode<uint8_t>(addr, static_cast<uint8_t>(type_idx::voidtype));
                 write_bytecode<name_idx>(addr, method.name);
@@ -1068,11 +1068,11 @@ namespace propane
                 const size_t current_size = new_data.size();
                 new_data.resize(current_size + global_type.total_size);
 
-                pointer_t lhs_addr = new_data.data() + current_size;
+                uint8_t* lhs_addr = new_data.data() + current_size;
                 memset(lhs_addr, 0, global_type.total_size);
                 type_idx lhs_type = global_type.index;
 
-                const_pointer_t rhs_addr = table.data.data() + global.offset;
+                const uint8_t* rhs_addr = table.data.data() + global.offset;
                 const uint16_t init_count = read_bytecode<uint16_t>(rhs_addr);
                 uint16_t used_count = init_count;
                 global.offset = current_size;
@@ -1084,7 +1084,7 @@ namespace propane
             }
             swap(table.data, new_data);
         }
-        void initialize_data_recursive(name_idx name, pointer_t& lhs_addr, type_idx lhs_type, const_pointer_t& rhs_addr, uint16_t& init_count, bool is_constant)
+        void initialize_data_recursive(name_idx name, uint8_t*& lhs_addr, type_idx lhs_type, const uint8_t*& rhs_addr, uint16_t& init_count, bool is_constant)
         {
             const auto& t = types[lhs_type];
 
@@ -1223,12 +1223,12 @@ namespace propane
         }
         type_idx return_value = type_idx::invalid;
         size_t max_return_value_size = 0;
-        pointer_t iptr = nullptr;
-        index_t iidx = 0;
+        uint8_t* iptr = nullptr;
+        uint32_t iidx = 0;
         opcode current_op = opcode::noop;
 
-        vector<index_t> labels;
-        index_t label_idx = 0;
+        vector<uint32_t> labels;
+        uint32_t label_idx = 0;
 
         string generated_name_buffers[2];
         size_t generated_name_index = 0;

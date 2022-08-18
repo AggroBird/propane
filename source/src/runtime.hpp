@@ -14,14 +14,14 @@
 namespace propane
 {
     // Global indices
-    enum class global_flags : index_t
+    enum class global_flags : uint32_t
     {
-        constant_flag = index_t(1) << (address_header_constants::index_bit_count - 1),
+        constant_flag = uint32_t(1) << (address_header_constants::index_bit_count - 1),
         constant_mask = (address_header_constants::index_max >> 1),
     };
     constexpr global_idx operator|(global_idx lhs, global_flags rhs) noexcept
     {
-        return global_idx(index_t(lhs) | index_t(rhs));
+        return global_idx(uint32_t(lhs) | uint32_t(rhs));
     }
     constexpr global_idx& operator|=(global_idx& lhs, global_flags rhs) noexcept
     {
@@ -30,7 +30,7 @@ namespace propane
     }
     constexpr global_idx operator&(global_idx lhs, global_flags rhs) noexcept
     {
-        return global_idx(index_t(lhs) & index_t(rhs));
+        return global_idx(uint32_t(lhs) & uint32_t(rhs));
     }
     constexpr global_idx& operator&=(global_idx& lhs, global_flags rhs) noexcept
     {
@@ -43,13 +43,13 @@ namespace propane
     }
 
     // Pointer ops
-    inline pointer_t dereference(pointer_t addr) noexcept
+    inline uint8_t* dereference(uint8_t* addr) noexcept
     {
-        return *reinterpret_cast<pointer_t*>(addr);
+        return *reinterpret_cast<uint8_t**>(addr);
     }
-    inline const_pointer_t dereference(const_pointer_t addr) noexcept
+    inline const uint8_t* dereference(const uint8_t* addr) noexcept
     {
-        return *reinterpret_cast<const const_pointer_t*>(addr);
+        return *reinterpret_cast<const uint8_t* const*>(addr);
     }
 
     constexpr native_type_info_t base_types[] =
@@ -89,7 +89,7 @@ namespace propane
 
 
     // Lookups/translations
-    enum class lookup_type : index_t
+    enum class lookup_type : uint32_t
     {
         type,
         method,
@@ -102,7 +102,7 @@ namespace propane
     {
         lookup_idx() = default;
 
-        lookup_idx(lookup_type lookup, index_t index) :
+        lookup_idx(lookup_type lookup, uint32_t index) :
             lookup(lookup),
             index(index) {}
 
@@ -114,11 +114,11 @@ namespace propane
             lookup(lookup_type::method),
             method(method) {}
 
-        inline static lookup_idx make_global(index_t index) noexcept
+        inline static lookup_idx make_global(uint32_t index) noexcept
         {
             return lookup_idx(lookup_type::global, index);
         }
-        inline static lookup_idx make_constant(index_t index) noexcept
+        inline static lookup_idx make_constant(uint32_t index) noexcept
         {
             return lookup_idx(lookup_type::constant, index);
         }
@@ -133,7 +133,7 @@ namespace propane
         {
             type_idx type;
             method_idx method;
-            index_t index;
+            uint32_t index;
         };
 
         inline bool operator==(type_idx idx) const noexcept
@@ -174,7 +174,7 @@ namespace propane
     struct address_data_t
     {
         address_data_t() = default;
-        address_data_t(index_t init) :
+        address_data_t(uint32_t init) :
             header(init),
             offset(0) {}
 
@@ -185,25 +185,25 @@ namespace propane
             aligned_offset_t offset;
         };
     };
-    static_assert(sizeof(address_data_t) == sizeof(index_t) + sizeof(size_t), "Address size mismatch");
+    static_assert(sizeof(address_data_t) == sizeof(uint32_t) + sizeof(size_t), "Address size mismatch");
 
     // Read/write bytecode
-    template<typename value_t> value_t read_bytecode(pointer_t& iptr) noexcept
+    template<typename value_t> value_t read_bytecode(uint8_t*& iptr) noexcept
     {
         static_assert(std::is_trivial_v<value_t>, "Trivial type required");
         return *reinterpret_cast<value_t*&>(iptr)++;
     }
-    template<typename value_t> value_t& read_bytecode_ref(pointer_t& iptr) noexcept
+    template<typename value_t> value_t& read_bytecode_ref(uint8_t*& iptr) noexcept
     {
         static_assert(std::is_trivial_v<value_t>, "Trivial type required");
         return *reinterpret_cast<value_t*&>(iptr)++;
     }
-    template<typename value_t> value_t read_bytecode(const_pointer_t& iptr) noexcept
+    template<typename value_t> value_t read_bytecode(const uint8_t*& iptr) noexcept
     {
         static_assert(std::is_trivial_v<value_t>, "Trivial type required");
         return *reinterpret_cast<const value_t*&>(iptr)++;
     }
-    template<typename value_t> void write_bytecode(pointer_t& iptr, const value_t& data) noexcept
+    template<typename value_t> void write_bytecode(uint8_t*& iptr, const value_t& data) noexcept
     {
         static_assert(std::is_trivial_v<value_t>, "Trivial type required");
         *reinterpret_cast<value_t*&>(iptr)++ = data;
@@ -221,7 +221,7 @@ namespace propane
     }
 
     // Serialization of generic types
-    template<typename value_t> struct propane::serialization::is_packed<aligned_t<value_t, alignof(index_t)>> { static constexpr bool value = true; };
+    template<typename value_t> struct propane::serialization::is_packed<aligned_t<value_t, alignof(uint32_t)>> { static constexpr bool value = true; };
     template<> struct propane::serialization::is_packed<translate_idx> { static constexpr bool value = true; };
 
     SERIALIZABLE(stackvar, type, offset);
@@ -247,18 +247,18 @@ namespace propane
 
         string name;
         bool preload_symbols;
-        indexed_block<index_t, external_call_info> calls;
+        indexed_block<uint32_t, external_call_info> calls;
     };
 
     struct runtime_call_index
     {
         runtime_call_index() = default;
-        runtime_call_index(name_idx library, index_t index) :
+        runtime_call_index(name_idx library, uint32_t index) :
             library(library),
             index(index) {}
 
         name_idx library;
-        index_t index;
+        uint32_t index;
     };
 
     class environment_data

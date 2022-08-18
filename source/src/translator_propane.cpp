@@ -75,7 +75,7 @@ namespace propane
             for (auto& g : table.info)
             {
                 file_writer.write("\t", resolve_type_name(g.type), " ", database[g.name]);
-                const_pointer_t addr = table.data.data() + g.offset;
+                const uint8_t* addr = table.data.data() + g.offset;
                 write_constant(addr, g.type, true);
                 file_writer.write_newline();
             }
@@ -118,13 +118,13 @@ namespace propane
 
                 // Evaluate bytecode
                 sv_count = m.stackvars.size();
-                label_idx = static_cast<index_t>(m.labels.size());
+                label_idx = static_cast<uint32_t>(m.labels.size());
                 label_queue.resize(label_idx);
                 label_indices.clear();
                 for (auto& label : m.labels)
                 {
                     label_queue[--label_idx] = label;
-                    label_indices.emplace(label, static_cast<index_t>(label_indices.size()));
+                    label_indices.emplace(label, static_cast<uint32_t>(label_indices.size()));
                 }
 
                 const auto& bytecode = m.bytecode;
@@ -141,7 +141,7 @@ namespace propane
         {
             while (true)
             {
-                const index_t offset = static_cast<index_t>(iptr - ibeg);
+                const uint32_t offset = static_cast<uint32_t>(iptr - ibeg);
                 while (!label_queue.empty() && offset >= label_queue.back())
                 {
                     file_writer.write("label_", get_number_str(label_idx), ":\n");
@@ -287,12 +287,12 @@ namespace propane
         }
 
         size_t sv_count = 0;
-        vector<index_t> label_queue;
-        unordered_map<index_t, index_t> label_indices;
-        index_t label_idx = 0;
-        const_pointer_t iptr;
-        const_pointer_t ibeg;
-        const_pointer_t iend;
+        vector<uint32_t> label_queue;
+        unordered_map<uint32_t, uint32_t> label_indices;
+        uint32_t label_idx = 0;
+        const uint8_t* iptr;
+        const uint8_t* ibeg;
+        const uint8_t* iend;
 
 
         inline subcode read_subcode() noexcept
@@ -312,7 +312,7 @@ namespace propane
                 case address_prefix::size_of: file_writer.write("!"); break;
             }
 
-            const index_t index = addr.header.index();
+            const uint32_t index = addr.header.index();
             switch (addr.header.type())
             {
                 case address_type::stackvar:
@@ -350,7 +350,7 @@ namespace propane
                 {
                     const type_idx btype_idx = type_idx(index);
                     iptr += sizeof(address_header);
-                    pointer_t ptr = (pointer_t)iptr;
+                    uint8_t* ptr = (uint8_t*)iptr;
                     const auto& type = data.types[btype_idx];
                     write_literal(ptr, type.index);
                     iptr += type.total_size;
@@ -386,13 +386,13 @@ namespace propane
         }
         void read_label()
         {
-            const index_t jump = read_bytecode<index_t>(iptr);
+            const uint32_t jump = read_bytecode<uint32_t>(iptr);
             auto find = label_indices.find(jump);
             ASSERT(find != label_indices.end(), "Invalid jump location");
             file_writer.write(" label_", get_number_str(find->second));
         }
 
-        void write_literal(const_pointer_t ptr, type_idx type)
+        void write_literal(const uint8_t* ptr, type_idx type)
         {
             switch (type)
             {
@@ -428,7 +428,7 @@ namespace propane
                 value <<= 4;
             }
         }
-        void write_constant(const_pointer_t& ptr, type_idx type, bool top_level = false)
+        void write_constant(const uint8_t*& ptr, type_idx type, bool top_level = false)
         {
             if (top_level) file_writer.write(" init ");
 

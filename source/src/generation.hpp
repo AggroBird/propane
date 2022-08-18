@@ -6,7 +6,7 @@
 
 namespace propane
 {
-    enum class extended_flags : index_t
+    enum class extended_flags : uint32_t
     {
         is_defined = 1 << 24,
         is_resolving = 1 << 25,
@@ -14,15 +14,15 @@ namespace propane
     };
     constexpr type_flags operator|(type_flags lhs, extended_flags rhs) noexcept
     {
-        return type_flags(index_t(lhs) | index_t(rhs));
+        return type_flags(uint32_t(lhs) | uint32_t(rhs));
     }
     constexpr type_flags operator|(extended_flags lhs, type_flags rhs) noexcept
     {
-        return type_flags(index_t(lhs) | index_t(rhs));
+        return type_flags(uint32_t(lhs) | uint32_t(rhs));
     }
     constexpr type_flags operator|(extended_flags lhs, extended_flags rhs) noexcept
     {
-        return type_flags(index_t(lhs) | index_t(rhs));
+        return type_flags(uint32_t(lhs) | uint32_t(rhs));
     }
     constexpr type_flags& operator|=(type_flags& lhs, extended_flags rhs) noexcept
     {
@@ -31,7 +31,7 @@ namespace propane
     }
     constexpr bool operator&(type_flags lhs, extended_flags rhs) noexcept
     {
-        return type_flags(index_t(lhs) & index_t(rhs)) != type_flags::none;
+        return type_flags(uint32_t(lhs) & uint32_t(rhs)) != type_flags::none;
     }
 
     class gen_type
@@ -273,7 +273,7 @@ namespace propane
         signature_idx signature = signature_idx::invalid;
 
         vector<uint8_t> bytecode;
-        vector<index_t> labels;
+        vector<uint32_t> labels;
         vector<stackvar> stackvars;
         size_t method_stack_size = 0;
         size_t total_stack_size = 0;

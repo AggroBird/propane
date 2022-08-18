@@ -26,10 +26,9 @@ namespace propane
     using offset_t = std::make_signed_t<size_t>;
 
     // Index types
-    using index_t = uint32_t;
-    enum : index_t { invalid_index = 0xFFFFFFFF };
+    enum : uint32_t { invalid_index = 0xFFFFFFFF };
 
-    enum class type_idx : index_t
+    enum class type_idx : uint32_t
     {
         i8,
         u8,
@@ -118,7 +117,7 @@ namespace propane
     }
     constexpr bool is_unsigned(type_idx type) noexcept
     {
-        return is_integral(type) && (((index_t)type & 1) == 1);
+        return is_integral(type) && (((uint32_t)type & 1) == 1);
     }
     constexpr bool is_floating_point(type_idx type) noexcept
     {
@@ -129,13 +128,13 @@ namespace propane
         return type <= type_idx::f64;
     }
 
-    enum class method_idx : index_t { invalid = invalid_index };
-    enum class signature_idx : index_t { invalid = invalid_index };
-    enum class name_idx : index_t { invalid = invalid_index };
-    enum class label_idx : index_t { invalid = invalid_index };
-    enum class offset_idx : index_t { invalid = invalid_index };
-    enum class global_idx : index_t { invalid = invalid_index };
-    enum class meta_idx : index_t { invalid = invalid_index };
+    enum class method_idx : uint32_t { invalid = invalid_index };
+    enum class signature_idx : uint32_t { invalid = invalid_index };
+    enum class name_idx : uint32_t { invalid = invalid_index };
+    enum class label_idx : uint32_t { invalid = invalid_index };
+    enum class offset_idx : uint32_t { invalid = invalid_index };
+    enum class global_idx : uint32_t { invalid = invalid_index };
+    enum class meta_idx : uint32_t { invalid = invalid_index };
 
 
     // Aligned type
@@ -167,8 +166,8 @@ namespace propane
 
         std::aligned_storage_t<sizeof(value_t), alignment> data;
     };
-    using aligned_size_t = aligned_t<size_t, alignof(index_t)>;
-    using aligned_offset_t = aligned_t<offset_t, alignof(index_t)>;
+    using aligned_size_t = aligned_t<size_t, alignof(uint32_t)>;
+    using aligned_offset_t = aligned_t<offset_t, alignof(uint32_t)>;
 
 
     // Addresses
@@ -198,30 +197,30 @@ namespace propane
 
     namespace address_header_constants
     {
-        static constexpr index_t flag_mask = 0b11;
-        static constexpr index_t index_bit_count = 26;
-        static constexpr index_t type_offset = 30;
-        static constexpr index_t prefix_offset = 28;
-        static constexpr index_t modifier_offset = 26;
-        static constexpr index_t index_max = ~0u >> (32 - address_header_constants::index_bit_count);
+        static constexpr uint32_t flag_mask = 0b11;
+        static constexpr uint32_t index_bit_count = 26;
+        static constexpr uint32_t type_offset = 30;
+        static constexpr uint32_t prefix_offset = 28;
+        static constexpr uint32_t modifier_offset = 26;
+        static constexpr uint32_t index_max = ~0u >> (32 - address_header_constants::index_bit_count);
     }
 
     struct address_header
     {
         address_header() noexcept = default;
-        address_header(index_t init) noexcept :
+        address_header(uint32_t init) noexcept :
             value(init) {}
-        address_header(address_type type, address_prefix prefix, address_modifier modifier, index_t index) noexcept
+        address_header(address_type type, address_prefix prefix, address_modifier modifier, uint32_t index) noexcept
         {
-            value = (static_cast<index_t>(index) & address_header_constants::index_max);
-            value |= ((static_cast<index_t>(type) & address_header_constants::flag_mask) << address_header_constants::type_offset);
-            value |= ((static_cast<index_t>(prefix) & address_header_constants::flag_mask) << address_header_constants::prefix_offset);
-            value |= ((static_cast<index_t>(modifier) & address_header_constants::flag_mask) << address_header_constants::modifier_offset);
+            value = (static_cast<uint32_t>(index) & address_header_constants::index_max);
+            value |= ((static_cast<uint32_t>(type) & address_header_constants::flag_mask) << address_header_constants::type_offset);
+            value |= ((static_cast<uint32_t>(prefix) & address_header_constants::flag_mask) << address_header_constants::prefix_offset);
+            value |= ((static_cast<uint32_t>(modifier) & address_header_constants::flag_mask) << address_header_constants::modifier_offset);
         }
         address_header(type_idx constant_type) noexcept
         {
-            value = static_cast<index_t>(constant_type) & address_header_constants::index_max;
-            value |= ((static_cast<index_t>(address_type::constant) & address_header_constants::flag_mask) << address_header_constants::type_offset);
+            value = static_cast<uint32_t>(constant_type) & address_header_constants::index_max;
+            value |= ((static_cast<uint32_t>(address_type::constant) & address_header_constants::flag_mask) << address_header_constants::type_offset);
         }
 
         inline const address_type type() const noexcept
@@ -236,30 +235,30 @@ namespace propane
         {
             return address_modifier((value >> address_header_constants::modifier_offset) & address_header_constants::flag_mask);
         }
-        inline index_t index() const noexcept
+        inline uint32_t index() const noexcept
         {
-            return static_cast<index_t>(value & address_header_constants::index_max);
+            return static_cast<uint32_t>(value & address_header_constants::index_max);
         }
 
         inline void set_type(address_type type) noexcept
         {
             value &= ~(address_header_constants::flag_mask << address_header_constants::type_offset);
-            value |= ((static_cast<index_t>(type) & address_header_constants::flag_mask) << address_header_constants::type_offset);
+            value |= ((static_cast<uint32_t>(type) & address_header_constants::flag_mask) << address_header_constants::type_offset);
         }
         inline void set_prefix(address_prefix prefix) noexcept
         {
             value &= ~(address_header_constants::flag_mask << address_header_constants::prefix_offset);
-            value |= ((static_cast<index_t>(prefix) & address_header_constants::flag_mask) << address_header_constants::prefix_offset);
+            value |= ((static_cast<uint32_t>(prefix) & address_header_constants::flag_mask) << address_header_constants::prefix_offset);
         }
         inline void set_modifier(address_modifier modifier) noexcept
         {
             value &= ~(address_header_constants::flag_mask << address_header_constants::modifier_offset);
-            value |= ((static_cast<index_t>(modifier) & address_header_constants::flag_mask) << address_header_constants::modifier_offset);
+            value |= ((static_cast<uint32_t>(modifier) & address_header_constants::flag_mask) << address_header_constants::modifier_offset);
         }
-        inline void set_index(index_t index) noexcept
+        inline void set_index(uint32_t index) noexcept
         {
             value &= ~address_header_constants::index_max;
-            value |= (static_cast<index_t>(index) & address_header_constants::index_max);
+            value |= (static_cast<uint32_t>(index) & address_header_constants::index_max);
         }
 
         inline bool operator==(const address_header& other) const noexcept
@@ -272,11 +271,11 @@ namespace propane
         }
 
     private:
-        index_t value;
+        uint32_t value;
     };
 
     // Type flags
-    enum class type_flags : index_t
+    enum class type_flags : uint32_t
     {
         none = 0,
         is_union = 1 << 0,
@@ -291,7 +290,7 @@ namespace propane
 
     constexpr type_flags operator|(type_flags lhs, type_flags rhs) noexcept
     {
-        return type_flags(static_cast<index_t>(lhs) | static_cast<index_t>(rhs));
+        return type_flags(static_cast<uint32_t>(lhs) | static_cast<uint32_t>(rhs));
     }
     constexpr type_flags& operator|=(type_flags& lhs, type_flags rhs) noexcept
     {
@@ -300,30 +299,30 @@ namespace propane
     }
     constexpr bool operator&(type_flags lhs, type_flags rhs) noexcept
     {
-        return type_flags(static_cast<index_t>(lhs) & static_cast<index_t>(rhs)) != type_flags::none;
+        return type_flags(static_cast<uint32_t>(lhs) & static_cast<uint32_t>(rhs)) != type_flags::none;
     }
 
 
     struct file_meta
     {
         file_meta() = default;
-        file_meta(std::string_view file_name, index_t line_number) :
+        file_meta(std::string_view file_name, uint32_t line_number) :
             file_name(file_name),
             line_number(line_number) {}
 
         std::string_view file_name;
-        index_t line_number = 0;
+        uint32_t line_number = 0;
     };
 
     struct string_offset
     {
         string_offset() = default;
-        string_offset(index_t offset, index_t length) :
+        string_offset(uint32_t offset, uint32_t length) :
             offset(offset),
             length(length) {}
 
-        index_t offset;
-        index_t length;
+        uint32_t offset;
+        uint32_t length;
     };
 
     template<typename value_t, size_t size> class handle

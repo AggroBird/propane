@@ -261,13 +261,13 @@ namespace propane
                     ibeg = iptr = bytecode.data();
                     iend = ibeg + bytecode.size();
 
-                    label_idx = static_cast<index_t>(m.labels.size());
+                    label_idx = static_cast<uint32_t>(m.labels.size());
                     label_queue.resize(label_idx);
                     label_indices.clear();
                     for (auto& label : m.labels)
                     {
                         label_queue[--label_idx] = label;
-                        label_indices.emplace(label, index_t(label_indices.size()));
+                        label_indices.emplace(label, uint32_t(label_indices.size()));
                     }
 
                     evaluate();
@@ -393,7 +393,7 @@ namespace propane
                 if (is_constant) dst_buf.write(" const");
                 dst_buf.write(")");
             }
-            const_pointer_t addr = table.data.data() + global_info.offset;
+            const uint8_t* addr = table.data.data() + global_info.offset;
             write_constant(dst_buf, addr, global_type.index, true);
             dst_buf.write(";");
 
@@ -415,7 +415,7 @@ namespace propane
             bool has_returned = false;
             while (true)
             {
-                const index_t offset = static_cast<index_t>(iptr - ibeg);
+                const uint32_t offset = static_cast<uint32_t>(iptr - ibeg);
                 while (!label_queue.empty() && offset >= label_queue.back())
                 {
                     method_body.write("$", get_number_str(label_idx), label_postfix, ":;\n");
@@ -638,14 +638,14 @@ namespace propane
 
         void br()
         {
-            const index_t branch_location = read_bytecode<index_t>(iptr);
+            const uint32_t branch_location = read_bytecode<uint32_t>(iptr);
             auto label_index = label_indices.find(branch_location);
 
             instruction.write("goto $", get_number_str(static_cast<size_t>(label_index->second)), label_postfix);
         }
         void br(opcode op)
         {
-            const index_t branch_location = read_bytecode<index_t>(iptr);
+            const uint32_t branch_location = read_bytecode<uint32_t>(iptr);
             auto label_index = label_indices.find(branch_location);
 
             instruction.write("if (");
@@ -659,8 +659,8 @@ namespace propane
 
             const uint32_t label_count = read_bytecode<uint32_t>(iptr);
 
-            const index_t* labels = reinterpret_cast<const index_t*>(iptr);
-            iptr += sizeof(index_t) * label_count;
+            const uint32_t* labels = reinterpret_cast<const uint32_t*>(iptr);
+            iptr += sizeof(uint32_t) * label_count;
 
             instruction.write("switch (", idx_addr.addr, ")\n\t{\n");
             for (uint32_t i = 0; i < label_count; i++)
@@ -999,14 +999,14 @@ namespace propane
         // Stack frame
         const method* current_method = nullptr;
         const signature* current_signature = nullptr;
-        vector<index_t> label_queue;
-        unordered_map<index_t, index_t> label_indices;
-        index_t label_idx = 0;
+        vector<uint32_t> label_queue;
+        unordered_map<uint32_t, uint32_t> label_indices;
+        uint32_t label_idx = 0;
         size_t ret_idx = 0;
         type_idx return_type = type_idx::voidtype;
-        const_pointer_t iptr = nullptr;
-        const_pointer_t ibeg = nullptr;
-        const_pointer_t iend = nullptr;
+        const uint8_t* iptr = nullptr;
+        const uint8_t* ibeg = nullptr;
+        const uint8_t* iend = nullptr;
 
         // String buffers
         static constexpr string_view stack_postfix = "s";
@@ -1077,7 +1077,7 @@ namespace propane
             return indent_str[idx];
         }
 
-        void write_literal(string_writer& buf, const_pointer_t ptr, type_idx type)
+        void write_literal(string_writer& buf, const uint8_t* ptr, type_idx type)
         {
             switch (type)
             {
@@ -1136,7 +1136,7 @@ namespace propane
                 value <<= 4;
             }
         }
-        void write_constant(string_writer& buf, const_pointer_t& ptr, type_idx type, bool top_level)
+        void write_constant(string_writer& buf, const uint8_t*& ptr, type_idx type, bool top_level)
         {
             const auto& t = data.types[type];
 
@@ -1215,7 +1215,7 @@ namespace propane
                 case address_prefix::size_of: buf.write("sizeof("); break;
             }
 
-            const index_t index = addr.header.index();
+            const uint32_t index = addr.header.index();
             type_idx sv_type = type_idx::invalid;
             switch (addr.header.type())
             {
@@ -1279,7 +1279,7 @@ namespace propane
                     const type_idx btype_idx = type_idx(index);
                     ASSERT(btype_idx <= type_idx::vptr, "Malformed constant opcode");
                     iptr += sizeof(address_header);
-                    pointer_t ptr = (pointer_t)iptr;
+                    uint8_t* ptr = (uint8_t*)iptr;
                     const auto& type = get_type(btype_idx);
                     string_writer& next_buf = get_next_buffer();
                     write_literal(next_buf, ptr, type.index);

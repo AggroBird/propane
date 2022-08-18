@@ -58,7 +58,7 @@ namespace propane
         auto& self_data = self();
         auto& env_data = env.self();
 
-        index_t lib_idx = 0;
+        uint32_t lib_idx = 0;
         for (auto& pair : env_data.libraries)
         {
             auto& lib_data = *pair.second;
@@ -68,7 +68,7 @@ namespace propane
             library_info add_lib(lib_data.path, lib_data.preload_symbols, lib_data.calls);
 
             const name_idx lib_name = name_idx(lib_idx++);
-            index_t call_idx = 0;
+            uint32_t call_idx = 0;
             for (auto& call : add_lib.calls)
             {
                 self_data.call_lookup.emplace(call.name, runtime_call_index(lib_name, call_idx++));

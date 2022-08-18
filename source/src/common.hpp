@@ -55,10 +55,6 @@ namespace propane
     typedef double f64;
     typedef void* vptr;
 
-    // Bytecode pointers
-    using pointer_t = uint8_t*;
-    using const_pointer_t = const uint8_t*;
-
     // Fnv hash
     namespace fnv
     {
@@ -235,13 +231,13 @@ namespace propane
     }
 
     // Read/write bytes
-    template<typename src_t> inline const src_t& read(const_pointer_t ptr) noexcept
+    template<typename src_t> inline const src_t& read(const uint8_t* ptr) noexcept
     {
         static_assert(std::is_trivial_v<src_t>, "Type must be trivial");
         const src_t& src = *reinterpret_cast<const src_t*>(ptr);
         return src;
     }
-    template<typename dst_t> inline dst_t& write(pointer_t ptr) noexcept
+    template<typename dst_t> inline dst_t& write(uint8_t* ptr) noexcept
     {
         static_assert(std::is_trivial_v<dst_t>, "Type must be trivial");
         dst_t& dst = *reinterpret_cast<dst_t*>(ptr);
@@ -317,7 +313,7 @@ namespace propane
             type = header.type();
         }
 
-        index_t index;
+        uint32_t index;
         address_modifier modifier;
         address_prefix prefix;
         address_type type;

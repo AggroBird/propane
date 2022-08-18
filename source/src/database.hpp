@@ -133,7 +133,7 @@ namespace propane
     {
         database_entry() = default;
 
-        template<typename... arg_t> database_entry(index_t offset, index_t length, key_t key, arg_t&&... arg) :
+        template<typename... arg_t> database_entry(uint32_t offset, uint32_t length, key_t key, arg_t&&... arg) :
             string_offset(offset, length),
             value(key, std::forward<arg_t>(arg)...) {}
 
@@ -229,14 +229,14 @@ namespace propane
         template <typename... arg_t> inline find_result_type emplace(string_view name, arg_t&&... arg)
         {
             const char* ptr = name.data();
-            const database_string_view view(&ptr, static_cast<index_t>(name.size()));
+            const database_string_view view(&ptr, static_cast<uint32_t>(name.size()));
 
             auto find = lookup.find(view);
             if (find == lookup.end())
             {
                 const size_t idx = entries.size();
-                const index_t offset = static_cast<index_t>(strings.size());
-                const index_t length = static_cast<index_t>(name.size());
+                const uint32_t offset = static_cast<uint32_t>(strings.size());
+                const uint32_t length = static_cast<uint32_t>(name.size());
 
                 // Insert entry
                 entries.push_back(entry_type(offset, length, key_t(idx), std::forward<arg_t>(arg)...));
@@ -257,7 +257,7 @@ namespace propane
         inline find_result_type find(string_view name) noexcept
         {
             const char* ptr = name.data();
-            const database_string_view view(&ptr, static_cast<index_t>(name.size()));
+            const database_string_view view(&ptr, static_cast<uint32_t>(name.size()));
 
             auto find = lookup.find(view);
             if (find == lookup.end())
@@ -270,7 +270,7 @@ namespace propane
         inline const_find_result_type find(string_view name) const noexcept
         {
             const char* ptr = name.data();
-            const database_string_view view(&ptr, static_cast<index_t>(name.size()));
+            const database_string_view view(&ptr, static_cast<uint32_t>(name.size()));
 
             auto find = lookup.find(view);
             if (find == lookup.end())
@@ -304,12 +304,12 @@ namespace propane
         inline void serialize_database(block_writer& writer) const
         {
             auto& write_entries = writer.write_deferred();
-            write_entries.write_direct(entries.data(), static_cast<index_t>(entries.size()));
-            write_entries.increment_length(static_cast<index_t>(entries.size()));
+            write_entries.write_direct(entries.data(), static_cast<uint32_t>(entries.size()));
+            write_entries.increment_length(static_cast<uint32_t>(entries.size()));
 
             auto& write_strings = writer.write_deferred();
-            write_strings.write_direct(strings.data(), static_cast<index_t>(strings.size()));
-            write_strings.increment_length(static_cast<index_t>(strings.size()));
+            write_strings.write_direct(strings.data(), static_cast<uint32_t>(strings.size()));
+            write_strings.increment_length(static_cast<uint32_t>(strings.size()));
         }
         inline void deserialize_database(const static_database<key_t, value_t>& t)
         {
@@ -337,11 +337,11 @@ namespace propane
                 const string_offset& str_offset = it;
                 write_entries.write(str_offset);
             }
-            write_entries.increment_length(static_cast<index_t>(entries.size()));
+            write_entries.increment_length(static_cast<uint32_t>(entries.size()));
 
             auto& write_strings = writer.write_deferred();
-            write_strings.write_direct(strings.data(), static_cast<index_t>(strings.size()));
-            write_strings.increment_length(static_cast<index_t>(strings.size()));
+            write_strings.write_direct(strings.data(), static_cast<uint32_t>(strings.size()));
+            write_strings.increment_length(static_cast<uint32_t>(strings.size()));
         }
 
     private:
@@ -366,10 +366,10 @@ namespace propane
         {
         public:
             database_string_view() = default;
-            database_string_view(const char** ptr, index_t length) :
+            database_string_view(const char** ptr, uint32_t length) :
                 offset(0, length),
                 ptr(ptr) {}
-            database_string_view(const char** ptr, index_t offset, index_t length) :
+            database_string_view(const char** ptr, uint32_t offset, uint32_t length) :
                 offset(offset, length),
                 ptr(ptr) {}
 

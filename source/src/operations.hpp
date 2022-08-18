@@ -16,7 +16,7 @@ namespace propane
 
     namespace operations
     {
-        void conv(pointer_t lhs_addr, type_idx lhs_type, const_pointer_t rhs_addr, type_idx rhs_type);
+        void conv(uint8_t* lhs_addr, type_idx lhs_type, const uint8_t* rhs_addr, type_idx rhs_type);
     }
 }
 

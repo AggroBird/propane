@@ -99,7 +99,7 @@ namespace propane
             }
 
             auto& table = get_data_table(lookup);
-            const index_t idx = index_t(table.info.size());
+            const uint32_t idx = uint32_t(table.info.size());
 
             // Upgrade to global
             *find = lookup_idx(lookup, idx);
@@ -141,7 +141,7 @@ namespace propane
 
         // Meta index for the current intermediate (0 if defined)
         meta_idx meta_index = meta_idx::invalid;
-        index_t line_number = 0;
+        uint32_t line_number = 0;
 
         vector<uint8_t> keybuf;
 
@@ -196,15 +196,15 @@ namespace propane
 
 
         // Lookup tables, to prevent duplicate indices
-        unordered_map<method_idx, index_t> call_lookup;
-        unordered_map<name_idx, index_t> global_lookup;
-        unordered_map<offset_idx, index_t> offset_index_lookup;
+        unordered_map<method_idx, uint32_t> call_lookup;
+        unordered_map<name_idx, uint32_t> global_lookup;
+        unordered_map<offset_idx, uint32_t> offset_index_lookup;
 
         // Labels
-        unordered_map<label_idx, index_t> label_locations;
-        unordered_map<label_idx, vector<index_t>> unresolved_branches;
-        database<index_t, label_idx> named_labels;
-        indexed_vector<label_idx, index_t> label_declarations; // Unnamed labels will be added to the declarations list as 'invalid_index'
+        unordered_map<label_idx, uint32_t> label_locations;
+        unordered_map<label_idx, vector<uint32_t>> unresolved_branches;
+        database<uint32_t, label_idx> named_labels;
+        indexed_vector<label_idx, uint32_t> label_declarations; // Unnamed labels will be added to the declarations list as 'invalid_index'
 
         size_t parameter_count = 0;
         size_t last_return = 0;
@@ -215,7 +215,7 @@ namespace propane
 
         inline type_idx get_type(address addr) const
         {
-            const index_t idx = addr.header.index();
+            const uint32_t idx = addr.header.index();
             switch (addr.header.type())
             {
                 case address_type::stackvar:
@@ -246,7 +246,7 @@ namespace propane
         void resolve_labels()
         {
             // Fetch all labels that have been referenced by a branch
-            map<index_t, vector<label_idx>> write_labels;
+            map<uint32_t, vector<label_idx>> write_labels;
             for (auto& branch : unresolved_branches)
             {
                 auto label = label_locations.find(branch.first);
@@ -256,7 +256,7 @@ namespace propane
                     const auto label_name_index = label_declarations[branch.first];
                     if (label_name_index == invalid_index)
                     {
-                        VALIDATE_LABEL_DEF(false, static_cast<index_t>(branch.first));
+                        VALIDATE_LABEL_DEF(false, static_cast<uint32_t>(branch.first));
                     }
                     else
                     {
@@ -275,7 +275,7 @@ namespace propane
                     auto locations = unresolved_branches.find(branch_index);
                     for (auto& offset : locations->second)
                     {
-                        *reinterpret_cast<index_t*>(bytecode.data() + offset) = label.first;
+                        *reinterpret_cast<uint32_t*>(bytecode.data() + offset) = label.first;
                     }
                 }
                 if (label.first >= bytecode.size())
@@ -370,14 +370,14 @@ namespace propane
                     if (find == global_lookup.end())
                     {
                         // New global
-                        const index_t idx = index_t(globals.size());
+                        const uint32_t idx = uint32_t(globals.size());
                         global_lookup.emplace(global_name, idx);
                         globals.push_back(global_name);
                         data.header.set_index(idx);
                     }
                     else
                     {
-                        data.header.set_index(index_t(find->second));
+                        data.header.set_index(uint32_t(find->second));
                     }
                 }
                 break;
@@ -395,7 +395,7 @@ namespace propane
                     if (find == offset_index_lookup.end())
                     {
                         // New offset
-                        const index_t idx = index_t(offsets.size());
+                        const uint32_t idx = uint32_t(offsets.size());
                         offset_index_lookup.emplace(field, idx);
                         offsets.push_back(field);
                         data.field = (offset_idx)idx;
@@ -431,10 +431,10 @@ namespace propane
         void write_label(label_idx label)
         {
             auto branch = unresolved_branches.find(label);
-            vector<index_t>& list = branch == unresolved_branches.end() ? unresolved_branches.emplace(label, vector<index_t>()).first->second : branch->second;
-            list.push_back(index_t(bytecode.size()));
+            vector<uint32_t>& list = branch == unresolved_branches.end() ? unresolved_branches.emplace(label, vector<uint32_t>()).first->second : branch->second;
+            list.push_back(uint32_t(bytecode.size()));
 
-            append_bytecode(index_t(0));
+            append_bytecode(uint32_t(0));
         }
 
         void write_expression(opcode op, address lhs)
@@ -530,11 +530,11 @@ namespace propane
             if (validate_operands(args))
             {
                 append_bytecode(opcode::call);
-                index_t idx;
+                uint32_t idx;
                 auto find = call_lookup.find(method);
                 if (find == call_lookup.end())
                 {
-                    idx = index_t(calls.size());
+                    idx = uint32_t(calls.size());
                     calls.push_back(method);
                     call_lookup.emplace(method, idx);
                 }
@@ -788,7 +788,7 @@ namespace propane
             const auto label_name_index = writer.label_declarations[label];
             if (label_name_index == invalid_index)
             {
-                VALIDATE_LABEL_DEC(false, static_cast<index_t>(label));
+                VALIDATE_LABEL_DEC(false, static_cast<uint32_t>(label));
             }
             else
             {
@@ -796,7 +796,7 @@ namespace propane
             }
         }
 
-        writer.label_locations.emplace(label, index_t(writer.bytecode.size()));
+        writer.label_locations.emplace(label, uint32_t(writer.bytecode.size()));
     }
 
     void generator::method_writer::write_noop()
@@ -981,7 +981,7 @@ namespace propane
         auto& writer = self();
         auto& gen = writer.gen;
 
-        ASSERT(writer.bytecode.size() <= static_cast<size_t>(~index_t(0)), "Method bytecode exceeds maximum supported value");
+        ASSERT(writer.bytecode.size() <= static_cast<size_t>(~uint32_t(0)), "Method bytecode exceeds maximum supported value");
 
         // Ensure the method has returned a value
         if (writer.expects_return_value)
@@ -1298,7 +1298,7 @@ namespace propane
         return *writer;
     }
 
-    void generator::set_line_number(index_t line_number) noexcept
+    void generator::set_line_number(uint32_t line_number) noexcept
     {
         self().line_number = line_number;
     }
