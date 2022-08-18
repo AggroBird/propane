@@ -138,30 +138,22 @@ namespace propane
     struct stack_frame_t
     {
         stack_frame_t() = default;
-        stack_frame_t(size_t iptr, size_t return_offset, size_t frame_offset, size_t param_offset, size_t stack_offset, size_t stack_end, method_idx method) :
+        stack_frame_t(const uint8_t* iptr, uint8_t* rptr, uint8_t* sptr, const method* mptr) :
             iptr(iptr),
-            return_offset(return_offset),
-            frame_offset(frame_offset),
-            param_offset(param_offset),
-            stack_offset(stack_offset),
-            stack_end(stack_end),
-            method(method) {}
+            rptr(rptr),
+            sptr(sptr),
+            mptr(mptr) {}
 
-        // Current instruction offset at the time of calling
-        size_t iptr = 0;
-        // Offset on the previous stack frame where the return value should go
-        size_t return_offset = 0;
-        // Offset of the pushed stackframe
-        size_t frame_offset = 0;
-        // Offset of the method parameters
-        size_t param_offset = 0;
-        // Offset of the method stackvars
-        size_t stack_offset = 0;
-        // End of the method stack (excluding return values)
-        size_t stack_end = 0;
-        // Current executing method
-        method_idx method = method_idx::invalid;
+        // Current instruction at the time of calling
+        const uint8_t* iptr = nullptr;
+        //Address on the previous stack frame where the return value should go
+        uint8_t* rptr = nullptr;
+        // Position of the stack at the time of calling
+        uint8_t* sptr = nullptr;
+        // Executing method at the time of calling
+        const method* mptr;
     };
+    constexpr size_t stack_frame_size = sizeof(stack_frame_t);
 
     class interpreter final
     {
@@ -170,10 +162,6 @@ namespace propane
             stack(allocate_stack(parameters)),
             parameters(parameters),
             data(asm_data),
-            types(asm_data.types.data()),
-            methods(asm_data.methods.data()),
-            signatures(asm_data.signatures.data()),
-            offsets(asm_data.offsets.data()),
             global_data(asm_data.globals.data.data(), asm_data.globals.data.size()),
             global_tables(),
             database(asm_data.database)
@@ -220,6 +208,8 @@ namespace propane
             stack.size = int_size;
 
             // Push return type and stack frame
+            param_offset = stack_offset = stack_end = stack.data + stack.size;
+            sf = stack_frame_t(nullptr, stack.data, stack_end, nullptr);
             push_stack_frame(main, get_signature(main.signature));
 
             // Execute
@@ -239,11 +229,11 @@ namespace propane
     private:
         void execute()
         {
-            while (iptr)
+            while (sf.iptr)
             {
-                ASSERT(iptr >= ibeg && iptr <= iend, "Instruction pointer out of range");
+                ASSERT(sf.iptr >= ibeg && sf.iptr <= iend, "Instruction pointer out of range");
 
-                const opcode op = read_bytecode<opcode>(iptr);
+                const opcode op = read_bytecode<opcode>(sf.iptr);
                 switch (op)
                 {
                     case opcode::noop: break;
@@ -309,7 +299,7 @@ namespace propane
             std::cout << "TYPES: " << std::endl;
             for (size_t tidx = 0; tidx < data.types.size(); tidx++)
             {
-                auto& t = types[tidx];
+                auto& t = data.types[type_idx(tidx)];
 
                 std::cout << tidx << ": " << get_name(t);
                 if (t.meta.index != meta_idx::invalid)
@@ -336,7 +326,7 @@ namespace propane
             std::cout << "SIGNATURES: " << std::endl;
             for (size_t sidx = 0; sidx < data.signatures.size(); sidx++)
             {
-                auto& s = signatures[sidx];
+                auto& s = data.signatures[signature_idx(sidx)];
 
                 std::cout << sidx << ": " << get_name(get_type(s.return_type));
                 std::cout << '(';
@@ -358,7 +348,7 @@ namespace propane
             std::cout << "METHODS: " << std::endl;
             for (size_t midx = 0; midx < data.methods.size(); midx++)
             {
-                auto& m = methods[midx];
+                auto& m = data.methods[method_idx(midx)];
                 auto& s = get_signature(m.signature);
 
                 std::cout << midx << ": " << get_name(get_type(s.return_type)) << " ";
@@ -1859,55 +1849,55 @@ namespace propane
 
         inline void br() noexcept
         {
-            const uint32_t branch_location = read_bytecode<uint32_t>(iptr);
+            const uint32_t branch_location = read_bytecode<uint32_t>(sf.iptr);
 
             jump(branch_location);
         }
         inline void beq() noexcept
         {
-            const uint32_t branch_location = read_bytecode<uint32_t>(iptr);
+            const uint32_t branch_location = read_bytecode<uint32_t>(sf.iptr);
 
             if (ceq()) jump(branch_location);
         }
         inline void bne() noexcept
         {
-            const uint32_t branch_location = read_bytecode<uint32_t>(iptr);
+            const uint32_t branch_location = read_bytecode<uint32_t>(sf.iptr);
 
             if (cne()) jump(branch_location);
         }
         inline void bgt() noexcept
         {
-            const uint32_t branch_location = read_bytecode<uint32_t>(iptr);
+            const uint32_t branch_location = read_bytecode<uint32_t>(sf.iptr);
 
             if (cgt()) jump(branch_location);
         }
         inline void bge() noexcept
         {
-            const uint32_t branch_location = read_bytecode<uint32_t>(iptr);
+            const uint32_t branch_location = read_bytecode<uint32_t>(sf.iptr);
 
             if (cge()) jump(branch_location);
         }
         inline void blt() noexcept
         {
-            const uint32_t branch_location = read_bytecode<uint32_t>(iptr);
+            const uint32_t branch_location = read_bytecode<uint32_t>(sf.iptr);
 
             if (clt()) jump(branch_location);
         }
         inline void ble() noexcept
         {
-            const uint32_t branch_location = read_bytecode<uint32_t>(iptr);
+            const uint32_t branch_location = read_bytecode<uint32_t>(sf.iptr);
 
             if (cle()) jump(branch_location);
         }
         inline void bze() noexcept
         {
-            const uint32_t branch_location = read_bytecode<uint32_t>(iptr);
+            const uint32_t branch_location = read_bytecode<uint32_t>(sf.iptr);
 
             if (cze()) jump(branch_location);
         }
         inline void bnz() noexcept
         {
-            const uint32_t branch_location = read_bytecode<uint32_t>(iptr);
+            const uint32_t branch_location = read_bytecode<uint32_t>(sf.iptr);
 
             if (cnz()) jump(branch_location);
         }
@@ -1929,27 +1919,29 @@ namespace propane
                 case type_idx::u64: idx = (uint32_t)read<u64>(idx_addr); break;
             }
 
-            const uint32_t label_count = read_bytecode<uint32_t>(iptr);
+            const uint32_t label_count = read_bytecode<uint32_t>(sf.iptr);
 
-            const uint32_t* labels = reinterpret_cast<const uint32_t*>(iptr);
-            iptr += sizeof(uint32_t) * label_count;
-
+            const uint32_t* labels = reinterpret_cast<const uint32_t*>(sf.iptr);
             if (idx < label_count)
             {
                 jump(labels[idx]);
+            }
+            else
+            {
+                sf.iptr += sizeof(uint32_t) * label_count;
             }
         }
 
         inline void jump(uint32_t target) noexcept
         {
-            iptr = ibeg + target;
+            sf.iptr = ibeg + target;
 
             clear_return_value();
         }
 
         inline void call()
         {
-            const method_idx call_idx = read_bytecode<method_idx>(iptr);
+            const method_idx call_idx = read_bytecode<method_idx>(sf.iptr);
             ASSERT(is_valid_method(call_idx), "Attempted to invoke an invalid method");
             const auto& call_method = get_method(call_idx);
             push_stack_frame(call_method, get_signature(call_method.signature));
@@ -1976,7 +1968,7 @@ namespace propane
             const uint8_t* ret_value = read_address(true);
 
             // Set return value (of the current signature)
-            return_value_addr = stack.data + sf.return_offset;
+            return_value_addr = sf.rptr;
             return_value_type = method_return_type;
 
             set(sub, return_value_addr, ret_value);
@@ -2066,15 +2058,15 @@ namespace propane
 
         inline const type& get_type(type_idx type) const noexcept
         {
-            return types[static_cast<size_t>(type)];
+            return data.types[type];
         }
         inline const method& get_method(method_idx method) const noexcept
         {
-            return methods[static_cast<size_t>(method)];
+            return data.methods[method];
         }
         inline const signature& get_signature(signature_idx signature) const noexcept
         {
-            return signatures[static_cast<size_t>(signature)];
+            return data.signatures[signature];
         }
         inline bool is_valid_method(method_idx method) const noexcept
         {
@@ -2087,13 +2079,13 @@ namespace propane
 
         inline subcode read_subcode() noexcept
         {
-            return read_bytecode<subcode>(iptr);
+            return read_bytecode<subcode>(sf.iptr);
         }
         uint8_t* read_address(bool is_rhs) noexcept
         {
             uint8_t* result = nullptr;
 
-            const address_data_t& addr = *reinterpret_cast<const address_data_t*>(iptr);
+            const address_data_t& addr = *reinterpret_cast<const address_data_t*>(sf.iptr);
 
             const uint32_t index = addr.header.index();
             switch (addr.header.type())
@@ -2108,9 +2100,7 @@ namespace propane
                     else
                     {
                         const auto& stack_var = method_stackvars[index];
-                        const size_t offset = sf.stack_offset + stack_var.offset;
-
-                        result = stack.data + offset;
+                        result = stack_offset + stack_var.offset;
                         addr_type[is_rhs] = stack_var.type;
                     }
                 }
@@ -2119,9 +2109,7 @@ namespace propane
                 case address_type::parameter:
                 {
                     const auto& param = method_parameters[index];
-                    const size_t offset = sf.param_offset + param.offset;
-
-                    result = stack.data + offset;
+                    result = param_offset + param.offset;
                     addr_type[is_rhs] = param.type;
                 }
                 break;
@@ -2142,11 +2130,10 @@ namespace propane
                 case address_type::constant:
                 {
                     const type_idx btype_idx = type_idx(index);
-                    iptr += sizeof(address_header);
-                    uint8_t* ptr = (uint8_t*)iptr;
-                    const auto& type = get_type(btype_idx);
-                    iptr += type.total_size;
-                    addr_type[is_rhs] = type.index;
+                    sf.iptr += sizeof(address_header);
+                    uint8_t* ptr = const_cast<uint8_t*>(sf.iptr);
+                    sf.iptr += get_type(btype_idx).total_size;
+                    addr_type[is_rhs] = btype_idx;
                     return ptr;
                 }
                 break;
@@ -2158,7 +2145,7 @@ namespace propane
 
                 case address_modifier::direct_field:
                 {
-                    const auto& field = offsets[static_cast<size_t>(addr.field)];
+                    const auto& field = data.offsets[addr.field];
                     result += field.offset;
                     addr_type[is_rhs] = field.type;
                 }
@@ -2166,7 +2153,7 @@ namespace propane
 
                 case address_modifier::indirect_field:
                 {
-                    const auto& field = offsets[static_cast<size_t>(addr.field)];
+                    const auto& field = data.offsets[addr.field];
                     result = dereference(result) + field.offset;
                     addr_type[is_rhs] = field.type;
                 }
@@ -2224,7 +2211,7 @@ namespace propane
                 break;
             }
 
-            iptr += sizeof(address_data_t);
+            sf.iptr += sizeof(address_data_t);
 
             return result;
         }
@@ -2236,54 +2223,53 @@ namespace propane
 
             const auto& bytecode = method.bytecode;
 
-            const size_t frame_offset = stack.size;
-            const size_t return_offset = sf.stack_end;
+            const size_t current_stack_size = stack.size;
+            uint8_t* const frame_offset = stack.data + current_stack_size;
+            uint8_t* const return_offset = stack_end;
 
             if (!method.is_external())
             {
                 callstack_depth++;
                 VALIDATE_CALLSTACK_LIMIT(callstack_depth <= parameters.max_callstack_depth, parameters.max_callstack_depth);
 
-                const size_t param_offset = frame_offset + sizeof(stack_frame_t);
-                uint8_t* param_ptr = stack.data + param_offset;
-                const size_t stack_offset = param_offset + calling_signature.parameters_size;
-
                 // Push method stack size
-                const size_t stack_end = stack.size + method.method_stack_size + sizeof(stack_frame_t);
-                const size_t new_stack_size = stack.size + method.total_stack_size + sizeof(stack_frame_t);
+                const size_t new_stack_size = stack.size + method.total_stack_size + stack_frame_size;
                 VALIDATE_STACK_OVERFLOW(new_stack_size <= stack.capacity, new_stack_size, stack.capacity);
                 stack.size = new_stack_size;
 
+                // Update offsets
+                param_offset = frame_offset + stack_frame_size;
+                stack_offset = param_offset + calling_signature.parameters_size;
+                stack_end = stack.data + method.method_stack_size + stack_frame_size;
+
+                // Update method lookup
+                method_return_type = signature.return_type;
+                method_stackvars = method.stackvars.data();
+                method_parameters = signature.parameters.data();
+
                 // Write parameters
                 const size_t parameter_count = calling_signature.parameters.size();
-                const size_t arg_count = iptr ? static_cast<size_t>(read_bytecode<uint8_t>(iptr)) : 0;
+                const size_t arg_count = sf.iptr ? static_cast<size_t>(read_bytecode<uint8_t>(sf.iptr)) : 0;
                 ASSERT(arg_count == parameter_count, "Invalid argument count");
                 if (parameter_count > 0)
                 {
-                    uint8_t* param_ptr = stack.data + param_offset;
                     for (size_t i = 0; i < parameter_count; i++)
                     {
                         const stackvar& parameter = calling_signature.parameters[i];
                         const subcode sub = read_subcode();
                         const uint8_t* arg_addr = read_address(true);
-                        uint8_t* param_addr = param_ptr + parameter.offset;
-                        set(sub, param_addr, arg_addr);
+                        set(sub, param_offset + parameter.offset, arg_addr);
                     }
                 }
 
                 // Write stack frame
-                sf.iptr = iptr - ibeg;
-                *reinterpret_cast<stack_frame_t*>(stack.data + frame_offset) = sf;
+                *reinterpret_cast<stack_frame_t*>(frame_offset) = sf;
 
                 // Call
-                sf = stack_frame_t(0, return_offset, frame_offset, param_offset, stack_offset, stack_end, method.index);
-                ibeg = iptr = bytecode.data();
+                sf = stack_frame_t(bytecode.data(), return_offset, frame_offset, &method);
+                ibeg = sf.iptr;
                 iend = ibeg + bytecode.size();
                 
-                method_return_type = signature.return_type;
-                method_stackvars = method.stackvars.data();
-                method_parameters = signature.parameters.data();
-
                 // Clear return value after a call
                 clear_return_value();
             }
@@ -2309,18 +2295,17 @@ namespace propane
                 }
 
                 // Push method stack size (parameters only for external methods)
-                const size_t param_offset = stack.size;
-                uint8_t* param_ptr = stack.data + param_offset;
+                uint8_t* const param_offset = stack.data + stack.size;
                 if (method.total_stack_size > 0)
                 {
-                    const size_t new_stack_size = stack.size + (method.total_stack_size);
+                    const size_t new_stack_size = stack.size + method.total_stack_size;
                     VALIDATE_STACK_OVERFLOW(new_stack_size <= stack.capacity, new_stack_size, stack.capacity);
                     stack.size = new_stack_size;
                 }
 
                 // Write parameters
                 const size_t parameter_count = calling_signature.parameters.size();
-                const size_t arg_count = iptr ? static_cast<size_t>(read_bytecode<uint8_t>(iptr)) : 0;
+                const size_t arg_count = sf.iptr ? static_cast<size_t>(read_bytecode<uint8_t>(sf.iptr)) : 0;
                 ASSERT(arg_count == parameter_count, "Invalid argument count");
                 if (parameter_count > 0)
                 {
@@ -2329,54 +2314,59 @@ namespace propane
                         const stackvar& parameter = calling_signature.parameters[i];
                         const subcode sub = read_subcode();
                         const uint8_t* arg_addr = read_address(true);
-                        uint8_t* param_addr = param_ptr + parameter.offset;
-                        set(sub, param_addr, arg_addr);
+                        set(sub, param_offset + parameter.offset, arg_addr);
                     }
                 }
 
                 // Invoke external
-                call.forward(call.handle, stack.data + return_offset, stack.data + param_offset);
+                call.forward(call.handle, return_offset, param_offset);
 
                 // Set return value here since we return immediately
                 const type_idx return_type_idx = calling_signature.return_type;
-                return_value_addr = stack.data + return_offset;
+                return_value_addr = return_offset;
                 return_value_type = return_type_idx;
                 
                 // Pop stackframe
-                stack.size = frame_offset;
+                stack.size = current_stack_size;
             }
         }
         void pop_stack_frame()
         {
             // Restore stackframe
             ASSERT(callstack_depth > 0, "Stack frame pop overflow");
-            sf = *reinterpret_cast<stack_frame_t*>(stack.data + sf.frame_offset);
-            if (sf.method != method_idx::invalid)
+            sf = *reinterpret_cast<stack_frame_t*>(sf.sptr);
+            if (sf.mptr != nullptr)
             {
-                const method& calling_method = get_method(sf.method);
+                // Restore method lookup
+                const method& calling_method = *sf.mptr;
                 const signature& calling_signature = get_signature(calling_method.signature);
                 method_stackvars = calling_method.stackvars.data();
                 method_parameters = calling_signature.parameters.data();
                 method_return_type = calling_signature.return_type;
 
+                // Restore instruction range
                 const auto& bytecode = calling_method.bytecode;
                 ibeg = bytecode.data();
                 iend = ibeg + bytecode.size();
-                iptr = ibeg + sf.iptr;
+
+                // Restore local offsets
+                param_offset = sf.sptr + stack_frame_size;
+                stack_offset = param_offset + calling_signature.parameters_size;
+                stack_end = stack.data + calling_method.method_stack_size + stack_frame_size;
             }
             else
             {
                 method_return_type = type_idx::voidtype;
                 method_stackvars = nullptr;
                 method_parameters = nullptr;
-                iptr = ibeg = iend = nullptr;
+                ibeg = iend = nullptr;
             }
             callstack_depth--;
         }
 
         inline uint8_t* push_return_value(type_idx type) noexcept
         {
-            return_value_addr = stack.data + sf.stack_end;
+            return_value_addr = stack_end;
             return_value_type = type;
             return return_value_addr;
         }
@@ -2409,8 +2399,18 @@ namespace propane
         }
 
 
+        // Stack frame
+        stack_frame_t sf;
+
         // Stack data
         stack_data_t stack;
+
+        // Offset of the method parameters
+        uint8_t* param_offset = nullptr;
+        // Offset of the method stackvars
+        uint8_t* stack_offset = nullptr;
+        // End of the method stack (excluding return values)
+        uint8_t* stack_end = nullptr;
 
         // Temporary variables
         size_t tmp_var[2];
@@ -2425,7 +2425,6 @@ namespace propane
         type_idx return_value_type;
 
         // Instruction pointer
-        const uint8_t* iptr = nullptr;
         const uint8_t* ibeg = nullptr;
         const uint8_t* iend = nullptr;
 
@@ -2433,16 +2432,6 @@ namespace propane
         type_idx method_return_type = type_idx::voidtype;
         const stackvar* method_stackvars;
         const stackvar* method_parameters;
-
-        // Stack frame
-        stack_frame_t sf;
-        uint32_t callstack_depth = 0;
-
-        // Lookup
-        const type* const types;
-        const method* const methods;
-        const signature* const signatures;
-        const field_offset* const offsets;
 
         // Globals/constants
         block<uint8_t> global_data;
@@ -2459,6 +2448,7 @@ namespace propane
         // Input data
         const assembly_data& data;
         const runtime_parameters parameters;
+        uint32_t callstack_depth = 0;
 
         int32_t return_code = 0;
     };
