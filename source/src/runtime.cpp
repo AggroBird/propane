@@ -76,10 +76,10 @@ namespace propane
             
             for (auto& type : lib_data.types)
             {
-                auto find_type = self_data.type_lookup.find(type.type);
+                auto find_type = self_data.type_lookup.find(type.name);
                 if (find_type == self_data.type_lookup.end())
                 {
-                    self_data.type_lookup.emplace(type.type, type);
+                    self_data.type_lookup.emplace(type.name, type);
                 }
                 else
                 {

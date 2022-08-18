@@ -46,39 +46,82 @@ namespace propane
         invalid = invalid_index,
     };
 
+    // Ensure void size is 0
+    template<typename value_t> constexpr size_t native_type_size_v = sizeof(value_t);
+    template<> constexpr size_t native_type_size_v<void> = 0;
+
+    // Derive pointer depth
+    template<typename value_t> struct derive_pointer_info
+    {
+        typedef value_t base_type;
+        static constexpr size_t depth = 0;
+    };
+    template<typename value_t> struct derive_pointer_info<value_t*> : public derive_pointer_info<value_t>
+    {
+        static constexpr size_t depth = derive_pointer_info<value_t>::depth + 1;
+    };
+    template<typename value_t> constexpr size_t derive_pointer_depth_v = derive_pointer_info<value_t>::depth;
+
     // Specializing this template allows for binding native structs to the runtime,
     // so they can be used as parameters in native library calls.
     // Since the runtime has no notion of padding, extra caution needs to be taken to ensure
     // the structs are properly packed have the same layout in both runtime and native environments.
-    template<typename value_t> constexpr std::string_view native_type_name_v = std::string_view();
-    template<> constexpr std::string_view native_type_name_v<int8_t> = "byte";
-    template<> constexpr std::string_view native_type_name_v<uint8_t> = "ubyte";
-    template<> constexpr std::string_view native_type_name_v<int16_t> = "short";
-    template<> constexpr std::string_view native_type_name_v<uint16_t> = "ushort";
-    template<> constexpr std::string_view native_type_name_v<int32_t> = "int";
-    template<> constexpr std::string_view native_type_name_v<uint32_t> = "uint";
-    template<> constexpr std::string_view native_type_name_v<int64_t> = "long";
-    template<> constexpr std::string_view native_type_name_v<uint64_t> = "ulong";
-    template<> constexpr std::string_view native_type_name_v<float> = "float";
-    template<> constexpr std::string_view native_type_name_v<double> = "double";
-    template<> constexpr std::string_view native_type_name_v<void> = "void";
+    struct native_type_info_t
+    {
+        constexpr native_type_info_t() :
+            name(),
+            size(0),
+            fields() {}
+        constexpr native_type_info_t(std::string_view name, size_t size) :
+            name(name),
+            size(size),
+            fields() {}
+        constexpr native_type_info_t(std::string_view name, size_t size, std::span<std::string_view> fields) :
+            name(name),
+            size(size),
+            fields(fields) {}
+        constexpr native_type_info_t(const native_type_info_t& copy, size_t pointer_depth) :
+            name(copy.name),
+            size(copy.size),
+            pointer_depth(pointer_depth),
+            fields(copy.fields) {}
+
+        std::string_view name;
+        size_t size;
+        size_t pointer_depth = 0;
+        std::span<std::string_view> fields;
+
+        template<typename value_t> static constexpr native_type_info_t make(std::string_view name)
+        {
+            return native_type_info_t(name, native_type_size_v<value_t>, std::span<std::string_view>());
+        }
+    };
+
+    template<typename value_t> constexpr native_type_info_t native_type_info_v = native_type_info_t::make<value_t>(std::string_view());
+    template<> constexpr native_type_info_t native_type_info_v<int8_t> = native_type_info_t::make<int8_t>("byte");
+    template<> constexpr native_type_info_t native_type_info_v<uint8_t> = native_type_info_t::make<uint8_t>("ubyte");
+    template<> constexpr native_type_info_t native_type_info_v<int16_t> = native_type_info_t::make<int16_t>("short");
+    template<> constexpr native_type_info_t native_type_info_v<uint16_t> = native_type_info_t::make<uint16_t>("ushort");
+    template<> constexpr native_type_info_t native_type_info_v<int32_t> = native_type_info_t::make<int32_t>("int");
+    template<> constexpr native_type_info_t native_type_info_v<uint32_t> = native_type_info_t::make<uint32_t>("uint");
+    template<> constexpr native_type_info_t native_type_info_v<int64_t> = native_type_info_t::make<int64_t>("long");
+    template<> constexpr native_type_info_t native_type_info_v<uint64_t> = native_type_info_t::make<uint64_t>("ulong");
+    template<> constexpr native_type_info_t native_type_info_v<float> = native_type_info_t::make<float>("float");
+    template<> constexpr native_type_info_t native_type_info_v<double> = native_type_info_t::make<double>("double");
+    template<> constexpr native_type_info_t native_type_info_v<void> = native_type_info_t::make<void>("void");
 
     template<typename value_t> constexpr std::string_view native_alias_name_v = std::string_view();
     template<> constexpr std::string_view native_alias_name_v<offset_t> = "offset";
     template<> constexpr std::string_view native_alias_name_v<size_t> = "size";
 
 
-    // Ensure void size is 0
-    template<typename value_t> constexpr size_t native_type_size_v = sizeof(value_t);
-    template<> constexpr size_t native_type_size_v<void> = 0;
-
-    struct native_type_info_t
+    struct base_type_info_t
     {
-        constexpr native_type_info_t() :
-            name("???"),
+        constexpr base_type_info_t() :
+            name(),
             index(type_idx::invalid),
             size(0) {}
-        constexpr native_type_info_t(std::string_view name, type_idx index, size_t size) :
+        constexpr base_type_info_t(std::string_view name, type_idx index, size_t size) :
             name(name),
             index(index),
             size(size) {}
@@ -87,29 +130,30 @@ namespace propane
         type_idx index;
         size_t size;
 
-        template<typename value_t> static constexpr native_type_info_t make(type_idx type)
+        template<typename value_t> static constexpr base_type_info_t make(type_idx type)
         {
-            return native_type_info_t(native_type_name_v<value_t>, type, native_type_size_v<value_t>);
+            constexpr native_type_info_t type_info = native_type_info_v<value_t>;
+            return base_type_info_t(type_info.name, type, type_info.size);
         }
     };
 
 
     // Native type info
-    template<typename value_t> constexpr native_type_info_t native_type_info_v = native_type_info_t();
-    template<> constexpr native_type_info_t native_type_info_v<int8_t> = native_type_info_t::make<int8_t>(type_idx::i8);
-    template<> constexpr native_type_info_t native_type_info_v<uint8_t> = native_type_info_t::make<uint8_t>(type_idx::u8);
-    template<> constexpr native_type_info_t native_type_info_v<int16_t> = native_type_info_t::make<int16_t>(type_idx::i16);
-    template<> constexpr native_type_info_t native_type_info_v<uint16_t> = native_type_info_t::make<uint16_t>(type_idx::u16);
-    template<> constexpr native_type_info_t native_type_info_v<int32_t> = native_type_info_t::make<int32_t>(type_idx::i32);
-    template<> constexpr native_type_info_t native_type_info_v<uint32_t> = native_type_info_t::make<uint32_t>(type_idx::u32);
-    template<> constexpr native_type_info_t native_type_info_v<int64_t> = native_type_info_t::make<int64_t>(type_idx::i64);
-    template<> constexpr native_type_info_t native_type_info_v<uint64_t> = native_type_info_t::make<uint64_t>(type_idx::u64);
-    template<> constexpr native_type_info_t native_type_info_v<float> = native_type_info_t::make<float>(type_idx::f32);
-    template<> constexpr native_type_info_t native_type_info_v<double> = native_type_info_t::make<double>(type_idx::f64);
-    template<> constexpr native_type_info_t native_type_info_v<void*> = native_type_info_t::make<void*>(type_idx::vptr);
-    template<> constexpr native_type_info_t native_type_info_v<void> = native_type_info_t::make<void>(type_idx::voidtype);
+    template<typename value_t> constexpr base_type_info_t base_type_info_v = base_type_info_t();
+    template<> constexpr base_type_info_t base_type_info_v<int8_t> = base_type_info_t::make<int8_t>(type_idx::i8);
+    template<> constexpr base_type_info_t base_type_info_v<uint8_t> = base_type_info_t::make<uint8_t>(type_idx::u8);
+    template<> constexpr base_type_info_t base_type_info_v<int16_t> = base_type_info_t::make<int16_t>(type_idx::i16);
+    template<> constexpr base_type_info_t base_type_info_v<uint16_t> = base_type_info_t::make<uint16_t>(type_idx::u16);
+    template<> constexpr base_type_info_t base_type_info_v<int32_t> = base_type_info_t::make<int32_t>(type_idx::i32);
+    template<> constexpr base_type_info_t base_type_info_v<uint32_t> = base_type_info_t::make<uint32_t>(type_idx::u32);
+    template<> constexpr base_type_info_t base_type_info_v<int64_t> = base_type_info_t::make<int64_t>(type_idx::i64);
+    template<> constexpr base_type_info_t base_type_info_v<uint64_t> = base_type_info_t::make<uint64_t>(type_idx::u64);
+    template<> constexpr base_type_info_t base_type_info_v<float> = base_type_info_t::make<float>(type_idx::f32);
+    template<> constexpr base_type_info_t base_type_info_v<double> = base_type_info_t::make<double>(type_idx::f64);
+    template<> constexpr base_type_info_t base_type_info_v<void*> = base_type_info_t::make<void*>(type_idx::vptr);
+    template<> constexpr base_type_info_t base_type_info_v<void> = base_type_info_t::make<void>(type_idx::voidtype);
 
-    template<typename value_t> constexpr type_idx derive_type_index_v = native_type_info_v<value_t>.index;
+    template<typename value_t> constexpr type_idx derive_type_index_v = base_type_info_v<value_t>.index;
 
     constexpr bool is_integral(type_idx type) noexcept
     {

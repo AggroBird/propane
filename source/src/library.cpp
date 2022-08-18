@@ -13,19 +13,21 @@ namespace propane
 
         self_data.calls = block<external_call_info>(calls.size());
         external_call_info* write_call = self_data.calls.data();
-        unordered_map<string_view, native_type_info> declared_types;
+        unordered_map<string_view, native_type_info_t> declared_types;
         for (auto& call : calls)
         {
             ASSERT(is_identifier(call.name), "Invalid name");
 
             for (auto& type : call.parameters)
             {
-                ASSERT(is_identifier(type.type), "Invalid name");
+                ASSERT(is_identifier(type.name), "Invalid name");
 
-                declared_types.emplace(type.type, type);
+                declared_types.emplace(type.name, type);
             }
 
-            declared_types.emplace(call.return_type.type, call.return_type);
+            ASSERT(is_identifier(call.return_type.name), "Invalid name");
+
+            declared_types.emplace(call.return_type.name, call.return_type);
 
             external_call_info info(call.name);
             info.return_type = call.return_type;
@@ -36,8 +38,8 @@ namespace propane
             *write_call++ = std::move(info);
         }
 
-        self_data.types = block<native_type_info>(declared_types.size());
-        native_type_info* write_type = self_data.types.data();
+        self_data.types = block<native_type_info_t>(declared_types.size());
+        native_type_info_t* write_type = self_data.types.data();
         for (auto& it : declared_types)
         {
             *write_type++ = it.second;
@@ -52,15 +54,15 @@ namespace propane
 
         for (auto& call : self_data.calls)
         {
-            self_data.hash = fnv::append(self_data.hash, call.return_type.type);
+            self_data.hash = fnv::append(self_data.hash, call.return_type.name);
             self_data.hash = fnv::append(self_data.hash, call.return_type.size);
-            self_data.hash = fnv::append(self_data.hash, call.return_type.pointer);
+            self_data.hash = fnv::append(self_data.hash, call.return_type.pointer_depth);
 
             for (const auto& it : call.parameters)
             {
-                self_data.hash = fnv::append(self_data.hash, it.type);
+                self_data.hash = fnv::append(self_data.hash, it.name);
                 self_data.hash = fnv::append(self_data.hash, it.size);
-                self_data.hash = fnv::append(self_data.hash, it.pointer);
+                self_data.hash = fnv::append(self_data.hash, it.pointer_depth);
             }
         }
     }

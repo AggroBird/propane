@@ -197,11 +197,11 @@ namespace propane
                 return find->second;
             }
         }
-        type_idx resolve_native_type(const native_type_info& native_type)
+        type_idx resolve_native_type(const native_type_info_t& native_type)
         {
             type_idx result_idx;
 
-            if (auto find = data.database.find(native_type.type))
+            if (auto find = data.database.find(native_type.name))
             {
                 // Existing type
                 ASSERT(find->lookup == lookup_type::type, "Invalid type");
@@ -224,7 +224,7 @@ namespace propane
             {
                 // New type
                 result_idx = type_idx(data.types.size());
-                const name_idx name = data.database.emplace(native_type.type, result_idx).key;
+                const name_idx name = data.database.emplace(native_type.name, result_idx).key;
                 gen_type type(name, result_idx);
                 type.total_size = native_type.size;
                 type.flags |= type_flags::is_external;
@@ -233,7 +233,7 @@ namespace propane
             }
 
             // Resolve pointers
-            for (size_t i = 0; i < native_type.pointer; i++)
+            for (size_t i = 0; i < native_type.pointer_depth; i++)
             {
                 type_idx idx = data.types[result_idx].pointer_type;
                 if (idx == type_idx::invalid)

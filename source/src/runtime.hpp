@@ -52,29 +52,29 @@ namespace propane
         return *reinterpret_cast<const uint8_t* const*>(addr);
     }
 
-    constexpr native_type_info_t base_types[] =
+    constexpr base_type_info_t base_types[] =
     {
-        native_type_info_v<i8>,
-        native_type_info_v<u8>,
-        native_type_info_v<i16>,
-        native_type_info_v<u16>,
-        native_type_info_v<i32>,
-        native_type_info_v<u32>,
-        native_type_info_v<i64>,
-        native_type_info_v<u64>,
-        native_type_info_v<f32>,
-        native_type_info_v<f64>,
-        native_type_info_v<vptr>,
-        native_type_info_v<void>,
+        base_type_info_v<i8>,
+        base_type_info_v<u8>,
+        base_type_info_v<i16>,
+        base_type_info_v<u16>,
+        base_type_info_v<i32>,
+        base_type_info_v<u32>,
+        base_type_info_v<i64>,
+        base_type_info_v<u64>,
+        base_type_info_v<f32>,
+        base_type_info_v<f64>,
+        base_type_info_v<vptr>,
+        base_type_info_v<void>,
     };
-    constexpr size_t base_type_count = sizeof(base_types) / sizeof(native_type_info_t);
+    constexpr size_t base_type_count = sizeof(base_types) / sizeof(base_type_info_t);
 
-    constexpr native_type_info_t alias_types[] =
+    constexpr base_type_info_t alias_types[] =
     {
-        native_type_info_t(native_alias_name_v<size_t>, derive_type_index_v<size_t>, native_type_size_v<size_t>),
-        native_type_info_t(native_alias_name_v<offset_t>, derive_type_index_v<offset_t>, native_type_size_v<offset_t>),
+        base_type_info_t(native_alias_name_v<size_t>, base_type_info_v<size_t>.index, base_type_info_v<size_t>.size),
+        base_type_info_t(native_alias_name_v<offset_t>, base_type_info_v<offset_t>.index, base_type_info_v<offset_t>.size),
     };
-    constexpr size_t alias_type_count = sizeof(alias_types) / sizeof(native_type_info_t);
+    constexpr size_t alias_type_count = sizeof(alias_types) / sizeof(base_type_info_t);
 
     constexpr bool is_base_type(type_idx key) noexcept
     {
@@ -278,7 +278,7 @@ namespace propane
 
         indexed_vector<name_idx, library_info> libraries;
         unordered_map<string_view, runtime_call_index> call_lookup;
-        unordered_map<string_view, native_type_info> type_lookup;
+        unordered_map<string_view, native_type_info_t> type_lookup;
         size_t hash = 0;
     };
     constexpr size_t runtime_data_handle_size = approximate_handle_size(sizeof(runtime_data));

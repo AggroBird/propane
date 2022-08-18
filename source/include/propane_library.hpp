@@ -7,42 +7,18 @@
 
 namespace propane
 {
-    struct native_type_info
-    {
-        native_type_info() = default;
-        native_type_info(std::string_view type, size_t size, size_t pointer) :
-            type(type),
-            size(size),
-            pointer(pointer) {}
-
-        std::string_view type;
-        size_t size = 0;
-        size_t pointer = 0;
-    };
-
     namespace native
     {
         // Get type size
         template<typename value_t> constexpr size_t type_size_v = sizeof(value_t);
         template<> constexpr size_t type_size_v<void> = 0;
 
-        // Get pointer info
-        template<typename value_t> struct pointer_info
-        {
-            typedef value_t base_type;
-            static constexpr size_t value = 0;
-        };
-        template<typename value_t> struct pointer_info<value_t*> : public pointer_info<value_t>
-        {
-            static constexpr size_t value = pointer_info<value_t>::value + 1;
-        };
-
         // Parameter info
-        struct parameter : native_type_info
+        struct parameter : native_type_info_t
         {
             parameter() = default;
-            parameter(std::string_view type, size_t size, size_t pointer, size_t offset) :
-                native_type_info(type, size, pointer),
+            parameter(const native_type_info_t& info, size_t offset, size_t pointer_depth) :
+                native_type_info_t(info, pointer_depth),
                 offset(offset) {}
 
             size_t offset = 0;
@@ -79,13 +55,12 @@ namespace propane
             static inline void generate_signature(parameter* result, size_t& offset) noexcept
             {
                 typedef decay_base_t<value_t> param_type;
-                typedef pointer_info<param_type>::base_type base_type;
-                constexpr std::string_view type = native_type_name_v<base_type>;
-                static_assert(type.size() > 0, "Undefined type");
-                constexpr size_t size = type_size_v<base_type>;
-                constexpr size_t pointer = pointer_info<param_type>::value;
-                *result++ = parameter(type, size, pointer, offset);
-                offset += (pointer == 0) ? size : sizeof(void*);
+                typedef derive_pointer_info<param_type>::base_type param_base_type;
+                constexpr native_type_info_t type_info = native_type_info_v<param_base_type>;
+                static_assert(!type_info.name.empty() && type_info.size > 0, "Undefined type");
+                constexpr size_t pointer_depth = derive_pointer_depth_v<param_type>;
+                *result++ = parameter(type_info, offset, pointer_depth);
+                offset += pointer_depth == 0 ? type_info.size : sizeof(void*);
                 method_signature_param<param_t...>::generate_signature(result, offset);
             }
             template<size_t idx, typename... tuple_args> static inline void read_argument(std::tuple<tuple_args...>& tup, const void*& data) noexcept
@@ -168,14 +143,13 @@ namespace propane
             static const bind instance;
 
             typedef native::decay_base_t<retval_t> return_type;
-            typedef native::pointer_info<return_type>::base_type base_type;
-            constexpr std::string_view type = native_type_name_v<base_type>;
-            static_assert(type.size() > 0, "Undefined type");
-            constexpr size_t size = native::type_size_v<base_type>;
-            constexpr size_t pointer = native::pointer_info<return_type>::value;
+            typedef derive_pointer_info<return_type>::base_type retval_base_type;
+            constexpr native_type_info_t type_info = native_type_info_v<retval_base_type>;
+            static_assert(!type_info.name.empty() && type_info.size > 0, "Undefined type");
+            constexpr size_t pointer_depth = derive_pointer_depth_v<return_type>;
 
             call.forward = bind::forward_call;
-            call.return_type = native_type_info(type, size, pointer);
+            call.return_type = native_type_info_t(type_info, pointer_depth);
             call.parameters = std::span<const native::parameter>(instance.parameters, sizeof...(param_t));
             call.parameters_size = instance.parameters_size;
             call.handle = (void(*)())(method);
@@ -185,7 +159,7 @@ namespace propane
 
         std::string_view name;
         forward_method forward = nullptr;
-        native_type_info return_type;
+        native_type_info_t return_type;
         std::span<const native::parameter> parameters;
         size_t parameters_size = 0;
         void(*handle)() = nullptr;
