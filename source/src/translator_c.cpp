@@ -1279,7 +1279,7 @@ namespace propane
                     const type_idx btype_idx = type_idx(index);
                     ASSERT(btype_idx <= type_idx::vptr, "Malformed constant opcode");
                     iptr += sizeof(address_header);
-                    uint8_t* ptr = (uint8_t*)iptr;
+                    uint8_t* ptr = const_cast<uint8_t*>(iptr);
                     const auto& type = get_type(btype_idx);
                     string_writer& next_buf = get_next_buffer();
                     write_literal(next_buf, ptr, type.index);

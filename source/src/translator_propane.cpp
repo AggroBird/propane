@@ -350,7 +350,7 @@ namespace propane
                 {
                     const type_idx btype_idx = type_idx(index);
                     iptr += sizeof(address_header);
-                    uint8_t* ptr = (uint8_t*)iptr;
+                    uint8_t* ptr = const_cast<uint8_t*>(iptr);
                     const auto& type = data.types[btype_idx];
                     write_literal(ptr, type.index);
                     iptr += type.total_size;

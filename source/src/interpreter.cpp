@@ -2388,7 +2388,7 @@ namespace propane
                 capacity = (static_cast<size_t>(1) << static_cast<size_t>(i - 1));
                 if (capacity >= parameters.min_stack_size && capacity <= parameters.max_stack_size)
                 {
-                    data = (uint8_t*)malloc(capacity);
+                    data = static_cast<uint8_t*>(malloc(capacity));
                     if (data) break;
                 }
             }
