@@ -95,8 +95,10 @@ namespace propane
 
         template<typename retval_t, typename... param_t> class method_invoke
         {
+            typedef retval_t(*invoke_method_handle)(param_t...);
+
         public:
-            static inline void invoke(void* ret_val, const void* param, retval_t(*call)(param_t...))
+            static inline void invoke(void* ret_val, const void* param, invoke_method_handle call)
             {
                 std::tuple<std::decay_t<param_t>...> tup;
 
@@ -107,8 +109,10 @@ namespace propane
         };
         template<typename... param_t> class method_invoke<void, param_t...>
         {
+            typedef void(*invoke_method_handle)(param_t...);
+
         public:
-            static inline void invoke(void* ret_val, const void* param, void(*call)(param_t...))
+            static inline void invoke(void* ret_val, const void* param, invoke_method_handle call)
             {
                 std::tuple<std::decay_t<param_t>...> tup;
 
@@ -127,7 +131,7 @@ namespace propane
     class external_call
     {
     public:
-        typedef void(*forward_method)(void(*)(), void*, const void*);
+        typedef void(*forward_method_handle)(method_handle, void*, const void*);
 
     private:
         external_call(std::string_view name);
@@ -136,15 +140,17 @@ namespace propane
         {
             struct bind
             {
+                typedef retval_t(*invoke_method_handle)(param_t...);
+
                 bind()
                 {
                     parameters_size = 0;
                     native::method_signature_param<param_t...>::generate_signature(parameters, parameters_size);
                 }
 
-                static void forward_call(void(*handle)(), void* ret_val, const void* param)
+                static void forward_call(method_handle handle, void* ret_val, const void* param)
                 {
-                    const auto method_ptr = (retval_t(*)(param_t...))(handle);
+                    const auto method_ptr = reinterpret_cast<invoke_method_handle>(handle);
                     native::method_invoke<retval_t, param_t...>::invoke(ret_val, param, method_ptr);
                 }
 
@@ -165,17 +171,17 @@ namespace propane
             call.return_type = native::typedecl(type_info, pointer_depth);
             call.parameters = std::span<const native::parameter>(instance.parameters, sizeof...(param_t));
             call.parameters_size = instance.parameters_size;
-            call.handle = (void(*)())(method);
+            call.handle = reinterpret_cast<method_handle>(method);
         }
 
         friend class library;
 
         std::string_view name;
-        forward_method forward = nullptr;
+        forward_method_handle forward = nullptr;
         native::typedecl return_type;
         std::span<const native::parameter> parameters;
         size_t parameters_size = 0;
-        void(*handle)() = nullptr;
+        method_handle handle = nullptr;
 
     public:
         template<typename method_t> static external_call bind(std::string_view name, method_t method = nullptr)

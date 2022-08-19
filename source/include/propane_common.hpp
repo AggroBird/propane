@@ -24,6 +24,7 @@ namespace propane
     // Typedefs
     static_assert(std::is_unsigned_v<size_t>, "size_t is not unsigned");
     using offset_t = std::make_signed_t<size_t>;
+    typedef void(*method_handle)();
 
     // Index types
     enum : uint32_t { invalid_index = 0xFFFFFFFF };

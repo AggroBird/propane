@@ -25,8 +25,8 @@ namespace propane
         std::span<const native::parameter> parameters;
         size_t parameters_size = 0;
 
-        external_call::forward_method forward = nullptr;
-        void(*handle)() = nullptr;
+        external_call::forward_method_handle forward = nullptr;
+        method_handle handle = nullptr;
     };
 
     class library_data
@@ -61,7 +61,7 @@ namespace propane
         bool open();
         void close();
 
-        void(*get_proc(const char* name))();
+        method_handle get_proc(const char* name);
 
     private:
         string path;

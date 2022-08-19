@@ -46,9 +46,9 @@ namespace propane
     {
         FreeLibrary((HMODULE)handle);
     }
-    void(*host::loadsym(void* handle, const char* name))()
+    method_handle host::loadsym(void* handle, const char* name)
     {
-        return (void(*)())GetProcAddress((HMODULE)handle, name);
+        return reinterpret_cast<method_handle>(GetProcAddress((HMODULE)handle, name));
     }
 }
 

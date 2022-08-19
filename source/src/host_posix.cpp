@@ -46,9 +46,9 @@ namespace propane
     {
         ::dlclose(handle);
     }
-    void(*host::loadsym(void* handle, const char* name))()
+    method_handle host::loadsym(void* handle, const char* name)
     {
-        return (void(*)())::dlsym(handle, name);
+        return reinterpret_cast<method_handle>(::dlsym(handle, name));
     }
 }
 

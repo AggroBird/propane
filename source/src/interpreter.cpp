@@ -106,8 +106,8 @@ namespace propane
                 handle(cinf.handle) {}
 
             string_view name;
-            external_call::forward_method forward = nullptr;
-            void(*handle)() = nullptr;
+            external_call::forward_method_handle forward = nullptr;
+            method_handle handle = nullptr;
         };
 
         runtime_library() = default;

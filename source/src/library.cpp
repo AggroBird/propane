@@ -121,7 +121,7 @@ namespace propane
         lib_handle = nullptr;
     }
 
-    void(*host_library::get_proc(const char* name))()
+    method_handle host_library::get_proc(const char* name)
     {
         return host::loadsym(lib_handle, name);
     }
