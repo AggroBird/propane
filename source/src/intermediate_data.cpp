@@ -3,11 +3,6 @@
 
 namespace propane
 {
-    namespace constants
-    {
-        constexpr size_t data_offset = intermediate_header.size() + sizeof(toolchain_version);
-    }
-
     bool intermediate::is_valid() const noexcept
     {
         return constants::validate_intermediate_header(content);
@@ -19,7 +14,7 @@ namespace propane
 
     toolchain_version intermediate::version() const noexcept
     {
-        if (content.size() >= constants::data_offset)
+        if (content.size() >= constants::im_data_offset)
         {
             return *reinterpret_cast<const toolchain_version*>(content.data() + constants::intermediate_header.size());
         }
@@ -91,7 +86,7 @@ namespace propane
     gen_intermediate_data gen_intermediate_data::deserialize(const intermediate& im)
     {
         gen_intermediate_data result;
-        const im_assembly_data& im_data = *reinterpret_cast<const im_assembly_data*>(im.content.data() + constants::data_offset);
+        const im_assembly_data& im_data = *reinterpret_cast<const im_assembly_data*>(im.content.data() + constants::im_data_offset);
         serialization::serializer<gen_intermediate_data>::read(im_data, result);
         return result;
     }

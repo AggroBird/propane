@@ -4,12 +4,6 @@
 
 namespace propane
 {
-    namespace constants
-    {
-        constexpr size_t data_offset = assembly_header.size() + sizeof(toolchain_version);
-        constexpr size_t total_size = data_offset + footer.size();
-    }
-
     bool assembly::is_valid() const noexcept
     {
         return constants::validate_assembly_header(content);
@@ -21,7 +15,7 @@ namespace propane
 
     toolchain_version assembly::version() const noexcept
     {
-        if (content.size() >= constants::data_offset)
+        if (content.size() >= constants::as_data_offset)
         {
             return *reinterpret_cast<const toolchain_version*>(content.data() + constants::assembly_header.size());
         }
@@ -36,7 +30,7 @@ namespace propane
     {
         if (is_valid())
         {
-            return *reinterpret_cast<const assembly_data*>(content.data() + constants::data_offset);
+            return *reinterpret_cast<const assembly_data*>(content.data() + constants::as_data_offset);
         }
 
         static thread_local assembly_data empty_assembly;
@@ -47,7 +41,7 @@ namespace propane
     {
         if (is_valid())
         {
-            return span<const uint8_t>(content.data() + constants::data_offset, content.size() - constants::total_size);
+            return span<const uint8_t>(content.data() + constants::as_data_offset, content.size() - constants::as_total_size);
         }
 
         return span<const uint8_t>();

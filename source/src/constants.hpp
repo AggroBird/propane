@@ -12,6 +12,10 @@ namespace propane
         constexpr string_view assembly_header = "PASM";
         constexpr string_view footer = "END";
 
+        constexpr size_t im_data_offset = intermediate_header.size() + sizeof(toolchain_version);
+        constexpr size_t as_data_offset = assembly_header.size() + sizeof(toolchain_version);
+        constexpr size_t as_total_size = as_data_offset + footer.size();
+
         bool validate_intermediate_header(span<const uint8_t> data) noexcept;
         bool validate_assembly_header(span<const uint8_t> data) noexcept;
     }
