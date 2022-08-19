@@ -159,12 +159,12 @@ namespace propane
     {
     public:
         NOCOPY_CLASS_DEFAULT(interpreter, const assembly_data& asm_data, const method& main, const runtime_data& runtime, runtime_parameters parameters) :
-            stack(allocate_stack(parameters)),
-            parameters(parameters),
-            data(asm_data),
+            stack(allocate_stack(parameters.min_stack_size, parameters.max_stack_size)),
             global_data(asm_data.globals.data.data(), asm_data.globals.data.size()),
             global_tables(),
-            database(asm_data.database)
+            database(asm_data.database),
+            data(asm_data),
+            parameters(parameters)
         {
             // Initialize externals
             for (size_t i = 0; i < runtime.libraries.size(); i++)
@@ -2381,25 +2381,25 @@ namespace propane
         }
 
 
-        inline stack_data_t allocate_stack(const runtime_parameters& parameters)
+        inline stack_data_t allocate_stack(size_t min_stack_size, size_t max_stack_size)
         {
-            uint8_t* data = nullptr;
+            uint8_t* memory = nullptr;
             size_t capacity = 0;
 
             // Try and find a stack that fits
             for (size_t i = sizeof(size_t) * 8; i > 0; i--)
             {
                 capacity = (static_cast<size_t>(1) << static_cast<size_t>(i - 1));
-                if (capacity >= parameters.min_stack_size && capacity <= parameters.max_stack_size)
+                if (capacity >= min_stack_size && capacity <= max_stack_size)
                 {
-                    data = static_cast<uint8_t*>(malloc(capacity));
-                    if (data) break;
+                    memory = static_cast<uint8_t*>(malloc(capacity));
+                    if (memory) break;
                 }
             }
 
-            VALIDATE_STACK_ALLOCATION(data != nullptr);
+            VALIDATE_STACK_ALLOCATION(memory != nullptr);
 
-            return stack_data_t(data, capacity);
+            return stack_data_t(memory, capacity);
         }
 
 
