@@ -23,10 +23,10 @@ int32_t main()
 
         // Create a stack with two integers, 4 and 5, and an extra number to hold the result
         main.push({
-                propane::type_idx::i32,
-                propane::type_idx::i32,
-                propane::type_idx::i32
-            });
+            propane::type_idx::i32,
+            propane::type_idx::i32,
+            propane::type_idx::i32,
+        });
         main.write_set(propane::stack(0), propane::constant(4));
         main.write_set(propane::stack(1), propane::constant(5));
 
@@ -50,13 +50,13 @@ int32_t main()
         main.write_call(add_idx, { propane::stack(2), propane::constant(15) });
         main.write_set(propane::stack(2), propane::retval());
 
+        // Print our result (should print 35)
+        main.write_dump(propane::stack(2));
+
         // Call a method that is imported from a dynamic library
         // (the library will be set up later)
         const propane::method_idx native_idx = gen.declare_method("native_call");
         main.write_call(native_idx, {});
-
-        // Print our result (should print 35)
-        main.write_dump(propane::stack(2));
 
         // Return
         main.write_retv(propane::constant(0));
@@ -81,13 +81,14 @@ int32_t main()
         // Bind the native function to a library. If no function pointer is provided,
         // the library will use the system to load a DLL called 'native_lib' and
         // attempt to import the function from that instead.
-        propane::library dynlib("native_lib",
+        propane::library dynlib("native_lib", true,
         {
             propane::external_call::bind<void()>("native_call", native_call),
         });
+        propane::environment env;
+        env += dynlib;
 
-        propane::runtime runtime;
-        runtime += dynlib;
+        propane::runtime runtime(env);
 
 
         // Link into an assembly
