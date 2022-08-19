@@ -62,11 +62,11 @@ namespace propane
 
     enum class subcode : uint8_t { invalid = 0xFF };
 
-    constexpr opcode operator+(opcode lhs, opcode rhs) noexcept
+    inline constexpr opcode operator+(opcode lhs, opcode rhs) noexcept
     {
         return opcode(static_cast<uint32_t>(lhs) + static_cast<uint32_t>(rhs));
     }
-    constexpr opcode operator-(opcode lhs, opcode rhs) noexcept
+    inline constexpr opcode operator-(opcode lhs, opcode rhs) noexcept
     {
         return opcode(static_cast<uint32_t>(lhs) - static_cast<uint32_t>(rhs));
     }

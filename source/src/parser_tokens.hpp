@@ -258,7 +258,7 @@ namespace propane
         token_string strings[token_string_count];
     };
 
-    constexpr token_string_lookup_table_t token_string_lookup_table = token_string_lookup_table_t::make_lookup_table(token_strings);
+    constexpr inline token_string_lookup_table_t token_string_lookup_table = token_string_lookup_table_t::make_lookup_table(token_strings);
 }
 
 #endif

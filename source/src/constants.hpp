@@ -8,9 +8,9 @@ namespace propane
 {
     namespace constants
     {
-        constexpr string_view intermediate_header = "PINT";
-        constexpr string_view assembly_header = "PASM";
-        constexpr string_view footer = "END";
+        inline constexpr string_view intermediate_header = "PINT";
+        inline constexpr string_view assembly_header = "PASM";
+        inline constexpr string_view footer = "END";
 
         constexpr size_t im_data_offset = intermediate_header.size() + sizeof(toolchain_version);
         constexpr size_t as_data_offset = assembly_header.size() + sizeof(toolchain_version);

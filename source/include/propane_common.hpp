@@ -19,7 +19,7 @@ namespace propane
         language_c,
     };
 
-    constexpr std::string_view null_keyword = "null";
+    inline constexpr std::string_view null_keyword = "null";
 
     // Typedefs
     static_assert(std::is_unsigned_v<size_t>, "size_t is not unsigned");
@@ -94,11 +94,11 @@ namespace propane
     };
 
     // Make type helper function
-    template<typename value_t> static constexpr native_type_info make_type(std::string_view name)
+    template<typename value_t> static inline constexpr native_type_info make_type(std::string_view name)
     {
         return native_type_info(name, native_type_size_v<value_t>, std::span<const native_field_info>());
     }
-    template<typename value_t> static constexpr native_type_info make_type(std::string_view name, std::span<const native_field_info> fields)
+    template<typename value_t> static inline constexpr native_type_info make_type(std::string_view name, std::span<const native_field_info> fields)
     {
         return native_type_info(name, native_type_size_v<value_t>, fields);
     }
@@ -107,26 +107,26 @@ namespace propane
     // so they can be used as parameters in native library calls.
     // Since the runtime has no notion of padding, extra caution needs to be taken to ensure
     // the structs are properly packed have the same layout in both runtime and native environments.
-    template<typename value_t> constexpr native_type_info native_type_info_v = make_type<value_t>(std::string_view());
-    template<> constexpr native_type_info native_type_info_v<int8_t> = make_type<int8_t>("byte");
-    template<> constexpr native_type_info native_type_info_v<uint8_t> = make_type<uint8_t>("ubyte");
-    template<> constexpr native_type_info native_type_info_v<int16_t> = make_type<int16_t>("short");
-    template<> constexpr native_type_info native_type_info_v<uint16_t> = make_type<uint16_t>("ushort");
-    template<> constexpr native_type_info native_type_info_v<int32_t> = make_type<int32_t>("int");
-    template<> constexpr native_type_info native_type_info_v<uint32_t> = make_type<uint32_t>("uint");
-    template<> constexpr native_type_info native_type_info_v<int64_t> = make_type<int64_t>("long");
-    template<> constexpr native_type_info native_type_info_v<uint64_t> = make_type<uint64_t>("ulong");
-    template<> constexpr native_type_info native_type_info_v<float> = make_type<float>("float");
-    template<> constexpr native_type_info native_type_info_v<double> = make_type<double>("double");
-    template<> constexpr native_type_info native_type_info_v<void> = make_type<void>("void");
+    template<typename value_t> inline constexpr native_type_info native_type_info_v = make_type<value_t>(std::string_view());
+    template<> inline constexpr native_type_info native_type_info_v<int8_t> = make_type<int8_t>("byte");
+    template<> inline constexpr native_type_info native_type_info_v<uint8_t> = make_type<uint8_t>("ubyte");
+    template<> inline constexpr native_type_info native_type_info_v<int16_t> = make_type<int16_t>("short");
+    template<> inline constexpr native_type_info native_type_info_v<uint16_t> = make_type<uint16_t>("ushort");
+    template<> inline constexpr native_type_info native_type_info_v<int32_t> = make_type<int32_t>("int");
+    template<> inline constexpr native_type_info native_type_info_v<uint32_t> = make_type<uint32_t>("uint");
+    template<> inline constexpr native_type_info native_type_info_v<int64_t> = make_type<int64_t>("long");
+    template<> inline constexpr native_type_info native_type_info_v<uint64_t> = make_type<uint64_t>("ulong");
+    template<> inline constexpr native_type_info native_type_info_v<float> = make_type<float>("float");
+    template<> inline constexpr native_type_info native_type_info_v<double> = make_type<double>("double");
+    template<> inline constexpr native_type_info native_type_info_v<void> = make_type<void>("void");
 
     // Alias types (for generator)
-    template<typename value_t> constexpr std::string_view native_alias_name_v = std::string_view();
-    template<> constexpr std::string_view native_alias_name_v<offset_t> = "offset";
-    template<> constexpr std::string_view native_alias_name_v<size_t> = "size";
+    template<typename value_t> inline constexpr std::string_view native_alias_name_v = std::string_view();
+    template<> inline constexpr std::string_view native_alias_name_v<offset_t> = "offset";
+    template<> inline constexpr std::string_view native_alias_name_v<size_t> = "size";
 
     // Make field helper function
-    template<typename value_t> static constexpr native_field_info make_field(std::string_view name, size_t offset)
+    template<typename value_t> static inline constexpr native_field_info make_field(std::string_view name, size_t offset)
     {
         return native_field_info(name, offset, native_type_info_v<value_t>.name);
     }
@@ -155,35 +155,35 @@ namespace propane
         }
     };
 
-    template<typename value_t> constexpr base_type_info base_type_info_v = base_type_info();
-    template<> constexpr base_type_info base_type_info_v<int8_t> = base_type_info::make<int8_t>(type_idx::i8);
-    template<> constexpr base_type_info base_type_info_v<uint8_t> = base_type_info::make<uint8_t>(type_idx::u8);
-    template<> constexpr base_type_info base_type_info_v<int16_t> = base_type_info::make<int16_t>(type_idx::i16);
-    template<> constexpr base_type_info base_type_info_v<uint16_t> = base_type_info::make<uint16_t>(type_idx::u16);
-    template<> constexpr base_type_info base_type_info_v<int32_t> = base_type_info::make<int32_t>(type_idx::i32);
-    template<> constexpr base_type_info base_type_info_v<uint32_t> = base_type_info::make<uint32_t>(type_idx::u32);
-    template<> constexpr base_type_info base_type_info_v<int64_t> = base_type_info::make<int64_t>(type_idx::i64);
-    template<> constexpr base_type_info base_type_info_v<uint64_t> = base_type_info::make<uint64_t>(type_idx::u64);
-    template<> constexpr base_type_info base_type_info_v<float> = base_type_info::make<float>(type_idx::f32);
-    template<> constexpr base_type_info base_type_info_v<double> = base_type_info::make<double>(type_idx::f64);
-    template<> constexpr base_type_info base_type_info_v<void*> = base_type_info::make<void*>(type_idx::vptr);
-    template<> constexpr base_type_info base_type_info_v<void> = base_type_info::make<void>(type_idx::voidtype);
+    template<typename value_t> inline constexpr base_type_info base_type_info_v = base_type_info();
+    template<> inline constexpr base_type_info base_type_info_v<int8_t> = base_type_info::make<int8_t>(type_idx::i8);
+    template<> inline constexpr base_type_info base_type_info_v<uint8_t> = base_type_info::make<uint8_t>(type_idx::u8);
+    template<> inline constexpr base_type_info base_type_info_v<int16_t> = base_type_info::make<int16_t>(type_idx::i16);
+    template<> inline constexpr base_type_info base_type_info_v<uint16_t> = base_type_info::make<uint16_t>(type_idx::u16);
+    template<> inline constexpr base_type_info base_type_info_v<int32_t> = base_type_info::make<int32_t>(type_idx::i32);
+    template<> inline constexpr base_type_info base_type_info_v<uint32_t> = base_type_info::make<uint32_t>(type_idx::u32);
+    template<> inline constexpr base_type_info base_type_info_v<int64_t> = base_type_info::make<int64_t>(type_idx::i64);
+    template<> inline constexpr base_type_info base_type_info_v<uint64_t> = base_type_info::make<uint64_t>(type_idx::u64);
+    template<> inline constexpr base_type_info base_type_info_v<float> = base_type_info::make<float>(type_idx::f32);
+    template<> inline constexpr base_type_info base_type_info_v<double> = base_type_info::make<double>(type_idx::f64);
+    template<> inline constexpr base_type_info base_type_info_v<void*> = base_type_info::make<void*>(type_idx::vptr);
+    template<> inline constexpr base_type_info base_type_info_v<void> = base_type_info::make<void>(type_idx::voidtype);
 
-    template<typename value_t> constexpr type_idx derive_type_index_v = base_type_info_v<value_t>.index;
+    template<typename value_t> inline constexpr type_idx derive_type_index_v = base_type_info_v<value_t>.index;
 
-    constexpr bool is_integral(type_idx type) noexcept
+    inline constexpr bool is_integral(type_idx type) noexcept
     {
         return type < type_idx::f32;
     }
-    constexpr bool is_unsigned(type_idx type) noexcept
+    inline constexpr bool is_unsigned(type_idx type) noexcept
     {
         return is_integral(type) && (((uint32_t)type & 1) == 1);
     }
-    constexpr bool is_floating_point(type_idx type) noexcept
+    inline constexpr bool is_floating_point(type_idx type) noexcept
     {
         return type == type_idx::f32 || type == type_idx::f64;
     }
-    constexpr bool is_arithmetic(type_idx type) noexcept
+    inline constexpr bool is_arithmetic(type_idx type) noexcept
     {
         return type <= type_idx::f64;
     }
@@ -348,16 +348,16 @@ namespace propane
         is_generated_type = (is_pointer_type | is_array_type | is_signature_type),
     };
 
-    constexpr type_flags operator|(type_flags lhs, type_flags rhs) noexcept
+    inline constexpr type_flags operator|(type_flags lhs, type_flags rhs) noexcept
     {
         return type_flags(static_cast<uint32_t>(lhs) | static_cast<uint32_t>(rhs));
     }
-    constexpr type_flags& operator|=(type_flags& lhs, type_flags rhs) noexcept
+    inline constexpr type_flags& operator|=(type_flags& lhs, type_flags rhs) noexcept
     {
         lhs = lhs | rhs;
         return lhs;
     }
-    constexpr bool operator&(type_flags lhs, type_flags rhs) noexcept
+    inline constexpr bool operator&(type_flags lhs, type_flags rhs) noexcept
     {
         return type_flags(static_cast<uint32_t>(lhs) & static_cast<uint32_t>(rhs)) != type_flags::none;
     }

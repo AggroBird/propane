@@ -12,24 +12,24 @@ namespace propane
         is_resolving = 1 << 25,
         is_resolved = 1 << 26,
     };
-    constexpr type_flags operator|(type_flags lhs, extended_flags rhs) noexcept
+    inline constexpr type_flags operator|(type_flags lhs, extended_flags rhs) noexcept
     {
         return type_flags(uint32_t(lhs) | uint32_t(rhs));
     }
-    constexpr type_flags operator|(extended_flags lhs, type_flags rhs) noexcept
+    inline constexpr type_flags operator|(extended_flags lhs, type_flags rhs) noexcept
     {
         return type_flags(uint32_t(lhs) | uint32_t(rhs));
     }
-    constexpr type_flags operator|(extended_flags lhs, extended_flags rhs) noexcept
+    inline constexpr type_flags operator|(extended_flags lhs, extended_flags rhs) noexcept
     {
         return type_flags(uint32_t(lhs) | uint32_t(rhs));
     }
-    constexpr type_flags& operator|=(type_flags& lhs, extended_flags rhs) noexcept
+    inline constexpr type_flags& operator|=(type_flags& lhs, extended_flags rhs) noexcept
     {
         lhs = lhs | type_flags(rhs);
         return lhs;
     }
-    constexpr bool operator&(type_flags lhs, extended_flags rhs) noexcept
+    inline constexpr bool operator&(type_flags lhs, extended_flags rhs) noexcept
     {
         return type_flags(uint32_t(lhs) & uint32_t(rhs)) != type_flags::none;
     }

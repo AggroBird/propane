@@ -19,25 +19,25 @@ namespace propane
         constant_flag = uint32_t(1) << (address_header_constants::index_bit_count - 1),
         constant_mask = (address_header_constants::index_max >> 1),
     };
-    constexpr global_idx operator|(global_idx lhs, global_flags rhs) noexcept
+    inline constexpr global_idx operator|(global_idx lhs, global_flags rhs) noexcept
     {
         return global_idx(uint32_t(lhs) | uint32_t(rhs));
     }
-    constexpr global_idx& operator|=(global_idx& lhs, global_flags rhs) noexcept
+    inline constexpr global_idx& operator|=(global_idx& lhs, global_flags rhs) noexcept
     {
         lhs = lhs | rhs;
         return lhs;
     }
-    constexpr global_idx operator&(global_idx lhs, global_flags rhs) noexcept
+    inline constexpr global_idx operator&(global_idx lhs, global_flags rhs) noexcept
     {
         return global_idx(uint32_t(lhs) & uint32_t(rhs));
     }
-    constexpr global_idx& operator&=(global_idx& lhs, global_flags rhs) noexcept
+    inline constexpr global_idx& operator&=(global_idx& lhs, global_flags rhs) noexcept
     {
         lhs = lhs & rhs;
         return lhs;
     }
-    constexpr bool is_constant_flag_set(global_idx idx) noexcept
+    inline constexpr bool is_constant_flag_set(global_idx idx) noexcept
     {
         return (idx & global_flags::constant_flag) != global_idx(0);
     }
@@ -52,7 +52,7 @@ namespace propane
         return *reinterpret_cast<const uint8_t* const*>(addr);
     }
 
-    constexpr base_type_info base_types[] =
+    inline constexpr base_type_info base_types[] =
     {
         base_type_info_v<i8>,
         base_type_info_v<u8>,
@@ -67,21 +67,21 @@ namespace propane
         base_type_info_v<vptr>,
         base_type_info_v<void>,
     };
-    constexpr size_t base_type_count = sizeof(base_types) / sizeof(base_type_info);
+    inline constexpr size_t base_type_count = sizeof(base_types) / sizeof(base_type_info);
 
-    constexpr base_type_info alias_types[] =
+    inline constexpr base_type_info alias_types[] =
     {
         base_type_info(native_alias_name_v<size_t>, base_type_info_v<size_t>.index, base_type_info_v<size_t>.size),
         base_type_info(native_alias_name_v<offset_t>, base_type_info_v<offset_t>.index, base_type_info_v<offset_t>.size),
     };
-    constexpr size_t alias_type_count = sizeof(alias_types) / sizeof(base_type_info);
+    inline constexpr size_t alias_type_count = sizeof(alias_types) / sizeof(base_type_info);
 
-    constexpr bool is_base_type(type_idx key) noexcept
+    inline constexpr bool is_base_type(type_idx key) noexcept
     {
         return static_cast<size_t>(key) < base_type_count;
     }
 
-    constexpr size_t get_base_type_size(type_idx btype) noexcept
+    inline constexpr size_t get_base_type_size(type_idx btype) noexcept
     {
         if (btype <= type_idx::vptr) return base_types[static_cast<size_t>(btype)].size;
         return 0;

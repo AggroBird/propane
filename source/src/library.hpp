@@ -8,7 +8,7 @@ namespace propane
 {
     template<typename value_t> struct sort_named
     {
-        constexpr bool operator()(const value_t& lhs, const value_t& rhs) const noexcept
+        inline constexpr bool operator()(const value_t& lhs, const value_t& rhs) const noexcept
         {
             return lhs.name < rhs.name;
         }
