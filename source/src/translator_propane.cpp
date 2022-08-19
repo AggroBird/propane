@@ -56,7 +56,7 @@ namespace propane
             {
                 if (is_base_type(t.index)) continue;
                 if (t.is_generated()) continue;
-                if (t.fields.empty()) continue;
+                if (t.is_external()) continue;
 
                 file_writer.write(t.is_union() ? "union " : "struct ", resolve_type_name(t));
                 file_writer.write_newline();

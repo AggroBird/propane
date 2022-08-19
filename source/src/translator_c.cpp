@@ -188,13 +188,13 @@ namespace propane
 
             if (!is_base_type(type.index))
             {
-                if (type.is_generated() || !type.fields.empty())
+                for (auto& field : type.fields)
                 {
-                    for (auto& field : type.fields)
-                    {
-                        resolve_type(field.type);
-                    }
+                    resolve_type(field.type);
+                }
 
+                if (!type.is_external())
+                {
                     if (type.is_array() || !type.is_generated())
                     {
                         type_fields.clear();
