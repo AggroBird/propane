@@ -7,6 +7,11 @@
 // Winapi implementation
 #include <Windows.h>
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4191) // warning C4191: 'reinterpret_cast': unsafe conversion from 'FARPROC' to 'propane::method_handle'
+#endif
+
 namespace propane
 {
     hostmem host::allocate(size_t len)
@@ -51,5 +56,9 @@ namespace propane
         return reinterpret_cast<method_handle>(GetProcAddress((HMODULE)handle, name));
     }
 }
+
+#ifdef _MSC_VER
+#pragma warning (pop)
+#endif
 
 #endif
