@@ -137,6 +137,11 @@ namespace propane
         // Metadata
         metadata meta;
 
+        inline bool is_external() const noexcept
+        {
+            return flags & type_flags::is_external;
+        }
+
         inline bool is_integral() const noexcept
         {
             return propane::is_integral(index);
