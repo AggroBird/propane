@@ -208,7 +208,8 @@ namespace propane
             stack.size = int_size;
 
             // Push return type and stack frame
-            param_offset = stack_offset = stack_end = stack.data + stack.size;
+            stack_end = stack.data;
+            param_offset = stack_offset = stack.data + stack.size;
             sf = stack_frame_t(nullptr, stack.data, stack_end, nullptr);
             push_stack_frame(main, get_signature(main.signature));
 
@@ -2224,8 +2225,10 @@ namespace propane
             const auto& bytecode = method.bytecode;
 
             const size_t current_stack_size = stack.size;
-            uint8_t* const frame_offset = stack.data + current_stack_size;
-            uint8_t* const return_offset = stack_end;
+            // Next stackframe pointer (end of total stack)
+            uint8_t* const sptr = stack.data + current_stack_size;
+            // Next return address (end of effective stack)
+            uint8_t* const rptr = stack_end;
 
             if (!method.is_external())
             {
@@ -2237,17 +2240,8 @@ namespace propane
                 VALIDATE_STACK_OVERFLOW(new_stack_size <= stack.capacity, new_stack_size, stack.capacity);
                 stack.size = new_stack_size;
 
-                // Update offsets
-                param_offset = frame_offset + stack_frame_size;
-                stack_offset = param_offset + calling_signature.parameters_size;
-                stack_end = stack.data + method.method_stack_size + stack_frame_size;
-
-                // Update method lookup
-                method_return_type = signature.return_type;
-                method_stackvars = method.stackvars.data();
-                method_parameters = signature.parameters.data();
-
                 // Write parameters
+                uint8_t* const param_ptr = sptr + stack_frame_size;
                 const size_t parameter_count = calling_signature.parameters.size();
                 const size_t arg_count = sf.iptr ? static_cast<size_t>(read_bytecode<uint8_t>(sf.iptr)) : 0;
                 ASSERT(arg_count == parameter_count, "Invalid argument count");
@@ -2258,15 +2252,25 @@ namespace propane
                         const stackvar& parameter = calling_signature.parameters[i];
                         const subcode sub = read_subcode();
                         const uint8_t* arg_addr = read_address(true);
-                        set(sub, param_offset + parameter.offset, arg_addr);
+                        set(sub, param_ptr + parameter.offset, arg_addr);
                     }
                 }
 
+                // Update method lookup
+                method_return_type = signature.return_type;
+                method_stackvars = method.stackvars.data();
+                method_parameters = signature.parameters.data();
+
+                // Update offsets
+                param_offset = param_ptr;
+                stack_offset = param_offset + calling_signature.parameters_size;
+                stack_end = sptr + method.method_stack_size + stack_frame_size;
+
                 // Write stack frame
-                *reinterpret_cast<stack_frame_t*>(frame_offset) = sf;
+                *reinterpret_cast<stack_frame_t*>(sptr) = sf;
 
                 // Call
-                sf = stack_frame_t(bytecode.data(), return_offset, frame_offset, &method);
+                sf = stack_frame_t(bytecode.data(), rptr, sptr, &method);
                 ibeg = sf.iptr;
                 iend = ibeg + bytecode.size();
                 
@@ -2295,7 +2299,6 @@ namespace propane
                 }
 
                 // Push method stack size (parameters only for external methods)
-                uint8_t* const param_offset = stack.data + stack.size;
                 if (method.total_stack_size > 0)
                 {
                     const size_t new_stack_size = stack.size + method.total_stack_size;
@@ -2307,6 +2310,7 @@ namespace propane
                 const size_t parameter_count = calling_signature.parameters.size();
                 const size_t arg_count = sf.iptr ? static_cast<size_t>(read_bytecode<uint8_t>(sf.iptr)) : 0;
                 ASSERT(arg_count == parameter_count, "Invalid argument count");
+                uint8_t* const param_ptr = sptr;
                 if (parameter_count > 0)
                 {
                     for (size_t i = 0; i < parameter_count; i++)
@@ -2314,16 +2318,16 @@ namespace propane
                         const stackvar& parameter = calling_signature.parameters[i];
                         const subcode sub = read_subcode();
                         const uint8_t* arg_addr = read_address(true);
-                        set(sub, param_offset + parameter.offset, arg_addr);
+                        set(sub, param_ptr + parameter.offset, arg_addr);
                     }
                 }
 
                 // Invoke external
-                call.forward(call.handle, return_offset, param_offset);
+                call.forward(call.handle, rptr, param_ptr);
 
                 // Set return value here since we return immediately
                 const type_idx return_type_idx = calling_signature.return_type;
-                return_value_addr = return_offset;
+                return_value_addr = rptr;
                 return_value_type = return_type_idx;
                 
                 // Pop stackframe
@@ -2352,7 +2356,7 @@ namespace propane
                 // Restore local offsets
                 param_offset = sf.sptr + stack_frame_size;
                 stack_offset = param_offset + calling_signature.parameters_size;
-                stack_end = stack.data + calling_method.method_stack_size + stack_frame_size;
+                stack_end = sf.sptr + calling_method.method_stack_size + stack_frame_size;
             }
             else
             {
