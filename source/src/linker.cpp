@@ -232,6 +232,26 @@ namespace propane
                 data.types.push_back(std::move(type));
             }
 
+            // Create field offsets
+            {
+                auto& type = data.types[result_idx];
+                for (auto& field : native_type.fields)
+                {
+                    if (auto find_field_type = data.database.find(field.type))
+                    {
+                        ASSERT(find_field_type->lookup == lookup_type::type, "NYI");
+
+                        const auto find_field_name = data.database.find(field.name);
+                        const name_idx field_name = find_field_name ? find_field_name.key : data.database.emplace(field.name, lookup_idx::make_identifier()).key;
+                        type.fields.push_back(propane::field(field_name, find_field_type->type));
+                    }
+                    else
+                    {
+                        VALIDATE_TYPE_DEFINITION(false, field.type);
+                    }
+                }
+            }
+
             // Resolve pointers
             for (size_t i = 0; i < native_type.pointer_depth; i++)
             {
