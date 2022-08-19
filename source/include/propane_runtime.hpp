@@ -332,18 +332,18 @@ namespace propane
         void generate_name(type_idx type, std::string& out_name) const;
     };
 
+    // Allow custom logging for the interpreter.
+    // Strings are null-terminated.
+    // If left unassigned, output is redirected to stdout.
+    typedef void(*print_method_handle)(const char*, size_t);
+
     struct runtime_parameters
     {
-        runtime_parameters() :
-            max_stack_size(1 << 20),
-            min_stack_size(1 << 15),
-            max_callstack_depth(1024) {}
-
-        size_t max_stack_size;
-        size_t min_stack_size;
-        uint32_t max_callstack_depth;
+        size_t max_stack_size = 1 << 20;
+        size_t min_stack_size = 1 << 15;
+        uint32_t max_callstack_depth = 1024;
+        print_method_handle print_method = nullptr;
     };
-
 
     // Environment object.
     // Contains a list of libraries with external function calls which can be invoked at runtime.

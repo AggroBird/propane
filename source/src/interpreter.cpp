@@ -4,6 +4,7 @@
 #include "library.hpp"
 
 #include <cmath>
+#include <iostream>
 
 #define VALIDATE(errc, expr, ...) ENSURE(errc, expr, propane::runtime_exception, __VA_ARGS__)
 
@@ -57,24 +58,6 @@ namespace propane
     private:
         hostmem handle;
     };
-
-    template<typename value_t> value_t get_value(const uint8_t* addr) { return *reinterpret_cast<const value_t*>(addr); }
-    template<typename value_t> void dump_value(const uint8_t* addr) { std::cout << get_value<value_t>(addr); }
-    template<> inline void dump_value<int8_t>(const uint8_t* addr) { std::cout << static_cast<int32_t>(get_value<int8_t>(addr)); }
-    template<> inline void dump_value<uint8_t>(const uint8_t* addr) { std::cout << static_cast<uint32_t>(get_value<uint8_t>(addr)); }
-    template<> inline void dump_value<bool>(const uint8_t* addr)
-    {
-        const uint8_t b = get_value<uint8_t>(addr);
-        if (b == 0) std::cout << "false";
-        else if (b == 1) std::cout << "true";
-        else std::cout << static_cast<uint32_t>(b);
-    }
-    template<typename value_t> void dump_var(const uint8_t* addr)
-    {
-        std::cout << '(';
-        dump_value<value_t>(addr);
-        std::cout << ')';
-    }
 
     struct stack_data_t
     {
@@ -164,7 +147,8 @@ namespace propane
             global_tables(),
             database(asm_data.database),
             data(asm_data),
-            parameters(parameters)
+            parameters(parameters),
+            print_method(parameters.print_method == nullptr ? default_print_method : parameters.print_method)
         {
             // Initialize externals
             for (size_t i = 0; i < runtime.libraries.size(); i++)
@@ -294,86 +278,88 @@ namespace propane
             }
         }
 
-        void dump_assembly() const
+        void dump_assembly()
         {
             // Types
-            std::cout << "TYPES: " << std::endl;
+            output_stream << "TYPES: " << std::endl;
             for (size_t tidx = 0; tidx < data.types.size(); tidx++)
             {
                 auto& t = data.types[type_idx(tidx)];
 
-                std::cout << tidx << ": " << get_name(t);
+                output_stream << tidx << ": " << get_name(t);
                 if (t.meta.index != meta_idx::invalid)
                 {
-                    std::cout << " (" << data.metatable[t.meta.index] << ":" << t.meta.line_number << ")";
+                    output_stream << " (" << data.metatable[t.meta.index] << ':' << t.meta.line_number << ')';
                 }
                 if (!t.fields.empty())
                 {
-                    std::cout << " { ";
+                    output_stream << " { ";
                     bool first = true;
                     for (auto& field : t.fields)
                     {
-                        if (!first) std::cout << ", ";
+                        if (!first) output_stream << ", ";
                         first = false;
-                        std::cout << get_name(get_type(field.type)) << ' ' << database[field.name];
+                        output_stream << get_name(get_type(field.type)) << ' ' << database[field.name];
                     }
-                    std::cout << " }";
+                    output_stream << " }";
                 }
-                std::cout << std::endl;
+                output_stream << std::endl;
             }
-            std::cout << std::endl;
+            output_stream << std::endl;
 
             // Signatures
-            std::cout << "SIGNATURES: " << std::endl;
+            output_stream << "SIGNATURES: " << std::endl;
             for (size_t sidx = 0; sidx < data.signatures.size(); sidx++)
             {
                 auto& s = data.signatures[signature_idx(sidx)];
 
-                std::cout << sidx << ": " << get_name(get_type(s.return_type));
-                std::cout << '(';
+                output_stream << sidx << ": " << get_name(get_type(s.return_type));
+                output_stream << '(';
                 if (!s.parameters.empty())
                 {
                     for (size_t i = 0; i < s.parameters.size(); i++)
                     {
                         const auto& param = s.parameters[i];
 
-                        if (i > 0) std::cout << ", ";
-                        std::cout << get_name(get_type(param.type));
+                        if (i > 0) output_stream << ", ";
+                        output_stream << get_name(get_type(param.type));
                     }
                 }
-                std::cout << ')' << std::endl;
+                output_stream << ')' << std::endl;
             }
-            std::cout << std::endl;
+            output_stream << std::endl;
 
             // Methods
-            std::cout << "METHODS: " << std::endl;
+            output_stream << "METHODS: " << std::endl;
             for (size_t midx = 0; midx < data.methods.size(); midx++)
             {
                 auto& m = data.methods[method_idx(midx)];
                 auto& s = get_signature(m.signature);
 
-                std::cout << midx << ": " << get_name(get_type(s.return_type)) << " ";
-                std::cout << database[m.name];
+                output_stream << midx << ": " << get_name(get_type(s.return_type)) << ' ';
+                output_stream << database[m.name];
 
-                std::cout << '(';
+                output_stream << '(';
                 if (!s.parameters.empty())
                 {
                     for (size_t i = 0; i < s.parameters.size(); i++)
                     {
                         const auto& param = s.parameters[i];
 
-                        if (i > 0) std::cout << ", ";
-                        std::cout << get_name(get_type(param.type));
+                        if (i > 0) output_stream << ", ";
+                        output_stream << get_name(get_type(param.type));
                     }
                 }
-                std::cout << ')';
+                output_stream << ')';
                 if (m.meta.index != meta_idx::invalid)
                 {
-                    std::cout << " (" << data.metatable[m.meta.index] << ":" << m.meta.line_number << ")";
+                    output_stream << " (" << data.metatable[m.meta.index] << ':' << m.meta.line_number << ')';
                 }
-                std::cout << std::endl;
+                output_stream << std::endl;
             }
-            std::cout << std::endl;
+            output_stream << std::endl;
+
+            print_output();
         }
 
 
@@ -1983,13 +1969,13 @@ namespace propane
 
             dump_recursive(src_addr, get_addr_type(true));
 
-            std::cout << std::endl;
+            print_output();
         }
 
 
         void dump_recursive(const uint8_t* addr, const type& type)
         {
-            std::cout << get_name(type);
+            output_stream << get_name(type);
             switch (type.index)
             {
                 case type_idx::i8: dump_var<i8>(addr); break;
@@ -2006,35 +1992,35 @@ namespace propane
                 {
                     if (type.is_pointer() || type.is_signature())
                     {
-                        std::cout << '(' << (void*)*reinterpret_cast<const uint8_t* const*>(addr) << ')';
+                        output_stream << '(' << (void*)*reinterpret_cast<const uint8_t* const*>(addr) << ')';
                     }
                     else if (type.is_array())
                     {
-                        std::cout << '{';
+                        output_stream << '{';
                         const uint8_t* ptr = addr;
                         const auto& underlying_type = get_type(type.generated.array.underlying_type);
                         for (size_t i = 0; i < type.generated.array.array_size; i++)
                         {
-                            std::cout << (i == 0 ? " " : ", ");
+                            output_stream << (i == 0 ? " " : ", ");
                             dump_recursive(ptr + underlying_type.total_size * i, get_type(underlying_type.index));
                         }
-                        std::cout << " }";
+                        output_stream << " }";
                     }
                     else if (!type.fields.empty())
                     {
-                        std::cout << '{';
+                        output_stream << '{';
                         for (size_t i = 0; i < type.fields.size(); i++)
                         {
                             auto& field = type.fields[i];
-                            std::cout << (i == 0 ? " " : ", ");
-                            std::cout << database[field.name] << " = ";
+                            output_stream << (i == 0 ? " " : ", ");
+                            output_stream << database[field.name] << " = ";
                             dump_recursive(addr + field.offset, get_type(field.type));
                         }
-                        std::cout << " }";
+                        output_stream << " }";
                     }
                     else
                     {
-                        std::cout << "(?)";
+                        output_stream << "(?)";
                     }
                 }
                 break;
@@ -2273,7 +2259,7 @@ namespace propane
                 sf = stack_frame_t(bytecode.data(), rptr, sptr, &method);
                 ibeg = sf.iptr;
                 iend = ibeg + bytecode.size();
-                
+
                 // Clear return value after a call
                 clear_return_value();
             }
@@ -2281,7 +2267,7 @@ namespace propane
             {
                 ASSERT(bytecode.size() == sizeof(runtime_call_index), "Invalid external index");
                 const runtime_call_index cidx = *reinterpret_cast<const runtime_call_index*>(bytecode.data());
-                
+
                 // Ensure method handle
                 ASSERT(libraries.is_valid_index(cidx.library), "Invalid library index");
                 auto& lib = libraries[cidx.library];
@@ -2329,7 +2315,7 @@ namespace propane
                 const type_idx return_type_idx = calling_signature.return_type;
                 return_value_addr = rptr;
                 return_value_type = return_type_idx;
-                
+
                 // Pop stackframe
                 stack.size = current_stack_size;
             }
@@ -2455,6 +2441,58 @@ namespace propane
         uint32_t callstack_depth = 0;
 
         int32_t return_code = 0;
+        print_method_handle print_method;
+        stringstream output_stream;
+        block<char> output_buffer;
+
+        void print_output()
+        {
+            std::streamsize stream_length = (std::streamsize)output_stream.tellp();
+            if (stream_length > 0)
+            {
+                // Add space for null terminator, stringstream appends one automatically)
+                stream_length++;
+                size_t required_size = static_cast<size_t>(stream_length);
+
+                if (output_buffer.size() < required_size)
+                {
+                    size_t new_size = std::max(output_buffer.size(), size_t(1 << 8));
+                    while (required_size > new_size)
+                    {
+                        new_size <<= 1;
+                        ASSERT(new_size <= size_t(1 << 20), "String buffer overflow");
+                    }
+                    output_buffer = block<char>(new_size);
+                }
+                output_stream.get(output_buffer.data(), stream_length);
+                output_stream.seekp(0, std::ios::beg);
+                output_stream.seekg(0, std::ios::beg);
+                output_stream.clear();
+                print_method(output_buffer.data(), required_size - 1);
+            }
+        }
+        static void default_print_method(const char* c_str, size_t len)
+        {
+            std::cout << std::string_view(c_str, len) << std::endl;
+        }
+
+        template<typename value_t> value_t get_value(const uint8_t* addr) { return *reinterpret_cast<const value_t*>(addr); }
+        template<typename value_t> void dump_value(const uint8_t* addr) { output_stream << get_value<value_t>(addr); }
+        template<> inline void dump_value<int8_t>(const uint8_t* addr) { output_stream << static_cast<int32_t>(get_value<int8_t>(addr)); }
+        template<> inline void dump_value<uint8_t>(const uint8_t* addr) { output_stream << static_cast<uint32_t>(get_value<uint8_t>(addr)); }
+        template<> inline void dump_value<bool>(const uint8_t* addr)
+        {
+            const uint8_t b = get_value<uint8_t>(addr);
+            if (b == 0) output_stream << "false";
+            else if (b == 1) output_stream << "true";
+            else output_stream << static_cast<uint32_t>(b);
+        }
+        template<typename value_t> void dump_var(const uint8_t* addr)
+        {
+            output_stream << '(';
+            dump_value<value_t>(addr);
+            output_stream << ')';
+        }
     };
 
 
