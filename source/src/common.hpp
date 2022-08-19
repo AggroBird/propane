@@ -8,6 +8,8 @@ using std::string;
 using std::string_view;
 using std::initializer_list;
 
+#include <array>
+using std::array;
 #include <vector>
 using std::vector;
 #include <set>

@@ -52,7 +52,7 @@ namespace propane
         return *reinterpret_cast<const uint8_t* const*>(addr);
     }
 
-    constexpr base_type_info_t base_types[] =
+    constexpr base_type_info base_types[] =
     {
         base_type_info_v<i8>,
         base_type_info_v<u8>,
@@ -67,14 +67,14 @@ namespace propane
         base_type_info_v<vptr>,
         base_type_info_v<void>,
     };
-    constexpr size_t base_type_count = sizeof(base_types) / sizeof(base_type_info_t);
+    constexpr size_t base_type_count = sizeof(base_types) / sizeof(base_type_info);
 
-    constexpr base_type_info_t alias_types[] =
+    constexpr base_type_info alias_types[] =
     {
-        base_type_info_t(native_alias_name_v<size_t>, base_type_info_v<size_t>.index, base_type_info_v<size_t>.size),
-        base_type_info_t(native_alias_name_v<offset_t>, base_type_info_v<offset_t>.index, base_type_info_v<offset_t>.size),
+        base_type_info(native_alias_name_v<size_t>, base_type_info_v<size_t>.index, base_type_info_v<size_t>.size),
+        base_type_info(native_alias_name_v<offset_t>, base_type_info_v<offset_t>.index, base_type_info_v<offset_t>.size),
     };
-    constexpr size_t alias_type_count = sizeof(alias_types) / sizeof(base_type_info_t);
+    constexpr size_t alias_type_count = sizeof(alias_types) / sizeof(base_type_info);
 
     constexpr bool is_base_type(type_idx key) noexcept
     {

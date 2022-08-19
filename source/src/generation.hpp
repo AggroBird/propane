@@ -41,7 +41,7 @@ namespace propane
         gen_type(name_idx name, type_idx index) :
             name(name),
             index(index) {}
-        gen_type(name_idx name, const base_type_info_t& btype_info) :
+        gen_type(name_idx name, const base_type_info& btype_info) :
             gen_type(name, btype_info.index)
         {
             if (btype_info.index == type_idx::voidtype)
@@ -242,6 +242,11 @@ namespace propane
         inline void make_key(vector<uint8_t>& out_key) const
         {
             return propane::make_key<name_idx>(object_type, field_names, out_key);
+        }
+        inline static void make_key(type_idx object_type, name_idx field_name, vector<uint8_t>& out_key)
+        {
+            const std::array<name_idx, 1> tmp_arr = { field_name };
+            return propane::make_key<name_idx>(object_type, tmp_arr, out_key);
         }
     };
 

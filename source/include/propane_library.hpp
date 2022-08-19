@@ -5,6 +5,9 @@
 
 #include <tuple>
 
+#define BIND_NATIVE_FIELD(type, name) propane::make_field<uint8_t>(#name, offsetof(type, name))
+#define BIND_NATIVE_TYPE(type, name, fields) template<> constexpr propane::native_type_info propane::native_type_info_v<type> = propane::make_type<type>(name, fields)
+
 namespace propane
 {
     namespace native
@@ -13,11 +16,11 @@ namespace propane
         template<typename value_t> constexpr size_t type_size_v = sizeof(value_t);
         template<> constexpr size_t type_size_v<void> = 0;
 
-        struct typedecl : public native_type_info_t
+        struct typedecl : public native_type_info
         {
             constexpr typedecl() = default;
-            constexpr typedecl(const native_type_info_t& info, size_t pointer_depth) :
-                native_type_info_t(info),
+            constexpr typedecl(const native_type_info& info, size_t pointer_depth) :
+                native_type_info(info),
                 pointer_depth(pointer_depth) {}
             
             size_t pointer_depth = 0;
@@ -27,7 +30,7 @@ namespace propane
         struct parameter : public typedecl
         {
             parameter() = default;
-            parameter(const native_type_info_t& info, size_t offset, size_t pointer_depth) :
+            parameter(const native_type_info& info, size_t offset, size_t pointer_depth) :
                 typedecl(info, pointer_depth),
                 offset(offset) {}
 
@@ -66,8 +69,8 @@ namespace propane
             {
                 typedef decay_base_t<value_t> param_type;
                 typedef derive_pointer_info<param_type>::base_type param_base_type;
-                constexpr native_type_info_t type_info = native_type_info_v<param_base_type>;
-                static_assert(!type_info.name.empty() && type_info.size > 0, "Undefined type");
+                constexpr native_type_info type_info = native_type_info_v<param_base_type>;
+                static_assert(!type_info.name.empty(), "Undefined type");
                 constexpr size_t pointer_depth = derive_pointer_depth_v<param_type>;
                 *result++ = parameter(type_info, offset, pointer_depth);
                 offset += pointer_depth == 0 ? type_info.size : sizeof(void*);
@@ -154,8 +157,8 @@ namespace propane
 
             typedef native::decay_base_t<retval_t> return_type;
             typedef derive_pointer_info<return_type>::base_type retval_base_type;
-            constexpr native_type_info_t type_info = native_type_info_v<retval_base_type>;
-            static_assert(!type_info.name.empty() && type_info.size > 0, "Undefined type");
+            constexpr native_type_info type_info = native_type_info_v<retval_base_type>;
+            static_assert(!type_info.name.empty(), "Undefined type");
             constexpr size_t pointer_depth = derive_pointer_depth_v<return_type>;
 
             call.forward = bind::forward_call;
