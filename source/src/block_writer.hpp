@@ -13,7 +13,7 @@ namespace propane
     class block_writer final
     {
     public:
-        block_writer() : off(0), len(0) {}
+        block_writer() : offset(0), element_count(0) {}
         ~block_writer()
         {
             free_children();
@@ -76,9 +76,9 @@ namespace propane
                 append(cb.data(), static_cast<uint32_t>(cb.size()));
 
                 // Write header
-                uint32_t* write = reinterpret_cast<uint32_t*>(binary.data() + it->off);
-                *write++ = (write_offset - it->off);
-                *write++ = it->len;
+                uint32_t* write = reinterpret_cast<uint32_t*>(binary.data() + it->offset);
+                *write++ = (write_offset - it->offset);
+                *write++ = it->element_count;
             }
             free_children();
 
@@ -87,17 +87,17 @@ namespace propane
             return result;
         }
 
-        const uint32_t off;
+        const uint32_t offset;
 
         inline void increment_length(uint32_t count = 1)
         {
-            len += count;
+            element_count += count;
         }
 
     private:
-        block_writer(uint32_t off) : off(off), len(0) {}
+        block_writer(uint32_t offset) : offset(offset), element_count(0) {}
 
-        uint32_t len;
+        uint32_t element_count;
 
         inline void append(const uint8_t* ptr, uint32_t length)
         {
