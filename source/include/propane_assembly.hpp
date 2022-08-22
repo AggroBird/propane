@@ -31,12 +31,12 @@ namespace propane
         // Direct reference to assembly data
         const assembly_data& assembly_ref() const noexcept;
         // Byte data of assembly (minus validation header/footer)
-        std::span<const uint8_t> assembly_binary() const noexcept;
+        span<const uint8_t> assembly_binary() const noexcept;
         // All data (including validation header/footer)
-        std::span<const uint8_t> data() const noexcept;
+        span<const uint8_t> data() const noexcept;
 
         // Load assembly from binary
-        bool load(std::span<const uint8_t> from_bytes);
+        bool load(span<const uint8_t> from_bytes);
 
     private:
         friend class asm_assembly_data;

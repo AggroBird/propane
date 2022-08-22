@@ -276,7 +276,7 @@ namespace propane
             }
             inline static void read(const void*& data, std::map<key_t, value_t>& value)
             {
-                abort();
+                std::terminate();
             }
         };
 

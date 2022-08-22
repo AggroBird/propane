@@ -169,7 +169,7 @@ namespace propane
 
             call.forward = bind::forward_call;
             call.return_type = native::typedecl(type_info, pointer_depth);
-            call.parameters = std::span<const native::parameter>(instance.parameters, sizeof...(param_t));
+            call.parameters = span<const native::parameter>(instance.parameters, sizeof...(param_t));
             call.parameters_size = instance.parameters_size;
             call.handle = reinterpret_cast<method_handle>(method);
         }
@@ -179,7 +179,7 @@ namespace propane
         std::string_view name;
         forward_method_handle forward = nullptr;
         native::typedecl return_type;
-        std::span<const native::parameter> parameters;
+        span<const native::parameter> parameters;
         size_t parameters_size = 0;
         method_handle handle = nullptr;
 
@@ -199,7 +199,7 @@ namespace propane
     class library : public handle<class library_data, sizeof(size_t) * 16>
     {
     public:
-        library(std::string_view path, bool preload_symbols, std::span<const external_call> calls);
+        library(std::string_view path, bool preload_symbols, span<const external_call> calls);
         library(std::string_view path, bool preload_symbols, std::initializer_list<external_call> calls) :
             library(path, preload_symbols, init_span(calls)) {}
         ~library();

@@ -22,7 +22,7 @@ namespace propane
 
         string name;
         native::typedecl return_type;
-        std::span<const native::parameter> parameters;
+        span<const native::parameter> parameters;
         size_t parameters_size = 0;
 
         external_call::forward_method_handle forward = nullptr;

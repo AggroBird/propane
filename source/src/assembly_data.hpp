@@ -111,7 +111,7 @@ namespace propane
         }
         inline static void read(const void*& data, asm_database & value)
         {
-            abort();
+            std::terminate();
         }
     };
 
@@ -124,7 +124,7 @@ namespace propane
         }
         inline static void read(const void*& data, asm_metatable & value)
         {
-            abort();
+            std::terminate();
         }
     };
 

@@ -189,7 +189,7 @@ namespace propane
             return 0;
         }
 
-        static constexpr token_string_lookup_table_t make_lookup_table(std::span<const token_string> strings)
+        static constexpr token_string_lookup_table_t make_lookup_table(span<const token_string> strings)
         {
             token_string_lookup_table_t result = {};
             int32_t count = 0;

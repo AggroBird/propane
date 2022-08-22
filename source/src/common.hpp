@@ -3,7 +3,6 @@
 
 #include "propane_common.hpp"
 
-using std::span;
 using std::string;
 using std::string_view;
 using std::initializer_list;

@@ -24,8 +24,8 @@ namespace propane
         toolchain_version version() const noexcept;
         bool is_compatible() const noexcept;
 
-        std::span<const uint8_t> data() const noexcept;
-        bool load(std::span<const uint8_t> from_bytes);
+        span<const uint8_t> data() const noexcept;
+        bool load(span<const uint8_t> from_bytes);
 
         intermediate operator+(const intermediate&) const;
         intermediate& operator+=(const intermediate&);

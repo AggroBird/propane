@@ -350,7 +350,7 @@ namespace propane
     class environment : public handle<class environment_data, sizeof(size_t) * 8>
     {
     public:
-        environment(std::span<const class library> libs = std::span<const class library>());
+        environment(span<const class library> libs = span<const class library>());
         environment(const class library& lib);
         ~environment();
 

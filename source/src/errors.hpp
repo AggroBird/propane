@@ -118,7 +118,7 @@ template<> inline bool validate_expression<bool>(bool expr) noexcept
         throw excep(                                        \
             errc_to_uint(errc),                             \
             propane::format(fmt, ##__VA_ARGS__).data());    \
-        abort();                                            \
+        std::terminate();                                   \
     }                                                       \
 }
 #define ENSURE_WITH_META(errc, meta, expr, excep, fmt, ...) \
@@ -131,7 +131,7 @@ template<> inline bool validate_expression<bool>(bool expr) noexcept
             propane::format(fmt, ##__VA_ARGS__).data(),     \
             meta_copy.file_name,                            \
             meta_copy.line_number);                         \
-        std::abort();                                       \
+        std::terminate();                                   \
     }                                                       \
 }
 #define ASSERT(expr, fmt, ...)                                                      \
@@ -141,7 +141,7 @@ template<> inline bool validate_expression<bool>(bool expr) noexcept
         const std::string str = propane::format("%:%, assertion failed: " fmt,      \
             propane::strip_filepath(__FILE__), __LINE__, ##__VA_ARGS__);            \
         fprintf(stderr, "%s", str.data());                                          \
-        std::abort();                                                               \
+        std::terminate();                                                           \
     }                                                                               \
 }
 #else

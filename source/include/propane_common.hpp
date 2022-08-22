@@ -83,22 +83,22 @@ namespace propane
             name(name),
             size(size),
             fields() {}
-        constexpr native_type_info(std::string_view name, size_t size, std::span<const native_field_info> fields) :
+        constexpr native_type_info(std::string_view name, size_t size, span<const native_field_info> fields) :
             name(name),
             size(size),
             fields(fields) {}
 
         std::string_view name;
         size_t size = 0;
-        std::span<const native_field_info> fields;
+        span<const native_field_info> fields;
     };
 
     // Make type helper function
     template<typename value_t> static inline constexpr native_type_info make_type(std::string_view name)
     {
-        return native_type_info(name, native_type_size_v<value_t>, std::span<const native_field_info>());
+        return native_type_info(name, native_type_size_v<value_t>, span<const native_field_info>());
     }
-    template<typename value_t> static inline constexpr native_type_info make_type(std::string_view name, std::span<const native_field_info> fields)
+    template<typename value_t> static inline constexpr native_type_info make_type(std::string_view name, span<const native_field_info> fields)
     {
         return native_type_info(name, native_type_size_v<value_t>, fields);
     }
@@ -463,21 +463,21 @@ namespace propane
     };
 
     // Span utility
-    template<typename value_t> inline std::span<const value_t> init_span(std::initializer_list<value_t> init) noexcept
+    template<typename value_t> inline span<const value_t> init_span(std::initializer_list<value_t> init) noexcept
     {
-        return std::span<const value_t>(init.begin(), init.size());
+        return span<const value_t>(init.begin(), init.size());
     }
-    template<typename value_t> inline std::span<const value_t> init_span(std::initializer_list<const value_t> init) noexcept
+    template<typename value_t> inline span<const value_t> init_span(std::initializer_list<const value_t> init) noexcept
     {
-        return std::span<const value_t>(init.begin(), init.size());
+        return span<const value_t>(init.begin(), init.size());
     }
-    template<typename value_t> inline std::span<const value_t> init_span(value_t& init) noexcept
+    template<typename value_t> inline span<const value_t> init_span(value_t& init) noexcept
     {
-        return std::span<const value_t>(&init, 1);
+        return span<const value_t>(&init, 1);
     }
-    template<typename value_t> inline std::span<const value_t> init_span(const value_t& init) noexcept
+    template<typename value_t> inline span<const value_t> init_span(const value_t& init) noexcept
     {
-        return std::span<const value_t>(&init, 1);
+        return span<const value_t>(&init, 1);
     }
 
     // Exceptions

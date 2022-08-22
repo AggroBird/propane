@@ -207,7 +207,7 @@ namespace propane
             void declare_field(type_idx type, name_idx name);
             name_idx declare_field(type_idx type, std::string_view name);
 
-            std::span<const field> fields() const;
+            span<const field> fields() const;
 
             // Finalize
             void finalize();
@@ -233,7 +233,7 @@ namespace propane
             method_idx index() const;
 
             // Variable stack
-            void push(std::span<const type_idx> types);
+            void push(span<const type_idx> types);
             inline void push(std::initializer_list<type_idx> types)
             {
                 push(init_span(types));
@@ -243,7 +243,7 @@ namespace propane
                 push(init_span(type));
             }
 
-            std::span<const stackvar> stack() const;
+            span<const stackvar> stack() const;
 
             // Declare label for later use (name is optional)
             label_idx declare_label(std::string_view label_name);
@@ -294,18 +294,18 @@ namespace propane
             void write_bze(label_idx label, address lhs);
             void write_bnz(label_idx label, address lhs);
 
-            void write_sw(address addr, std::span<const label_idx> switch_labels);
+            void write_sw(address addr, span<const label_idx> switch_labels);
             inline void write_sw(address addr, std::initializer_list<label_idx> switch_labels)
             {
                 write_sw(addr, init_span(switch_labels));
             }
 
-            void write_call(method_idx method, std::span<const address> args = std::span<const address>());
+            void write_call(method_idx method, span<const address> args = span<const address>());
             inline void write_call(method_idx method, std::initializer_list<address> args)
             {
                 write_call(method, init_span(args));
             }
-            void write_callv(address addr, std::span<const address> args = std::span<const address>());
+            void write_callv(address addr, span<const address> args = span<const address>());
             inline void write_callv(address addr, std::initializer_list<address> args)
             {
                 write_callv(addr, init_span(args));
@@ -335,7 +335,7 @@ namespace propane
 
         // Declare signatures
         // Signatures can be used for method declaration or signature type declaration
-        signature_idx make_signature(type_idx return_type, std::span<const type_idx> parameter_types = std::span<const type_idx>());
+        signature_idx make_signature(type_idx return_type, span<const type_idx> parameter_types = span<const type_idx>());
         inline signature_idx make_signature(type_idx return_type, std::initializer_list<type_idx> parameter_types)
         {
             return make_signature(return_type, init_span(parameter_types));
@@ -344,7 +344,7 @@ namespace propane
         // Offsets
         // Data views into structs relative to the root type.
         // Modifying field values is only possible through offsets.
-        offset_idx make_offset(type_idx type, std::span<const name_idx> fields);
+        offset_idx make_offset(type_idx type, span<const name_idx> fields);
         inline offset_idx make_offset(type_idx type, std::initializer_list<name_idx> fields)
         {
             return make_offset(type, init_span(fields));
@@ -354,7 +354,7 @@ namespace propane
             return make_offset(type, init_span(field));
         }
         // Append more fields to existing offsets (creates a new offset)
-        offset_idx append_offset(offset_idx offset, std::span<const name_idx> fields);
+        offset_idx append_offset(offset_idx offset, span<const name_idx> fields);
         inline offset_idx append_offset(offset_idx offset, std::initializer_list<name_idx> fields)
         {
             return append_offset(offset, init_span(fields));
@@ -366,12 +366,12 @@ namespace propane
 
 
         // Global and constant definition
-        void define_global(name_idx name, bool is_constant, type_idx type, std::span<const constant> values = std::span<const constant>());
+        void define_global(name_idx name, bool is_constant, type_idx type, span<const constant> values = span<const constant>());
         inline void define_global(name_idx name, bool is_constant, type_idx type, std::initializer_list<constant> values)
         {
             define_global(name, is_constant, type, init_span(values));
         }
-        inline name_idx define_global(std::string_view name, bool is_constant, type_idx type, std::span<const constant> values = std::span<const constant>())
+        inline name_idx define_global(std::string_view name, bool is_constant, type_idx type, span<const constant> values = span<const constant>())
         {
             const name_idx id = make_identifier(name);
             define_global(id, is_constant, type, values);

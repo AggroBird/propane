@@ -5,78 +5,92 @@
 
 #include <span>
 
+namespace propane
+{
+    template<typename value_t, size_t extend = std::dynamic_extent>
+    using span = std::span<value_t, extend>;
+}
+
 #else
 
-namespace std
+#if __cplusplus >= 201703L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703L)
+
+#include <array>
+
+namespace propane
 {
-    // Alternative for span when when lacking C++20.
+    // Simple alternative for span when when lacking C++20.
     // Supports most collection types used in propane toolchain,
-    // assuming they define data() and size() methods
+    // assuming they define data() and size() methods.
     template<typename value_t> class span
     {
     public:
-        inline constexpr span() : ptr(nullptr), len(0)
+        inline constexpr span() noexcept :
+            ptr(nullptr), len(0)
         {
 
         }
-        inline constexpr span(value_t* ptr, size_t len) : ptr(ptr), len(len)
+        inline constexpr span(value_t* ptr, size_t len)  noexcept :
+            ptr(ptr), len(len)
+        {
+            
+        }
+
+        template<size_t length> inline constexpr span(value_t(&arr)[length]) noexcept :
+            ptr(arr), len(length)
+        {
+
+        }
+        template<typename other_t> constexpr span(other_t& other) noexcept :
+            ptr(std::data(other)), len(std::size(other))
         {
 
         }
 
-        template<size_t length> inline constexpr span(value_t(&arr)[length]) : ptr(arr), len(length)
-        {
-
-        }
-        template<typename other_t> constexpr span(other_t& other) : ptr(other.data()), len(other.size())
-        {
-
-        }
-
-        constexpr span(const span&) = default;
-        constexpr span& operator=(const span&) = default;
+        constexpr span(const span&) noexcept = default;
+        constexpr span& operator=(const span&) noexcept = default;
 
 
-        inline constexpr value_t* begin()
+        inline constexpr value_t* begin() noexcept
         {
             return ptr;
         }
-        inline constexpr value_t* end()
+        inline constexpr value_t* end() noexcept
         {
             return ptr + len;
         }
-        inline constexpr const value_t* begin() const
+        inline constexpr const value_t* begin() const noexcept
         {
             return ptr;
         }
-        inline constexpr const value_t* end() const
+        inline constexpr const value_t* end() const noexcept
         {
             return ptr + len;
         }
 
-        inline constexpr value_t& operator[](size_t idx)
+        inline constexpr value_t& operator[](size_t idx) noexcept
         {
             return ptr[idx];
         }
-        inline constexpr const value_t& operator[](size_t idx) const
+        inline constexpr const value_t& operator[](size_t idx) const noexcept
         {
             return ptr[idx];
         }
 
-        inline constexpr value_t* data()
+        inline constexpr value_t* data() noexcept
         {
             return ptr;
         }
-        inline constexpr const value_t* data() const
+        inline constexpr const value_t* data() const noexcept
         {
             return ptr;
         }
 
-        inline constexpr size_t size() const
+        inline constexpr size_t size() const noexcept
         {
             return len;
         }
-        inline constexpr bool empty() const
+        inline constexpr bool empty() const noexcept
         {
             return len == 0;
         }
@@ -86,6 +100,8 @@ namespace std
         size_t len;
     };
 }
+
+#endif
 
 #endif
 
