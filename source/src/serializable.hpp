@@ -82,7 +82,7 @@ namespace propane
         template<typename value_t, typename... rest_t> constexpr bool serializable_size_check_v = serializable_size_check<value_t, rest_t...>::value;
 
         // Serializable alignment check
-        template<typename value_t> constexpr bool serializable_alignment_check_v = (sizeof(value_t) & (sizeof(uint32_t) - 1)) == 0 && alignof(value_t) == alignof(uint32_t);
+        template<typename value_t> constexpr bool serializable_alignment_check_v = alignof(value_t) == alignof(uint32_t);
 
         // Get type at idx
         template<typename> constexpr bool false_condition = false;
