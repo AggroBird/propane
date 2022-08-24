@@ -47,9 +47,9 @@ namespace propane
         // Write deferred
         block_writer& write_deferred()
         {
-            const uint32_t offset = static_cast<uint32_t>(binary.size());
+            const uint32_t current_offset = static_cast<uint32_t>(binary.size());
             reserve(static_cast<uint32_t>(sizeof(uint32_t) * 2));
-            block_writer* ptr = new block_writer(offset);
+            block_writer* ptr = new block_writer(current_offset);
             children.push_back(ptr);
             return *ptr;
         }
